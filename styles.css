@@ -1,0 +1,95 @@
+  html{
+    box-sizing: border-box;
+  }
+  
+  :root{
+    --bs-gold: darkgoldenrod;
+    --bs-blue: rgb(6, 6, 66);
+    --bs-light-blue:darkslateblue;
+    --bs-red: crimson;
+    --bs-white: azure;
+  }
+
+body{
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bs-blue);
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+#navbar{
+  background-color: var(--bs-gold);
+}
+
+
+.navbar-collapse {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+h1, a, .h3{
+  color: var(--bs-gold);
+  text-decoration: none;
+}
+
+.nav-link{
+  color: var(--bs-white);
+  text-decoration: none;
+}
+
+a:hover, .nav-link:hover{
+  color: var(--bs-red);
+  text-decoration: none;
+}
+
+#projects{
+  background: radial-gradient(circle, var(--bs-light-blue), rgb(48, 1, 75));;
+}  
+
+
+.card, .list-group-item {
+  background: radial-gradient(circle, rgb(48, 1, 75), var(--bs-blue));
+  color: var(--bs-white);
+  text-decoration: none;
+}
+
+.show{
+  animation: show 3s ease-in-out forwards;
+}
+
+.card-title{
+  color: var(--bs-gold);
+}
+
+footer header{
+  color: var(--bs-gold);
+  text-align: center;
+}
+
+.icon-link:hover{
+  animation: bounce 0.5s linear 1;
+}
+
+@keyframes bounce{
+  0%{
+    margin-top: 2rem;
+  }
+  50%{
+    margin-top: 1rem;
+  }
+  100%{
+    margin-top: 2rem;
+  }
+}
+
+@keyframes show {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
