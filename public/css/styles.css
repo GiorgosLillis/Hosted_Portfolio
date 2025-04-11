@@ -1,0 +1,94 @@
+  html{
+    box-sizing: border-box;
+  }
+  
+  .theme-default{
+    --bs-secondary: darkgoldenrod;
+    --bs-primary: rgb(6, 6, 66);
+    --bs-effect: crimson;
+    --bs-text: azure; 
+    --bs-text-secondary: darkgoldenrod;
+    --image: url('../backgrounds/graph_paper_blue.png');
+  }
+
+  .theme-dark{
+    --bs-secondary: #03dd5e;
+    --bs-primary: black;
+    --bs-effect: darkgoldenrod;
+    --bs-text: azure;
+    --bs-text-secondary: #03dd5e;
+    --image: url('../backgrounds/graph_paper_dark.png');
+  }
+
+ .theme-light{
+    --bs-secondary: lightgray;
+    --bs-primary: azure;
+    --bs-effect: black;
+    --bs-text: crimson;
+    --bs-text-secondary: black;
+    --image: url('../backgrounds/graph_paper_white.png');
+  }
+
+  .btn{
+    background-color: var(--bs-secondary);
+    color: var(--bs-text);
+  }
+
+body{
+    font-family: Arial, Helvetica, sans-serif;
+    background-image: var(--image);
+    background-size: cover;
+    background-position: center; 
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+#navbar{
+  background-color: var(--bs-secondary);
+}
+
+.navbar-collapse {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+h1, a, .card-title{
+  color: var(--bs-text-secondary);
+  text-decoration: none;
+}
+
+h2,h3{
+  color: var(--bs-text);
+}
+
+.nav-link, .navbar-toggler-text{
+  color: var(--bs-text);
+  text-decoration: none;
+}
+
+a:hover, .nav-link:hover, .btn:hover{
+  color: var(--bs-effect);
+  text-decoration: none;
+}
+
+.card, .list-group-item {
+  background-color: var(--bs-primary);
+  color: var(--bs-text);
+  text-decoration: none;
+  border: 2px solid var(--bs-secondary);
+  border-radius: 20px;
+}
+
+.icon-link:hover{
+  animation: bounce 0.5s linear 1;
+}
+
+@keyframes bounce{
+  0%, 100%{
+    transform: translateY(0);
+  }
+  50%{
+    transform: translateY(-1rem);
+  }
+  
+}
