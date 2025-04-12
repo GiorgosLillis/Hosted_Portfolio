@@ -48,6 +48,7 @@ Issues
 
 - reCAPTCHA insists on being v3, while I intended to be v2 for better user interaction.
 - Long time for submission notification: 8sec for successful submission, 5sec for failed reCAPTCHA check
+- Form and reCAPTCHA do not reset after submission.
 - Any recommendation regarding fixes will be appreciated.
 ---
 
