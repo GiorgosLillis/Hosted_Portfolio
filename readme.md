@@ -57,8 +57,13 @@ Security
 Issues
 
 - Long time for submission notification: 8sec for successful submission, 5sec for failed reCAPTCHA check
+<<<<<<< HEAD
 - Any recommendation regarding fixes and improvments will be appreciated.
 
+=======
+- Form and reCAPTCHA do not reset after submission.
+- Any recommendation regarding fixes will be appreciated.
+>>>>>>> b581a0392ac7aeb1cce4469a5ca26e7af4a754b9
 ---
 
 Installation (Development)
