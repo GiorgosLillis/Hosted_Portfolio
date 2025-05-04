@@ -106,6 +106,10 @@ a:hover{
   animation: bounce 0.5s linear 1;
 }
 
+.form-text{
+  color: var(--bs-text); /* Red (replace with your color) */
+}
+
 .submit-btn:hover {
   background: linear-gradient(60deg, var(--bs-secondary) 10%, var(--bs-secondary-light) 60%, var(--bs-secondary));
   color: var(--bs-text);
@@ -114,6 +118,7 @@ a:hover{
 .form-control::-webkit-input-placeholder{
   color: #181717; 
 }
+
 
 @keyframes bounce{
   0%, 100%{
