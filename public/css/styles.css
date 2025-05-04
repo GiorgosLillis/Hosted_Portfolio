@@ -3,28 +3,37 @@
   }
   
   .theme-default{
-    --bs-secondary: darkgoldenrod;
-    --bs-primary: rgb(6, 6, 66);
-    --bs-effect: crimson;
+    --bs-secondary: #D99F0D;
+    --bs-primary: #060642;
+    --bs-primary-light: #200242;
+    --bs-secondary-light: #fcbd1d;
+    --bs-effect: 	#75B6FF;
+    --bs-effect-secondary: #060642;
     --bs-text: azure; 
-    --bs-text-secondary: darkgoldenrod;
+    --bs-text-secondary: #D99F0D;
     --image: url('../backgrounds/graph_paper_blue.png');
   }
 
   .theme-dark{
-    --bs-secondary: #03dd5e;
-    --bs-primary: black;
-    --bs-effect: darkgoldenrod;
-    --bs-text: azure;
-    --bs-text-secondary: #03dd5e;
+    --bs-secondary: #06682f;
+    --bs-primary: #0d0d0d;
+    --bs-primary-light: #20202083;
+    --bs-secondary-light: #0adf63;
+    --bs-effect: #0adf63;
+    --bs-effect-secondary: #222222;
+    --bs-text: #babbbb;
+    --bs-text-secondary: #058038;
     --image: url('../backgrounds/graph_paper_dark.png');
   }
 
  .theme-light{
-    --bs-secondary: lightgray;
-    --bs-primary: azure;
-    --bs-effect: black;
-    --bs-text: crimson;
+    --bs-secondary: #E4DCDC;
+    --bs-primary: #f0ffff;
+    --bs-primary-light: white;
+    --bs-secondary-light: #d6c8c8;
+    --bs-effect: red;
+    --bs-effect-secondary: #f0ffff;
+    --bs-text: #740B20;
     --bs-text-secondary: black;
     --image: url('../backgrounds/graph_paper_white.png');
   }
@@ -55,6 +64,7 @@ body{
 h1, a, .card-title{
   color: var(--bs-text-secondary);
   text-decoration: none;
+  font-weight: bold;
 }
 
 h2,h3{
@@ -66,7 +76,12 @@ h2,h3{
   text-decoration: none;
 }
 
-a:hover, .nav-link:hover, .btn:hover{
+.nav-link:hover, .btn:hover{
+  color: var(--bs-effect-secondary);
+  text-decoration: none;
+}
+
+a:hover{
   color: var(--bs-effect);
   text-decoration: none;
 }
@@ -79,8 +94,25 @@ a:hover, .nav-link:hover, .btn:hover{
   border-radius: 20px;
 }
 
+.card:hover, .list-group-item:hover{
+  background: linear-gradient(45deg, var(--bs-primary) , var(--bs-primary-light));
+  color: var(--bs-text);
+  text-decoration: none;
+  border: 2px solid var(--bs-secondary);
+  border-radius: 20px;
+}
+
 .icon-link:hover{
   animation: bounce 0.5s linear 1;
+}
+
+.submit-btn:hover {
+  background: linear-gradient(60deg, var(--bs-secondary) 10%, var(--bs-secondary-light) 60%, var(--bs-secondary));
+  color: var(--bs-text);
+}
+
+.form-control::-webkit-input-placeholder{
+  color: #181717; 
 }
 
 @keyframes bounce{

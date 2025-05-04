@@ -1,13 +1,21 @@
-document.addEventListener("DOMContentLoaded", function () {
-document.getElementById("contactForm").addEventListener("submit", async function (e) {
+const form = document.getElementById("contactForm");
+
+form.addEventListener("submit", async function (e) {
+   
     e.preventDefault();
-  
+
+    if (!this.checkValidity()) {
+      this.classList.add('was-validated');
+      return;
+    }
+
     const recaptchaToken = grecaptcha.getResponse();
     if (!recaptchaToken) {
       alert("Please verify you're not a robot.");
       return;
     }
-  
+    grecaptcha.reset();
+    
     const formData = {
       email: document.getElementById("email").value,
       subject: document.getElementById("subject").value,
@@ -28,4 +36,3 @@ document.getElementById("contactForm").addEventListener("submit", async function
       console.error(err);
     }
   })
-});
