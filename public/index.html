@@ -23,6 +23,7 @@
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <link rel="dns-prefetch" href="//smtp.gmail.com" />
     <link rel="preconnect" href="//smtp.gmail.com" />
+    <script src="https://www.google.com/recaptcha/api.js?render=6LcMb0ArAAAAAE4QDCULqYxDxY8CU3Cqf5VDCwGm"></script>
     <title>Giorgos Lillis | Portfolio</title>
     <meta
       name="description"
@@ -272,9 +273,8 @@
         </section>
       </section>
     </main>
-  </body>
-  <footer class="d-flex flex-column flex-wrap justify-content-end align-items-center my-4">
-    <h1 class="display-3">If you wish to contact me</h1>
+  <footer class="d-flex flex-column flex-wrap justify-content-center align-items-center my-4">
+    <h1 class="display-3 text-center text-wrap px-3">If you wish to contact me</h1>
     <form
       class="container mt-4 needs-validation"
       method="POST"
@@ -331,17 +331,12 @@
         ></textarea>
         <div class="invalid-feedback">Please write your message.</div>
       </div>
-
-      <div
-        class="g-recaptcha"
-        data-sitekey="6LcqdBIrAAAAAGt8fw0zs8usoHDG1D-EyljgYnYQ"
-      ></div>
       <button type="submit" class="btn submit-btn my-3" aria-label="Send Email">
         Send Email
       </button>
     </form>
     <ul
-      class=" col-md-4 my-3 list-unstyled d-flex"
+      class="list-unstyled d-flex justify-content-start ms-md-5 ps-md-3"
       id="contact"
     >
       <li class="ms-3">
@@ -362,4 +357,14 @@
       </li>
     </ul>
   </footer>
+  <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="formToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <strong class="me-auto">Notification</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body"></div>
+    </div>
+  </div>
+</body>
 </html>

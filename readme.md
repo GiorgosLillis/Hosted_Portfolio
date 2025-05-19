@@ -28,7 +28,7 @@ Features I have given:
 
 - Clean, responsive design with no template
 - Contact form with email service
-- reCAPTCHA (Google) support to prevent spam
+- reCAPTCHAv3 (Google), a CAPTCHA service that helps prevent spam by analyzing user interactions without requiring user input, ensuring a seamless user experience
 - Three color modes switch
 - Animated sections as they appear in view with AOS library
 - Accessibility tools including ARIA roles
@@ -56,14 +56,8 @@ Security
 
 Issues
 
-- Long time for submission notification: 8sec for successful submission, 5sec for failed reCAPTCHA check
-<<<<<<< HEAD
 - Any recommendation regarding fixes and improvments will be appreciated.
 
-=======
-- Form and reCAPTCHA do not reset after submission.
-- Any recommendation regarding fixes will be appreciated.
->>>>>>> b581a0392ac7aeb1cce4469a5ca26e7af4a754b9
 ---
 
 Installation (Development)
@@ -72,5 +66,16 @@ Installation (Development)
 git clone https://github.com/GiorgosLillis/Hosted_Portfolio.git
 cd Hosted_Portfolio
 npm install
+
+# Set up environment variables
+
+# Install Vercel CLI
+npm install -g vercel
+
+# Log in to Vercel
+vercel login
+
+# Run the project locally
 vercel dev
+
 ```

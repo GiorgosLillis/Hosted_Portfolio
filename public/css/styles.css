@@ -86,6 +86,14 @@ a:hover{
   text-decoration: none;
 }
 
+.card {
+  min-height: 450px; 
+  transform: scale(1);        
+  transition: transform 0.3s ease-in-out;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
 .card, .list-group-item {
   background-color: var(--bs-primary);
   color: var(--bs-text);
@@ -106,8 +114,23 @@ a:hover{
   animation: bounce 0.5s linear 1;
 }
 
-.form-text{
-  color: var(--bs-text); /* Red (replace with your color) */
+.was-validated input:invalid {
+  border: #dc3545 3px solid;
+  box-shadow: 0 0 0 0.25rem rgba(220,53,69,.25);
+}
+.was-validated input:valid {
+  border: #28a745 3px solid;
+  box-shadow: 0 0 0 0.25rem rgba(40,167,69,.25);
+}
+
+.form-text, .toast-message{
+  color: var(--bs-text); 
+}
+
+.status{
+  background-color: var(--bs-secondary);
+  color: var(--bs-text);
+  font-size: 1.5rem;
 }
 
 .submit-btn:hover {

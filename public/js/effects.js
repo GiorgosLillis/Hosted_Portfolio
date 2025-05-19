@@ -1,7 +1,10 @@
 AOS.init({
-    duration: 1000,  
-    once: false,      
-    mirror: true    
+    startEvent: 'DOMContentLoaded',
+    once: true,               
+    duration: 1000,
+    easing: 'ease-in-out',
+    mirror: false,               
+    anchorPlacement: 'top-bottom'
 });
     
 const savedTheme = localStorage.getItem('site-theme') || 'default';
