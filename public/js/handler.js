@@ -24,7 +24,7 @@ form.addEventListener("submit", async function (e) {
       return;
     }
 
-    const token = await grecaptcha.execute('6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI', { action: 'submit' });
+    const token = await grecaptcha.execute('6Lc560ErAAAAAP7bly7AL_F_5AxlDf8zW7xxbML6', { action: 'submit' });
     if (!token) {
       showToast("reCAPTCHA token missing", "danger", toast, toastBody);
       return;
