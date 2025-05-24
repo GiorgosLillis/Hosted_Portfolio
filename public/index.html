@@ -42,7 +42,7 @@
   <body class="theme-default">
     <nav
       id="navbar"
-      class="navbar navbar-expand-lg sticky-top d-flex align-items-end"
+      class="navbar navbar-expand-lg fixed-top d-flex align-items-end"
     >
       <section class="container-fluid">
         <a
@@ -151,7 +151,6 @@
       <section
         id="projects"
         class="d-flex flex-column text-center mb-5 h-100"
-        data-aos="flip-down"
         data-aos-duration="1000"
       >
         <h1 class="display-3 mb-5">A bit of explanation regarding me</h3>
@@ -276,6 +275,15 @@
           </div>
         </section>
       </section>
+      <div class="d-none d-lg-flex justify-content-left align-items-center fixed-bottom" id="time">
+        <div class="text-center d-flex mx-5">
+          <h2 class="fs-5" id="current-date"></h2>
+        </div>
+        <div class="text-center d-flex m-5">
+          <h2 class="fs-5" id="current-time"></h2>
+        </div>
+
+      </div>
     </main>
   <footer class="d-flex flex-column flex-wrap justify-content-center align-items-center my-4">
     <h1 class="display-3 text-center text-wrap px-3">If you wish to contact me</h1>
