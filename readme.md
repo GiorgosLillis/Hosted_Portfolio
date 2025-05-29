@@ -32,6 +32,7 @@ Now:
 - reCAPTCHAv3 (Google), a CAPTCHA service that helps prevent spam by analyzing user interactions without requiring user input, ensuring a seamless user experience
 - Three color modes switch
 - Animated sections as they appear in view with AOS library
+- Simple REST API integration for geolocation and live weather
 - Accessibility tools including ARIA roles
 - SEO optimizations such as meta tags and descriptive titles
 
