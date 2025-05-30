@@ -8,7 +8,7 @@ Tech stack I used:
 
 - HTML5
 - CSS3
-- Javascript
+- Javascript ES2023
 - Bootstrap 5
 
 ### Backend:
@@ -44,6 +44,8 @@ Submissions are sent directly to my email using Nodemailer. To avoid authenticat
 You must set up a `.env` file in the `/server` folder to setup the same functionality. The file ought to store:
 
 - Your designated email account
+- An reCaptcha v3 key from [Google reCaptcha](https://cloud.google.com/security/products/recaptcha?hl=el)
+- An weather api key from [OpenWeather]https://home.openweathermap.org/api_keys
 - In case you wish to use an email account, it is required to enable 2FA and use an app passwords(not your account's password)
 
 ---
@@ -51,7 +53,7 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 ### Security
 
 - Inputs are filtered and sanitized
-- Email credentials are stored in `.env` and ignored by Git
+- Email and API keys credentials are stored in `.env` and ignored by Git
 
 ---
 

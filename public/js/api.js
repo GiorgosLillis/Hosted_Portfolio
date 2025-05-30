@@ -1,4 +1,6 @@
-const apiKey = "a1694888404d51c78d69d8c170e489a5";
+document.getElementById("weather").innerHTML = `
+  <span id="loading">Loading weather</span>
+`;
 
 fetch("https://ipapi.co/json/")
   .then(res => res.json())
@@ -10,7 +12,7 @@ fetch("https://ipapi.co/json/")
     const location = `Greetings to the visitor from ${city}, ${country}!`;
     document.getElementById("location").textContent = location;
 
-    return fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city},${countryCode}&units=metric&appid=${apiKey}`);
+    return fetch(`/api/weather?city=${encodeURIComponent(city)}&country=${encodeURIComponent(countryCode)}`);
   })
   .then(res => res.json())
   .then(weatherData => {
@@ -23,5 +25,10 @@ fetch("https://ipapi.co/json/")
       <strong>${temp}°C</strong> — ${condition}
     `;
   })
-  .catch(err => console.error("Error:", err));
+   .catch(err => {
+    console.error("Error:", err);
+    document.getElementById("weather").innerHTML = `
+      <span class="error">Weather data unavailable</span>
+    `;
+  });
 

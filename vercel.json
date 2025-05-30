@@ -2,10 +2,12 @@
     "version": 2,
     "builds": [
       { "src": "api/app.js", "use": "@vercel/node" },
+      { "src": "api/weather.js", "use": "@vercel/node" },
       { "src": "public/**/*", "use": "@vercel/static" }
     ],
     "routes": [
       { "src": "/api/send-email", "dest": "/api/app.js"},
+       { "src": "/api/weather", "dest": "/api/weather.js" },
       { "src": "/backgrounds/(.*)", "dest": "public/backgrounds/$1" },
       { "src": "/css/(.*)", "dest": "public/css/$1" },
       { "src": "/js/(.*)", "dest": "public/js/$1" },
