@@ -57,6 +57,14 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 
 ---
 
+### Shopping List App
+
+- I have recently developed a simple shopping list
+- You can add and delete items, reset the list, download the list as a text file and upload a text file
+- It automatically numbers the items with the order they have been added
+
+ ---
+
 ### Issues
 
 - Any recommendation regarding fixes and improvments will be appreciated.
@@ -68,9 +76,9 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 ```bash
 git clone https://github.com/GiorgosLillis/Hosted_Portfolio.git
 cd Hosted_Portfolio
-npm install
+npm install nodemailer axios dotenv
 
-# Set up environment variables
+# Set up your own environment variables in .env file and in Vercel 
 
 # Install Vercel CLI
 npm install -g vercel
