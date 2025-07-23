@@ -62,6 +62,7 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 - I have recently developed a simple shopping list
 - You can add and delete items, reset the list, download the list as a text file and upload a text file
 - It automatically numbers the items with the order they have been added
+- The list is locally stored to the browser
 
  ---
 

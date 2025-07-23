@@ -7,13 +7,41 @@ AOS.init({
     anchorPlacement: 'top-bottom'
 });
     
-const savedTheme = localStorage.getItem('site-theme') || 'default';
- setTheme(savedTheme);
+
 function setTheme(theme) {
   document.body.classList.remove('theme-default', 'theme-light', 'theme-dark');
   document.body.classList.add(`theme-${theme}`);
   localStorage.setItem('site-theme', theme);
 }
+
+function getSystemPreferredTheme() {
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark'; // System prefers dark mode
+  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+    return 'light'; // System prefers light mode
+  }
+  return 'default'; // Fallback if no preference is detected or feature not supported
+}
+
+const savedTheme = localStorage.getItem('site-theme');
+if(savedTheme) {
+  setTheme(savedTheme);
+} else {
+  const systemPreference = getSystemPreferredTheme();
+  setTheme(systemPreference);
+}
+
+// This allows the theme to change automatically if the user switches their system theme while the page is open.
+// (prefers-color-scheme: dark) == a media query property and a boolean value to check the condition
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (!localStorage.getItem('site-theme')) { // Only apply if user hasn't manually set a theme
+        if (e.matches) { // If the query is true
+            setTheme('dark');
+        } else {
+            setTheme('default'); 
+        }
+    }
+});
 
 const current_date = document.getElementById('current-date');
 const current_time = document.getElementById('current-time');

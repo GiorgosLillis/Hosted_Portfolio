@@ -21,10 +21,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single:wght@100..900&family=Manrope&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/list.css">
     <script src="js/list.js" defer></script>
     <script src="js/effects.js" defer></script>
-    <title>SHOP</title>
+    <title>SHOPPING LIST</title>
+    <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/icons/list-check.svg" type="image/svg+xml">
+
+    <meta name="title" content="Shopping List App - Manage Your Groceries Easily">
+    <meta name="description" content="A simple and intuitive web-based shopping list application to help you keep track of your groceries and daily needs. Save, reset, download, and upload your lists.">
+    <meta name="keywords" content="shopping list, groceries, to-do list, web app, list manager, online shopping list">
+    <meta name="author" content="Giorgos Lillis"> 
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="backgrounds/list-preview.jpg"/>
+    <meta property="og:url" content="https://www.giorgoslillis.com/list.html"> 
+    <meta property="og:title" content="Shopping List App - Manage Your Groceries Easily">
+    <meta property="og:description" content="A simple and intuitive web-based shopping list application to help you keep track of your groceries and daily needs. Save, reset, download, and upload your lists.">
   </head>
+
   <body class="theme-default mb-5 pb-4"> 
       <header>
         <nav
@@ -107,21 +120,53 @@
         data-aos="fade-in"
         data-aos-duration="2000"
       > 
-        <form class="my-5 w-100 w-lg-50 d-flex flex-column justify-content-center align-items-center">
-          <div class="row row-cols-1 d-flex flex-column justify-content-center align-items-center"> 
+        <form class="my-5 col-12 col-lg-6 d-flex flex-column justify-content-center align-items-center">
+          <div class="d-flex flex-column justify-content-center align-items-center"> 
             <h1 class="p-0 mb-4 text-center">SHOPPING LIST</h1>
-            <div class="item-input">
-              <label for="item" class="form-label my-3 p-0"><h2>On cart</h2></label> 
-              <input
-                type="text"
-                class="form-control flex-grow-1 fs-5"
-                id="item"
-                placeholder="Write your item here"
-              />
+            <div class="item-input row p-4 mb-3 w-100 d-flex justify-content-around align-items-center" id="list-form">
+              <div class="col-12 col-md-6 mb-3 mb-lg-0">
+                  <label for="item" class="form-label mb-2"><h2>Item on cart</h2></label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="item"
+                    placeholder="Write your item here"
+                  />
+                </div>
+                <div class="col-6 col-md-3 mb-3 mb-lg-0">
+                  <label for="quantity" class="form-label mb-2"><h2>Quantity</h2></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="quantity"
+                    placeholder="e.g., 1, 2.5"
+                    min="0"
+                    step="any"
+                  />
+                </div>
+                <div class="col-6 col-md-3 mb-3 mb-lg-0">
+                  <label for="unit" class="form-label mb-2"><h2>Unit</h2></label>
+                  <select class="form-select" id="unit">
+                      <option value="">Unit</option> 
+                      <option value="pcs">Pcs</option>
+                      <option value="kg">Kg</option>
+                      <option value="g">G</option>
+                      <option value="L">L</option>
+                      <option value="ml">Ml</option>
+                      <option value="packs">Packs</option>
+                      <option value="boxes">Boxes</option>
+                      <option value="bottles">Bottles</option>
+                      <option value="cans">Cans</option>
+                      <option value="rolls">Rolls</option>
+                      <option value="bags">Bags</option>
+                      <option value="units">Units</option>
+                      <option value="each">Each</option>
+                    </select>
+                </div>
             </div>
           </div>
           
-          <div class="row w-75 row-cols-2 row-cols-md-4 g-0 d-flex justify-content-center align-items-center">
+          <div class="row w-100 row-cols-2 row-cols-md-4 g-0 d-flex justify-content-center align-items-center">
             <div class="col d-flex justify-content-center align-items-center">
               <button type="submit" class="btn btn-success my-3 border-3 list-btn text-center" id="submitBtn">
                 Save
@@ -143,13 +188,13 @@
               </button>
             </div>
           </div>
-          <div class="row w-75 d-flex text-center">
+          <div class="row d-flex text-center">
               <h3 class="text-danger" id="fileInfo"></h3>
               <h3 class="text-danger" id="errorMessage"></h3> 
           </div>
           
-          <section class="row w-50 w-lg-50 d-flex column justify-content-center">
-            <ul class="list-group my-2" id="displayList"></ul>
+          <section class="row w-100 d-flex flex-column justify-content-center align-items-center">
+            <ul class="list-group my-2 col-12 col-md-8 px-0" id="displayList"></ul>
           </section>
         </form>
       </main>

@@ -162,19 +162,6 @@ a:hover{
   height: 7.5%;
 }
 
-.item-input{
-  background-color: var(--bs-primary);
-  border: 2px solid var(--bs-secondary);
-  border-radius: 20px;
-  width: 100%;
-  height: 100%;
-  padding: 1rem;
-}
-
-.list-btn{
-  width: 80%;
-}
-
 @keyframes bounce{
   0%, 100%{
     transform: translateY(0);
