@@ -40,7 +40,7 @@ Now:
 
 ### Contact Form
 
-Submissions are sent directly to my email using Nodemailer. To avoid authentication issues and ensure security, my own email is being used to send the user submitted emails.
+Submissions are sent directly to my email using Nodemailer. To avoid authentication issues and ensure security, my own email is being used to forward the user submitted emails.
 You must set up a `.env` file in the `/server` folder to setup the same functionality. The file ought to store:
 
 - Your designated email account
@@ -62,7 +62,16 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 - I have recently developed a simple shopping list
 - You can add and delete items, reset the list, download the list as a text file and upload a text file
 - It automatically numbers the items with the order they have been added
-- The list is locally stored to the browser
+
+  Features to add (List.html):
+- Drag-and-Drop Reordering: Allow users to reorder items in their list by dragging and dropping them.  ✅
+- Quantity/Unit Input: Add fields for quantity (e.g., "2x Apples") and units (e.g., "kg", "g", "pcs") next to each item. ✅
+- Categorization: Implement a way to categorize items (e.g., "Produce", "Dairy", "Meat") for easier shopping. ✅
+- Persistence (Local Storage/Server): Ensure shopping lists are saved between sessions. Currently, it seems to rely on download/upload.
+- Local Storage: For a client-side solution, save lists to the user's browser's local storage. ✅
+- Backend Database: For cross-device sync and more robust features, consider a simple backend to store user lists (e.g., using Firebase, Supabase, or a custom Node.js/Express API with a database).
+- Sharing Functionality: Allow users to share their lists with others (e.g., via a unique URL or email if using a backend).
+- Printable Version: Offer a clean, print-friendly version of the shopping list. ✅
 
  ---
 

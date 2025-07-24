@@ -2,8 +2,6 @@
   background-color: var(--bs-primary);
   border: 2px solid var(--bs-secondary);
   border-radius: 20px;
-  width: 100%;
-  height: 100%;
   padding: 1rem;
 }
 
@@ -11,7 +9,12 @@
   width: 90%;
 }
 
-.list-btn:hover, .list-btn:active{
+.filter-btn:hover, .filter-btn:active{
+    background: linear-gradient(60deg, var(--bs-secondary) 10%, var(--bs-secondary-light) 60%, var(--bs-secondary));
+    color: var(--bs-text);
+}
+
+.list-btn:hover, .list-btn:active, .list-group-item button:hover{
   color: var(--bs-text);
 }
 
@@ -19,8 +22,109 @@
     font-size: 15px;
 }
 
+.dragging {
+      opacity: 0.4;
+      border: 2px dashed var(--bs-primary);
+      background-color: var(--bs-primary-light);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      cursor: grabbing;
+}
+
+.drag-ghost {
+    position: fixed; 
+    z-index: 10;   
+    opacity: 0.7;   
+    pointer-events: none; 
+    background-color: var(--bs-primary); 
+    border: 1px solid var(--bs-effect); 
+    border-radius: 0.3rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
+    transition: transform 0.05s ease-out;
+}
+
+.drag-placeholder {
+    height: 3.5rem; 
+    background-color: rgba(117, 182, 255, 0.2); 
+    border: 2px dashed var(--bs-effect); 
+    border-radius: 0.3rem;
+    margin-bottom: 0.75rem; 
+    transition: all 0.1s ease-out; 
+    box-sizing: border-box; 
+    list-style: none;
+    padding: 10px;
+}
+
 @media (min-width: 426px){
     #list-form .form-control, #list-form .form-select{
-    font-size: 25px;
+    font-size: 20px;
 }
+}
+
+@media print {
+    
+    .item-input,
+    .btn,       
+    #errorMessage, 
+    #fileInfo,  
+    .list-btn,    
+    #time,       
+    footer, 
+    header {
+        display: none !important; 
+    }
+
+
+    main {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+
+    body {
+        color: #000 !important;
+        background-color: #fff !important; 
+        background-image: none !important; 
+    }
+
+
+    .list-group-item {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        padding: 8px 15px !important;
+        margin-bottom: 1rem !important;
+        page-break-inside: avoid; 
+    }
+
+    .list-group-item button{
+      display: none !important;;
+    }
+
+    .float-end {
+        float: none !important;
+        display: inline !important; 
+    }
+
+    
+    h1, h2, h3, h4, h5, h6 {
+        color: #000 !important;
+        text-align: center !important; 
+        margin-top: 10px !important;
+        margin-bottom: 5px !important;
+    }
+
+    .fs-5 {
+        font-size: 1.1em !important; 
+    }
+
+    /* --- Drag and Drop Styles --- */
+    
+  
+    #displayList {
+        list-style-type: decimal !important; 
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
 }
