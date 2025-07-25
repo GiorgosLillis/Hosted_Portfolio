@@ -100,10 +100,46 @@ function addDragAndDropListeners(listItem) {
     listItem.addEventListener('touchstart', (e) => {
         // Only proceed if one finger is used for drag (multi-touch could be zoom/scroll)
         if (e.touches.length === 1) {
-            e.preventDefault(); 
-            currentDraggedElement = listItem;
-            listItem.classList.add('dragging');
+            // Start a timer to distinguish between tap and drag
+            listItem._dragTouchTimer = setTimeout(() => {
+                currentDraggedElement = listItem;
+                listItem.classList.add('dragging');
+            }, 1000); // 500ms threshold for drag vs tap
         }
+    });
+
+    listItem.addEventListener('touchend', (e) => {
+        // Clear drag timer if touch ends quickly (it's a tap, not a drag)
+        clearTimeout(listItem._dragTouchTimer);
+        // ... rest of your touchend logic ...
+        if (!currentDraggedElement) return;
+
+        e.preventDefault(); // Prevent default action on touchend
+
+        currentDraggedElement.classList.remove('dragging');
+        cleanUpDragOverStyles(); // Remove any lingering drag-over styles
+
+        // Determine the final drop target
+        const lastTouch = e.changedTouches[0];
+        const finalTargetElement = document.elementFromPoint(lastTouch.clientX, lastTouch.clientY);
+        const finalDropTarget = finalTargetElement ? finalTargetElement.closest('li') : null;
+
+        if (finalDropTarget && currentDraggedElement && finalDropTarget !== currentDraggedElement) {
+            const boundingBox = finalDropTarget.getBoundingClientRect();
+            const offset = boundingBox.y + (boundingBox.height / 2);
+
+            if (lastTouch.clientY < offset) {
+                // Drop above the target
+                List.insertBefore(currentDraggedElement, finalDropTarget);
+            } else {
+                // Drop below the target
+                List.insertBefore(currentDraggedElement, finalDropTarget.nextSibling);
+            }
+            updateItemNumbers(); // Re-number and save the new order
+        }
+        // Reset global variables
+        currentDraggedElement = null;
+        currentTouchDropTarget = null;
     });
 
     listItem.addEventListener('touchmove', (e) => {

@@ -30,7 +30,7 @@
 }
 
 .dragging {
-      display: none;
+      opacity: 0.5;
 }
 
 .drag-placeholder {
