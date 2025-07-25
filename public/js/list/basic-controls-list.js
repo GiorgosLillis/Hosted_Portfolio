@@ -12,9 +12,7 @@ const submitBtn = document.getElementById('submitBtn');
 const resetBtn = document.getElementById('resetBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const uploadBtn = document.getElementById('uploadBtn');
-let draggedItem = null;
-let touchCurrentTarget = null;
-let placeholderElement = null;
+
 
 function inputValidation(item, quantity, unit, errorMessage){
     errorMessage.textContent = ''; // Clear previous error messages
@@ -106,7 +104,9 @@ function saveList(e) {
   itemInput.value = '';
   quantityInput.value = '';
   unitInput.value = '';
-  itemInput.focus(); 
+  if (window.innerWidth >= 768) { // Only focus on desktop/tablet
+    itemInput.focus();
+  }
 }
 
 function updateItemNumbers() {
@@ -118,17 +118,28 @@ function updateItemNumbers() {
     const quantity = listItem.dataset.quantity;
     const unit = listItem.dataset.unit;
     const category = listItem.dataset.category || 'Other'; 
+    const check = listItem.dataset.checked;
 
     let displayContent = `${category}: ${itemText} ${quantity}${unit}`.trim();
     listItem.innerHTML = `
-      ${i+1}) ${displayContent}
+      ${i+1}) ${displayContent};
     `;
+    
     listItem.draggable = "true";
-    listItem.ariaLabel = `${i + 1}. Category: ${category} Item:${itemText}, Quantity: ${quantity}${unit}, `;
-    addDragAndDropListeners(listItem);
-
     const removeBtn = createBtn();
     listItem.appendChild(removeBtn);
+    let checkBox = document.createElement('input');
+    checkBox.type = 'checkbox';
+    checkBox.id = 'gotItem' + (i+1);
+    checkBox.className = 'form-check-input mx-2 float-end'
+    checkBox.checked = (check === 'true');
+    checkBox.onclick = function(_){
+      this.parentElement.dataset.checked = this.checked;
+      return this.parentElement.ariaLabel = `${i + 1}. Category: ${category} Item:${itemText}, Quantity: ${quantity}${unit}, checkbox: ${this.checked ? 'checked' : 'not checked'}`;
+    }
+    listItem.appendChild(checkBox);
+    listItem.ariaLabel = `${i + 1}. Category: ${category} Item:${itemText}, Quantity: ${quantity}${unit}, checkbox: ${checkBox.checked ? 'checked' : 'not checked'}`;
+    addDragAndDropListeners(listItem);
   }
 }
 

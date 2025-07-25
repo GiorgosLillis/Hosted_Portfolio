@@ -18,28 +18,19 @@
   color: var(--bs-text);
 }
 
+.list-group-item .form-check-input[type=checkbox]{
+    background-color: var(--bs-primary);
+    border: 2px solid var(--bs-secondary);
+    color: var(--bs-text);
+}
+
+
 #list-form .form-control, #list-form .form-select{
     font-size: 15px;
 }
 
 .dragging {
-      opacity: 0.4;
-      border: 2px dashed var(--bs-primary);
-      background-color: var(--bs-primary-light);
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      cursor: grabbing;
-}
-
-.drag-ghost {
-    position: fixed; 
-    z-index: 10;   
-    opacity: 0.7;   
-    pointer-events: none; 
-    background-color: var(--bs-primary); 
-    border: 1px solid var(--bs-effect); 
-    border-radius: 0.3rem;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
-    transition: transform 0.05s ease-out;
+      display: none;
 }
 
 .drag-placeholder {

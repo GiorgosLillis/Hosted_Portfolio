@@ -7,12 +7,12 @@ function saveShoppingListToLocalStorage() {
             item: li.dataset.originalItem, // Always save the original casing
             quantity: li.dataset.quantity,
             unit: li.dataset.unit,
-            category: li.dataset.category
+            category: li.dataset.category,
+            check: li.dataset.checked
         };
     });
 
     localStorage.setItem('myShoppingList', JSON.stringify(shoppingList));
-    console.log('Shopping list saved to local storage upon closing.');
 }
 
 function loadShoppingListFromLocalStorage() {
@@ -21,19 +21,18 @@ function loadShoppingListFromLocalStorage() {
     if (storedListJSON) {
         try {
             const storedList = JSON.parse(storedListJSON); // Parse directly into a local variable
-            console.log('Shopping list loaded from local storage.');
 
    
             List.innerHTML = ''; 
             storedList.forEach(itemData => {
                 let listItem = document.createElement('li');
                 listItem.className = 'list-group-item fs-5 mb-3 rounded-3';
-
                 listItem.dataset.item = itemData.item.toUpperCase(); 
                 listItem.dataset.originalItem = itemData.item; 
                 listItem.dataset.quantity = itemData.quantity;
                 listItem.dataset.unit = itemData.unit;
                 listItem.dataset.category = itemData.category || 'Other';
+                listItem.dataset.checked = itemData.check; // Ensure boolean is stored as string
                 List.appendChild(listItem);
             });
             updateItemNumbers(); 
