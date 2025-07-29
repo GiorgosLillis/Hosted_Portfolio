@@ -81,6 +81,13 @@
       display: none !important;;
     }
 
+    .list-group-item .form-check-input[type=checkbox] {
+        margin-right: 10px !important;
+        background-color: white !important;
+        color: #000 !important;
+        border: 1px solid #000 !important;
+    }
+
     .float-end {
         float: none !important;
         display: inline !important; 
