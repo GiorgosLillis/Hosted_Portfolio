@@ -5,10 +5,10 @@
   padding: 1rem;
 }
 
-.list-btn{
-  width: 90%;
+.filter-btn{
+    width: 90%;
+    height: 50px;
 }
-
 .filter-btn:hover, .filter-btn:active{
     background: linear-gradient(60deg, var(--bs-secondary) 10%, var(--bs-secondary-light) 60%, var(--bs-secondary));
     color: var(--bs-text);

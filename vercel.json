@@ -1,17 +1,20 @@
 {
     "version": 2,
     "builds": [
-      { "src": "api/app.js", "use": "@vercel/node" },
+      { "src": "api/email.js", "use": "@vercel/node" },
       { "src": "api/weather.js", "use": "@vercel/node" },
+      { "src": "api/location.js", "use": "@vercel/node" },
       { "src": "public/**/*", "use": "@vercel/static" }
     ],
     "routes": [
-      { "src": "/api/send-email", "dest": "/api/app.js"},
-       { "src": "/api/weather", "dest": "/api/weather.js" },
+      { "src": "/api/send-email", "dest": "/api/email.js"},
+      { "src": "/api/weather", "dest": "/api/weather.js" },
+      { "src": "/api/location", "dest": "/api/location.js" },
       { "src": "/backgrounds/(.*)", "dest": "public/backgrounds/$1" },
       { "src": "/css/(.*)", "dest": "public/css/$1" },
       { "src": "/js/(.*)", "dest": "public/js/$1" },
       { "src": "/", "dest": "public/pages/index.html" },
-      { "src": "/list.html", "dest": "public/pages/list.html" }
+      { "src": "/list.html", "dest": "public/pages/list.html" },
+      { "src": "/weather.html", "dest": "public/pages/weather.html" }
     ]
   }

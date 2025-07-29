@@ -32,7 +32,8 @@ Now:
 - reCAPTCHAv3 (Google), a CAPTCHA service that helps prevent spam by analyzing user interactions without requiring user input, ensuring a seamless user experience
 - Three color modes switch
 - Animated sections as they appear in view with AOS library
-- Simple REST API integration for geolocation and live weather
+- Integration with IP geolocation(https://ipgeolocation.io/) and Weather APIs(https://www.weatherapi.com/) for live weather data
+- Weather data are saved in local storage for an hour
 - Accessibility tools including ARIA roles
 - SEO optimizations such as meta tags and descriptive titles
 
@@ -73,7 +74,13 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 - Sharing Functionality: Allow users to share their lists with others (e.g., via a unique URL or email if using a backend).
 - Printable Version: Offer a clean, print-friendly version of the shopping list. ✅
 
- ---
+---
+ 
+### Weather Forecast
+
+- For the purpose of deeper involvement with REST APIs and their data handling, an experimental weather forecast app will be developed.
+
+---
 
 ### Issues
 

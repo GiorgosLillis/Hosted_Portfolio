@@ -185,12 +185,15 @@
                     </select>
                 </div>
             </div>
-            <div class="row w-100 d-flex justify-content-center align-items-center mb-3" >
-              <div class="col-6 col-md-4 d-flex justify-content-center align-items-center">
-                  <button type="button" class="btn btn-sm list-btn px-0 filter-btn text-center" id="filterCategory">Filter by category</button>
+            <div class="row w-100 d-flex justify-content-center align-items-center mb-3 " >
+              <div class="col-4 d-flex justify-content-center align-items-center">
+                  <button type="button" class="btn btn-sm px-0 list-btn filter-btn text-center" id="filterCategory"><p class="d-flex text-center justify-content-center mb-0 fs-lg-5">Filter by category</p></button>
               </div>
-              <div class="col-6 col-md-4 d-flex justify-content-center align-items-center">
-                  <button type="button" class="btn btn-sm list-btn px-0 filter-btn text-center" id="filterName">Filter by name</button>
+              <div class="col-4 d-flex justify-content-center align-items-center">
+                  <button type="button" class="btn btn-sm px-1 list-btn filter-btn text-center" id="filterName"><p class="d-flex text-center justify-content-center mb-0 fs-lg-5">Filter by name</p></button>
+              </div>
+              <div class="col-4 d-flex justify-content-center align-items-center">
+                  <button type="button" class="btn btn-sm px-1 list-btn filter-btn text-center" id="filterAll"><p class="d-flex text-center justify-content-center mb-0 fs-lg-5">Filter by all</p></button>
               </div>
             </div>
         </form>
@@ -220,6 +223,7 @@
           </section>
           <div class="row d-flex text-center">
               <h3 class="text-danger" id="fileInfo"></h3>
+              <h3 class="text-success" id="successMessage"></h3>
               <h3 class="text-danger" id="errorMessage"></h3> 
           </div>
           

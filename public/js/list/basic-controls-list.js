@@ -6,6 +6,8 @@ const unitInput = document.getElementById('unit');
 const categoryInput = document.getElementById('category');
 const filterCategoryBtn = document.getElementById('filterCategory');
 const filterNameBtn = document.getElementById('filterName');
+const joinfilterBtn = document.getElementById('filterAll');
+const successMessage = document.getElementById('successMessage');
 const errorMessage = document.getElementById('errorMessage');
 const fileInfo = document.getElementById('fileInfo'); 
 const submitBtn = document.getElementById('submitBtn');
@@ -351,7 +353,6 @@ function filterListByCategory() {
     const selectedCategory = categoryInput.value;
     const listItems = Array.from(list_items);
 
-    
     listItems.forEach(listItem =>{
       listItem.style.display = '';
     })
@@ -368,13 +369,14 @@ function filterListByCategory() {
             listItem.style.display = 'none'; 
         }
     });
+    successMessage.textContent = 'Items within this category!';
 }
 
 filterNameBtn.addEventListener('click', filterListByName);
 function filterListByName(){
-     let listItems = Array.from(list_items);
-     const item = itemInput.value.trim(); 
-
+     const listItems = Array.from(list_items);
+     const item = itemInput.value.trim();   
+     successMessage.textContent = '';
 
      listItems.forEach(listItem =>{
         listItem.style.display = '';
@@ -385,14 +387,42 @@ function filterListByName(){
       }
 
       listItems.forEach(listItem =>{
-      const ItemUppercase = item.toUpperCase();
-      if(listItem.dataset.item === ItemUppercase){
-         listItem.style.display = ''; 
+        const ItemUppercase = item.toUpperCase();
+        if(listItem.dataset.item === ItemUppercase){
+          listItem.style.display = ''; 
+        }
+        else{
+          listItem.style.display = 'none';
+        }
+      })
+      successMessage.textContent = 'Items with this name!';
+  }
+
+  joinfilterBtn.addEventListener('click', joinFilter);
+  function joinFilter(){
+      const listItems = Array.from(list_items);
+      const selectedCategory = categoryInput.value;
+      const item = itemInput.value.trim(); 
+
+      listItems.forEach(listItem =>{
+        listItem.style.display = '';
+      });
+
+      if(item === '' || selectedCategory === ''){
+        return;
       }
-      else{
-        listItem.style.display = 'none';
-      }
-    })
+
+      listItems.forEach(listItem =>{
+        const ItemUppercase = item.toUpperCase();
+        const itemCategory = listItem.dataset.category;
+        if(listItem.dataset.item === ItemUppercase && itemCategory === selectedCategory){
+          listItem.style.display = ''; 
+        }
+        else{
+          listItem.style.display = 'none';
+        }
+      });
+      successMessage.textContent = 'Items that match all filters!';
 }
      
 
