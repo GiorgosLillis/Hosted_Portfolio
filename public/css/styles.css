@@ -97,19 +97,19 @@ a:hover{
 }
 
 .card {
-  min-height: 450px; 
   transform: scale(1);        
   transition: transform 0.3s ease-in-out;
   will-change: transform;
   backface-visibility: hidden;
-}
-
-.card, .list-group-item {
   background-color: var(--bs-primary);
   color: var(--bs-text);
-  text-decoration: none;
   border: 2px solid var(--bs-secondary) !important;
   border-radius: 20px;
+
+}
+
+.card .list-group-item{
+  font-size: 15px;
 }
 
 .card:hover, .list-group-item:hover{
@@ -176,4 +176,10 @@ a:hover{
   40% { content: '..'; }
   60% { content: '...'; }
   80%, 100% { content: ''; }
+}
+
+@media (min-width: 769px){
+  .card .list-group-item{
+    font-size: 25px;
+  }
 }

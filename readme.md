@@ -32,7 +32,7 @@ Now:
 - reCAPTCHAv3 (Google), a CAPTCHA service that helps prevent spam by analyzing user interactions without requiring user input, ensuring a seamless user experience
 - Three color modes switch
 - Animated sections as they appear in view with AOS library
-- Integration with IP geolocation(https://ipgeolocation.io/) and Weather APIs(https://www.weatherapi.com/) for live weather data
+- Integration with browser geolocation(https://opencagedata.com/) and Weather APIs(https://www.weatherapi.com/) for live weather data
 - Weather data are saved in local storage for an hour
 - Accessibility tools including ARIA roles
 - SEO optimizations such as meta tags and descriptive titles

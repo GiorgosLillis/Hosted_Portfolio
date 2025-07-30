@@ -5,10 +5,14 @@
   padding: 1rem;
 }
 
-.filter-btn{
+.list-btn{
     width: 90%;
+}
+
+.filter-btn{
     height: 50px;
 }
+
 .filter-btn:hover, .filter-btn:active{
     background: linear-gradient(60deg, var(--bs-secondary) 10%, var(--bs-secondary-light) 60%, var(--bs-secondary));
     color: var(--bs-text);
@@ -16,6 +20,14 @@
 
 .list-btn:hover, .list-btn:active, .list-group-item button:hover{
   color: var(--bs-text);
+}
+
+#displayList .list-group-item {
+  background-color: var(--bs-primary);
+  color: var(--bs-text);
+  text-decoration: none;
+  border: 2px solid var(--bs-secondary) !important;
+  border-radius: 20px;
 }
 
 .list-group-item .form-check-input[type=checkbox]{
@@ -38,6 +50,12 @@
     #list-form .form-control, #list-form .form-select{
     font-size: 20px;
 }
+}
+
+@media (min-width: 769px){
+    .filter-btn{
+        font-size: 1.5rem;
+    }
 }
 
 @media print {
