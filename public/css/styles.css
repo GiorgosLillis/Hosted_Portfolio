@@ -91,7 +91,7 @@ h2,h3{
   animation: dots 1.5s steps(5, end) infinite;
 }
 
-a:hover{
+a:hover, a:focus{
   color: var(--bs-effect);
   text-decoration: none;
 }
