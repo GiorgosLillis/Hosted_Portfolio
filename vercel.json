@@ -1,11 +1,7 @@
 {
     "version": 2,
-    "builds": [
-      { "src": "api/email.js", "use": "@vercel/node" },
-      { "src": "api/weather.js", "use": "@vercel/node" },
-      { "src": "api/location.js", "use": "@vercel/node" },
-      { "src": "public/**/*", "use": "@vercel/static" }
-    ],
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
     "routes": [
       { "src": "/api/send-email", "dest": "/api/email.js"},
       { "src": "/api/weather", "dest": "/api/weather.js" },

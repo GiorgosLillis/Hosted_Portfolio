@@ -25,7 +25,7 @@
     --bs-effect-secondary: #060642;
     --bs-text: azure; 
     --bs-text-secondary: #D99F0D;
-    --image: url('../backgrounds/graph_paper_blue.png');
+    --image: url('/public/backgrounds/graph-paper-blue.png');
   }
 
   .theme-dark{
@@ -37,7 +37,7 @@
     --bs-effect-secondary: #222222;
     --bs-text: #babbbb;
     --bs-text-secondary: #058038;
-    --image: url('../backgrounds/graph_paper_dark.png');
+    --image: url('/public/backgrounds/graph-paper-dark.png');
   }
 
  .theme-light{
@@ -49,7 +49,7 @@
     --bs-effect-secondary: #f0ffff;
     --bs-text: #740B20;
     --bs-text-secondary: black;
-    --image: url('../backgrounds/graph_paper_white.png');
+    --image: url('/public/backgrounds/graph-paper-white.png');
   }
 
   .btn{
@@ -97,19 +97,19 @@ a:hover, a:focus{
 }
 
 .card {
+  min-height: 450px; 
   transform: scale(1);        
   transition: transform 0.3s ease-in-out;
   will-change: transform;
   backface-visibility: hidden;
-  background-color: var(--bs-primary);
-  color: var(--bs-text);
-  border: 2px solid var(--bs-secondary) !important;
-  border-radius: 20px;
-
 }
 
-.card .list-group-item{
-  font-size: 15px;
+.card, .list-group-item {
+  background-color: var(--bs-primary);
+  color: var(--bs-text);
+  text-decoration: none;
+  border: 2px solid var(--bs-secondary) !important;
+  border-radius: 20px;
 }
 
 .card:hover, .list-group-item:hover{
@@ -176,10 +176,4 @@ a:hover, a:focus{
   40% { content: '..'; }
   60% { content: '...'; }
   80%, 100% { content: ''; }
-}
-
-@media (min-width: 769px){
-  .card .list-group-item{
-    font-size: 25px;
-  }
 }

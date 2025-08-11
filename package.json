@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "parcel": "^2.15.4"
+  }, 
+  "scripts": {
+    "start": "parcel public/pages/index.html",
+    "build": "parcel build public/pages/index.html"
+  }
+
+}
+  
+
