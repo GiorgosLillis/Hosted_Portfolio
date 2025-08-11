@@ -63,7 +63,6 @@ async function callLocationAPI() {
             city: "London",
             timestamp: new Date().getTime()
         };
-        localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(LocationInfo));
         return LocationInfo;
     }
 
@@ -93,24 +92,44 @@ async function callLocationAPI() {
         
         return LocationInfo;
     } catch (err) {
-        console.error("An error occurred during location retrieval:", err);
-        
+       // Robust error handling based on the GeolocationPositionError codes
+        switch (err.code) {
+            case err.PERMISSION_DENIED:
+                console.error("User denied the request for Geolocation.");
+                weather.innerHTML = `<span class="error">Location access denied. Showing weather for a default location.</span>`;
+                break;
+            case err.POSITION_UNAVAILABLE:
+                console.error("Location information is unavailable.");
+                weather.innerHTML = `<span class="error">Could not find your city. Showing weather for a default location.</span>`;
+                break;
+            case err.TIMEOUT:
+                console.error("The request to get user location timed out.");
+                weather.innerHTML = `<span class="error">Location request timed out. Showing weather for a default location.</span>`;
+                break;
+            default:
+                console.error("An unknown error occurred during location retrieval:", err);
+                weather.innerHTML = `<span class="error">An unknown error occurred. Showing weather for a default location.</span>`;
+                break;
+        }
+
         LocationInfo = {
             country: "United Kingdom",
             countryCode: "UK",
             city: "London",
             timestamp: new Date().getTime()
         };
-        
-        weather.innerHTML = `<span class="error">Could not find your city. Showing weather for a default location.</span>`;
-        localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(LocationInfo));
         return LocationInfo;
     }
 }
 
 function getCurrentPositionPromise() {
     return new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject);
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+        };
+        navigator.geolocation.getCurrentPosition(resolve, reject, options);
     });
 }
     

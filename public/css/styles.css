@@ -25,7 +25,7 @@
     --bs-effect-secondary: #060642;
     --bs-text: azure; 
     --bs-text-secondary: #D99F0D;
-    --image: url('../backgrounds/graph_paper_blue.png');
+    --image: url('/public/backgrounds/graph-paper-blue.png');
   }
 
   .theme-dark{
@@ -37,7 +37,7 @@
     --bs-effect-secondary: #222222;
     --bs-text: #babbbb;
     --bs-text-secondary: #058038;
-    --image: url('../backgrounds/graph_paper_dark.png');
+    --image: url('/public/backgrounds/graph-paper-dark.png');
   }
 
  .theme-light{
@@ -49,7 +49,7 @@
     --bs-effect-secondary: #f0ffff;
     --bs-text: #740B20;
     --bs-text-secondary: black;
-    --image: url('../backgrounds/graph_paper_white.png');
+    --image: url('/public/backgrounds/graph-paper-white.png');
   }
 
   .btn{
@@ -91,7 +91,7 @@ h2,h3{
   animation: dots 1.5s steps(5, end) infinite;
 }
 
-a:hover{
+a:hover, a:focus{
   color: var(--bs-effect);
   text-decoration: none;
 }
