@@ -24,9 +24,10 @@
 }
 
 .list-group-item .form-check-input[type=checkbox]{
-    background-color: var(--bs-primary);
+    background-color: var(--bs-text-secondary);
     border: 2px solid var(--bs-secondary);
     color: var(--bs-text);
+    accent-color: var(--bs-secondary); /* Changes the check color */
 }
 
 
