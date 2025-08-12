@@ -29,7 +29,7 @@ async function init() {
         }
     } catch (err) {
         console.error("An error occurred during initialization:", err);
-        weather.innerHTML = `
+        weather.innerHTML += ` <br>
             <span class="error">Failed to get location or weather data.</span>
         `;
     }
@@ -56,15 +56,9 @@ async function callLocationAPI() {
     let LocationInfo;
     
     if (!navigator.geolocation) {
-        console.log("Geolocation is not supported by this browser. Defaulting to a fixed location.");
-        LocationInfo = {
-            country: "United Kingdom",
-            countryCode: "UK",
-            city: "London",
-            timestamp: new Date().getTime()
-        };
-        localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(LocationInfo));
-        return LocationInfo;
+        console.log("Geolocation is not supported by this browser.");
+        weather.innerHTML = "Geolocation is not supported by this browser.";
+        return;
     }
 
     try {
@@ -112,16 +106,6 @@ async function callLocationAPI() {
                 weather.innerHTML = `<span class="error">An unknown error occurred. Showing weather for a default location.</span>`;
                 break;
         }
-
-        LocationInfo = {
-            country: "United Kingdom",
-            countryCode: "UK",
-            city: "London",
-            timestamp: new Date().getTime()
-        };
-        
-        localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(LocationInfo));
-        return LocationInfo;
     }
 }
 

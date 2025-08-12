@@ -15,13 +15,15 @@ Tech stack I used:
 
 Before:
 
-- Node.js
 - Express.js
-- Nodemailer
 
 Now:
 
 - +Vercel serverless functions
+
+### Extra:
+
+- Bundling using Parcel
 
 ---
 
@@ -32,7 +34,7 @@ Now:
 - reCAPTCHAv3 (Google), a CAPTCHA service that helps prevent spam by analyzing user interactions without requiring user input, ensuring a seamless user experience
 - Three color modes switch
 - Animated sections as they appear in view with AOS library
-- Integration with IP geolocation(https://ipgeolocation.io/) and Weather APIs(https://www.weatherapi.com/) for live weather data
+- Integration with reverse geolocation(https://opencagedata.com/) and Weather APIs(https://www.weatherapi.com/) for live weather data
 - Weather data are saved in local storage for an hour
 - Accessibility tools including ARIA roles
 - SEO optimizations such as meta tags and descriptive titles
@@ -95,6 +97,12 @@ git clone https://github.com/GiorgosLillis/Hosted_Portfolio.git
 cd Hosted_Portfolio
 npm install nodemailer axios dotenv
 
+# Instal Parcel
+npm install --save-dev parcel 
+npm install --save-dev rimraf 
+npm install --save-dev onchange
+npm install --save-dev npm-run-all 
+
 # Set up your own environment variables in .env file and in Vercel 
 
 # Install Vercel CLI
@@ -104,6 +112,6 @@ npm install -g vercel
 vercel login
 
 # Run the project locally
-vercel dev
+npm run dev
 
 ```

@@ -1,5 +1,6 @@
 // --- DRAG AND DROP LOGIC ---
 
+
 // Variable to hold the currently dragged list item
 let currentDraggedElement = null;
 let currentTouchDropTarget = null;

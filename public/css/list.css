@@ -9,6 +9,11 @@
     width: 90%;
     height: 50px;
 }
+
+.list-btn{
+    width: 90%;
+}
+
 .filter-btn:hover, .filter-btn:active{
     background: linear-gradient(60deg, var(--bs-secondary) 10%, var(--bs-secondary-light) 60%, var(--bs-secondary));
     color: var(--bs-text);
@@ -34,12 +39,17 @@
 }
 
 
-@media (min-width: 426px){
+@media screen and (min-width: 426px){
     #list-form .form-control, #list-form .form-select{
     font-size: 20px;
 }
 }
 
+@media  screen and (min-width: 1440px) {
+    .filter-btn{
+        font-size: 1.3rem;
+    }
+}
 @media print {
     
     .item-input,

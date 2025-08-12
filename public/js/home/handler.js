@@ -48,7 +48,7 @@ form.addEventListener("submit", async function (e) {
       errors.push('Message must be between 1-1000 characters');
     }
 
-    const submitBtn = form.querySelector('button[type="submit"]');
+    const submitBtn = document.getElementById('Email-Submit');
     const originalBtnText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<div class="status"><span class="spinner-border" role="status" aria-hidden="true"></span> Sending...</div>';
     submitBtn.disabled = true;

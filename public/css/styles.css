@@ -147,6 +147,12 @@ a:hover, a:focus{
 .submit-btn:hover,  .submit-btn:active{
   background: linear-gradient(60deg, var(--bs-secondary) 10%, var(--bs-secondary-light) 60%, var(--bs-secondary));
   color: var(--bs-text);
+  border: 0;
+}
+
+.form-control:focus{
+    border-color: var(--bs-secondary);       
+    box-shadow: 0 0 0 .25rem var(--bs-secondary);       
 }
 
 .form-control::-webkit-input-placeholder{
