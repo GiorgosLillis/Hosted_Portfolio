@@ -19,7 +19,7 @@ async function init() {
         const cachedWeather = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
         const currentTime = new Date().getTime();
         
-        if (cachedWeather && (currentTime - cachedWeather.current.time < HOUR_IN_MILLIS)) {
+        if (cachedWeather && (currentTime - cachedWeather.current.timestamp < HOUR_IN_MILLIS)) {
             console.log("Weather info is fresh, displaying from localStorage");
         } else {
             console.log("Weather info is older than 1 hour or not found, fetching new data");
