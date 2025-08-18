@@ -22,10 +22,10 @@ async function init() {
         if (cachedWeather && (currentTime - cachedWeather.timestamp < HOUR_IN_MILLIS)) {
             console.log("Weather info is fresh, displaying from localStorage");
             displayLocation(locationInfo.country, locationInfo.countryCode, locationInfo.city);
-            displayWeather(cachedWeather.temperature, cachedWeather.condition, cachedWeather.icon);
+            displayWeather(cachedWeather.current.temperature, cachedWeather.current.condition, cachedWeather.current.icon);
         } else {
             console.log("Weather info is older than 1 hour or not found, fetching new data");
-            await fetchWeather(locationInfo.city, locationInfo.countryCode);
+            await fetchWeather(locationInfo);
         }
     } catch (err) {
         console.error("An error occurred during initialization:", err);
@@ -76,6 +76,8 @@ async function callLocationAPI() {
         }
         
         LocationInfo = {
+            latitude: lat,
+            longitude: lon,
             country: locationData.country_name,
             countryCode: locationData.country,
             city: locationData.city,
@@ -121,31 +123,33 @@ function getCurrentPositionPromise() {
 }
     
 // Fetch new weather data
-async function fetchWeather(city, countryCode) {
+async function fetchWeather(locationInfo) {
     try {
-        const res = await fetch(`/api/weather?city=${encodeURIComponent(city)}&country=${encodeURIComponent(countryCode)}`);
         
+        const res = await fetch(`/api/weather?lat=${encodeURIComponent(locationInfo.latitude)}&lon=${encodeURIComponent(locationInfo.longitude)}`);
+
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
         }
         const weatherData = await res.json();
-        
-        const temp = weatherData.main.temp;
-        const condition = weatherData.weather[0].description;
-        const icon = `https:${weatherData.weather[0].icon}`;
-        
-        const locationInfo = JSON.parse(localStorage.getItem(LOCATION_CACHE_KEY));
         displayLocation(locationInfo.country, locationInfo.countryCode, locationInfo.city);
-        displayWeather(temp, condition, icon);
         
-        const weatherInfo = {
-            temperature: temp,
-            condition: condition,
-            icon: icon,
-            timestamp: new Date().getTime()
+       const weatherInfo = {
+            current: {
+                temperature: weatherData.current.temperature,
+                condition: weatherData.current.condition,
+                icon: weatherData.current.icon,
+                humidity: weatherData.current.humidity,
+                windSpeed: weatherData.current.windSpeed
+            },
+            forecast: weatherData.forecast,
+            timestamp: new Date().getTime(),
+            city: locationInfo.country,
+            country: locationInfo.city
         };
         localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(weatherInfo));
         console.log("Weather data saved to localStorage");
+        displayWeather(weatherInfo.current.temperature, weatherInfo.current.condition, weatherInfo.current.icon);
 
     } catch (err) {
         console.error("Error fetching weather:", err);
@@ -161,9 +165,9 @@ function displayLocation(country, countryCode, city){
 
 function displayWeather(temperature, condition, icon) {
     weather.innerHTML = `
-        <img src="${icon}" alt="${condition}" class="weather-icon">
-        <span class="temperature">${temperature}°C</span>
-        <span class="condition">${condition}</span>
+        <img src="${icon}" alt="${condition}" class="weather-icon mx-3">
+        <span class="condition mx-3">${condition}</span>
+        <span class="temperature mx-3">${temperature}°C</span>
     `;
 }
 

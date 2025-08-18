@@ -19,12 +19,7 @@ Before:
 
 Now:
 
-- +Vercel serverless functions
-
-### Extra:
-
-- Bundling using Parcel
-
+- Vercel serverless functions
 ---
 
 ### Features I have given:
@@ -34,8 +29,9 @@ Now:
 - reCAPTCHAv3 (Google), a CAPTCHA service that helps prevent spam by analyzing user interactions without requiring user input, ensuring a seamless user experience
 - Three color modes switch
 - Animated sections as they appear in view with AOS library
-- Integration with reverse geolocation(https://opencagedata.com/) and Weather APIs(https://www.weatherapi.com/) for live weather data
+- Integration with reverse geolocation(https://opencagedata.com/) and Weather APIs(https://open-meteo.com/) for live weather data
 - Weather data are saved in local storage for an hour
+- Location Data are saved in local storage for 24 hours
 - Accessibility tools including ARIA roles
 - SEO optimizations such as meta tags and descriptive titles
 
@@ -81,7 +77,8 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 ### Weather Forecast
 
 - For the purpose of deeper involvement with REST APIs and their data handling, an experimental weather forecast app will be developed.
-
+- 7-days forecast with 3-hour steps 
+- Weather icons from https://github.com/visualcrossing/WeatherIcons
 ---
 
 ### Issues
@@ -95,13 +92,9 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 ```bash
 git clone https://github.com/GiorgosLillis/Hosted_Portfolio.git
 cd Hosted_Portfolio
-npm install nodemailer axios dotenv
 
-# Instal Parcel
-npm install --save-dev parcel 
-npm install --save-dev rimraf 
-npm install --save-dev onchange
-npm install --save-dev npm-run-all 
+# Make sure you have Node.js installed: https://nodejs.org/
+npm install nodemailer axios dotenv
 
 # Set up your own environment variables in .env file and in Vercel 
 

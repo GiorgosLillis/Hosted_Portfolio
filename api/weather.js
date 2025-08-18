@@ -1,57 +1,72 @@
 module.exports = async (req, res) => {
-  const { city, country } = req.query; // These come from your frontend
-  const apiKey = process.env.WEATHER_API_KEY; // <<< Use the new WeatherAPI.com key
+    const { lat, lon } = req.query;
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (!apiKey) {
-    console.error("WEATHERAPI_KEY is not set in environment variables.");
-    return res.status(500).json({ error: "WeatherAPI.com API key is missing" });
-  }
-
-  // Basic validation for city and country
-  if (!city || !country) {
-    return res.status(400).json({ error: "City and country parameters are required." });
-  }
-
-  try {
-    // WeatherAPI.com endpoint for current weather
-    // We'll use 'q' parameter which accepts "City Name, Country Code" (e.g., London,UK)
-    const weatherApiUrl = `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${encodeURIComponent(city)},${encodeURIComponent(country)}&aqi=no`; // aqi=no reduces response size
-
-    const response = await fetch(weatherApiUrl);
-    const data = await response.json();
-
-    // WeatherAPI.com returns 'error' object if something went wrong
-    if (response.status !== 200) { // Check response.status directly for non-200 responses
-      const errorMessage = data.error ? data.error.message : "Unknown error from WeatherAPI.com";
-      console.error("WeatherAPI.com error response:", data);
-      return res.status(response.status).json({ error: errorMessage });
+    if (!lat || !lon) {
+        return res.status(400).json({ error: 'Latitude and longitude are required.' });
     }
 
-    // Your frontend expects: temp, condition, icon
-    const mappedData = {
-      main: {
-        temp: data.current.temp_c // Temperature in Celsius
-      },
-      weather: [
-        {
-          description: data.current.condition.text, // e.g., "Partly cloudy"
-          icon: data.current.condition.icon // Full URL to the icon image
-        }
-      ],
-      // Add other relevant fields if your frontend needs them or for future expansion
-      // city_name: data.location.name,
-      // country_name: data.location.country,
-      // humidity: data.current.humidity,
-      // wind_kph: data.current.wind_kph
-    };
+    // URL to get hourly data for 7 days
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&forecast_days=7&timezone=auto`;
 
-    res.status(200).json(mappedData);
-  } catch (err) {
-    console.error("Weather API error (network or server issue):", err);
-    res.status(500).json({ error: "Server error fetching weather data" });
-  }
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.error) {
+            return res.status(500).json({ error: data.reason });
+        }
+
+        const PathtoIcons = 'public/assets/weather-icons/';
+        const weatherCodeMapping = {
+            0: { condition: 'Clear sky', icon: PathtoIcons + 'clear-day.svg' },
+            1: { condition: 'Mainly clear', icon: PathtoIcons + 'partly-cloudy-day.svg' },
+            2: { condition: 'Partly cloudy', icon: PathtoIcons + 'partly-cloudy-day.svg' },
+            3: { condition: 'Overcast', icon: PathtoIcons + 'cloudy.svg' },
+            45: { condition: 'Fog', icon: PathtoIcons + 'fog.svg' },
+            48: { condition: 'Depositing rime fog', icon: PathtoIcons + 'fog.svg' },
+            51: { condition: 'Drizzle: Light', icon: PathtoIcons + 'rain.svg' },
+            53: { condition: 'Drizzle: Moderate', icon: PathtoIcons + 'rain.svg' },
+            55: { condition: 'Drizzle: Dense', icon: PathtoIcons + 'rain.svg' },
+            61: { condition: 'Rain: Slight', icon: PathtoIcons + 'rain.svg' },
+            63: { condition: 'Rain: Moderate', icon: PathtoIcons + 'rain.svg' },
+            65: { condition: 'Rain: Heavy', icon: PathtoIcons + 'rain.svg' },
+            80: { condition: 'Rain showers: Slight', icon: PathtoIcons + 'showers-day.svg' },
+            81: { condition: 'Rain showers: Moderate', icon: PathtoIcons + 'showers-day.svg' },
+            82: { condition: 'Rain showers: Violent', icon: PathtoIcons + 'showers-day.svg' },
+        };
+
+        const weatherInfo = {
+            current: {
+            temperature: data.hourly.temperature_2m[0],
+            condition: weatherCodeMapping[data.hourly.weather_code[0]].condition,
+            icon: weatherCodeMapping[data.hourly.weather_code[0]].icon,
+            windSpeed: data.hourly.wind_speed_10m[0],
+            humidity: data.hourly.relative_humidity_2m[0],
+            },
+            // Filter hourly data to get a 3-hour step forecast
+            forecast: data.hourly.time.filter((_, index) => index % 3 === 0).map((timestamp, index) => {
+            const hourIndex = index * 3;
+            const code = data.hourly.weather_code[hourIndex];
+            const condition = weatherCodeMapping[code] || { condition: 'Unknown', icon: '❓' };
+            
+            return {
+                timestamp,
+                time: new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                day: new Date(timestamp).toLocaleDateString(),
+                temp: data.hourly.temperature_2m[hourIndex],
+                condition: condition.condition,
+                icon: condition.icon,
+            };
+            }),
+        };
+
+        // Log the days it forecasts
+        const forecastDays = [...new Set(weatherInfo.forecast.map(f => f.day))];
+        console.log("Forecast days:", forecastDays);
+        res.status(200).json(weatherInfo);
+
+    } catch (error) {
+        console.error('Error fetching weather data:', error);
+        res.status(500).json({ error: 'Failed to fetch weather data.' });
+    }
 };

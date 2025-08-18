@@ -16,7 +16,6 @@ module.exports = async (req, res) => {
   try {
     // It takes 'latitude' and 'longitude' as parameters
     const reverseGeoUrl = `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lon}&key=${apiKey}&pretty=1&language=en`;
-    console.log("Calling OpenCage Reverse Geocoding URL:", reverseGeoUrl);
 
     const response = await fetch(reverseGeoUrl);
     const data = await response.json();

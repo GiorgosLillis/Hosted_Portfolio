@@ -78,7 +78,7 @@ h2,h3{
 
 .nav-link, .navbar-toggler-text{
   color: var(--bs-text);
-  text-decoration: none;
+  text-decoration: none;  
 }
 
 .nav-link:hover, .btn:hover{
@@ -89,6 +89,11 @@ h2,h3{
 #loading::after {
   content: '';
   animation: dots 1.5s steps(5, end) infinite;
+}
+
+#weather img{
+   max-width: 40px;
+   max-height: 40px;
 }
 
 a:hover, a:focus{

@@ -24,7 +24,6 @@
     <script src="../js/weather/weather-api.js" defer></script>
     <script src="../js/common/effects.js" defer></script>
     <link rel="stylesheet" href="../css/weather.css">
-    <link rel="stylesheet" href="../css/styles.css">
 
     <title>Weather Forecast</title>
     <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/icons/cloud-moon-fill.svg" type="image/svg+xml">
@@ -42,7 +41,6 @@
     <meta name="keywords" content="weather, forecast, web application, HTML, CSS, JavaScript, OpenWeatherMap API" />
     <meta name="author" content="Giorgos Lillis">
     <meta property="og:site_name" content="Weather Forecast"/>
-    <meta property="og:image" content="backgrounds\Welcome.png"/>
     <meta property="og:type" content="website"/>
     <meta property="og:url" content="https://www.giorgoslillis.com/weather.html"/>
   </head>
@@ -54,80 +52,16 @@
           class="navbar navbar-expand-lg fixed-top d-flex align-items-end"
         >
         <section class="container-fluid">
-          <a
-            class="navbar-toggler-text fs-2 d-lg-none"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarColor"
-            aria-controls="navbarColor"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-          >
-            Colors ▼
-          </a>
-          <div class="collapse navbar-collapse" id="navbarColor">
-            <ul class="navbar-nav">
-                <li class="nav-item navbar-brand">
-                  <button
-                    type="button"
-                    class="btn fs-1"
-                    onclick="setTheme('light')"
-                    aria-label="Light Mode"
-                  >
-                    Light Mode
-                  </button>
-                </li>
-                <li class="nav-item navbar-brand">
-                  <button
-                    type="button"
-                    class="btn fs-1"
-                    onclick="setTheme('dark')"
-                    aria-label="Dark Mode"
-                  >
-                    Dark Mode
-                  </button>
-                </li>
-                <li class="nav-item navbar-brand">
-                  <button
-                    type="button"
-                    class="btn fs-1"
-                    onclick="setTheme('default')"
-                    aria-label="Default Mode"
-                  >
-                    Default
-                  </button>
-                </li>
-              </ul>
-            </div>
-            <a
-              class="navbar-toggler-text fs-2 d-lg-none"
-              data-bs-toggle="collapse"
-              data-bs-target="#navbarNav"
-              aria-controls="navbarNav"
-              aria-expanded="false"
-              aria-label="Toggle navigation"
-            >
-              Content ▼
-            </a>
-            <div class="collapse navbar-collapse" id="navbarNav">
               <ul class="navbar-nav ms-auto">
                 <li class="nav-item navbar-brand">
                   <a
                     class="nav-link fs-1"
                     href="/"
                     aria-label="Go to home"
-                    >Home</a
-                  >
-                </li>
-                <li class="nav-item navbar-brand">
-                  <a
-                    class="nav-link fs-1"
-                    href="/list.html"
-                    aria-label="Go to shopping list"
-                    >List</a
+                    ><i class="bi bi-house-door-fill"></i></a
                   >
                 </li>
               </ul>
-            </div>
           </section>
         </nav>
       </header>
