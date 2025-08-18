@@ -1,4 +1,4 @@
-This was my first attempt to host a website to a public domain
+My first attempt to host a website to a public domain
 
 ---
 
@@ -44,7 +44,6 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 
 - Your designated email account
 - An reCaptcha v3 key from [Google reCaptcha](https://cloud.google.com/security/products/recaptcha?hl=el)
-- An weather api key from [OpenWeather]https://home.openweathermap.org/api_keys
 - In case you wish to use an email account, it is required to enable 2FA and use an app passwords(not your account's password)
 
 ---
@@ -78,6 +77,8 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 
 - For the purpose of deeper involvement with REST APIs and their data handling, an experimental weather forecast app will be developed.
 - 7-days forecast with 3-hour steps 
+- Accpents latitude and longitude, calls Open-Meteo API, maps the response according to weatherCodeMapping object 
+  and returns current and forecast data on the combined Weather info object
 - Weather icons from https://github.com/visualcrossing/WeatherIcons
 ---
 

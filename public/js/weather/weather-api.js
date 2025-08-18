@@ -18,14 +18,21 @@ async function init() {
 
         const cachedWeather = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
         const currentTime = new Date().getTime();
-
-        if (cachedWeather && (currentTime - cachedWeather.timestamp < HOUR_IN_MILLIS)) {
+        
+        if (cachedWeather && (currentTime - cachedWeather.current.time < HOUR_IN_MILLIS)) {
             console.log("Weather info is fresh, displaying from localStorage");
-            displayLocation(locationInfo.country, locationInfo.countryCode, locationInfo.city);
-            displayWeather(cachedWeather.current.temperature, cachedWeather.current.condition, cachedWeather.current.icon);
         } else {
             console.log("Weather info is older than 1 hour or not found, fetching new data");
             await fetchWeather(locationInfo);
+        }
+
+        const freshWeather = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
+         if (freshWeather && freshWeather.current) {
+            displayLocation(locationInfo.country, locationInfo.countryCode, locationInfo.city);
+            console.log(freshWeather.current.temperature, freshWeather.current.condition, freshWeather.current.icon);
+            displayCurrentWeather(freshWeather.current.temperature, freshWeather.current.condition, freshWeather.current.icon);
+        } else {
+            weather.innerHTML = `<span class="error">Weather data is not available.</span>`;
         }
     } catch (err) {
         console.error("An error occurred during initialization:", err);
@@ -131,25 +138,17 @@ async function fetchWeather(locationInfo) {
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
         }
-        const weatherData = await res.json();
-        displayLocation(locationInfo.country, locationInfo.countryCode, locationInfo.city);
-        
+       const weatherData = await res.json();
        const weatherInfo = {
-            current: {
-                temperature: weatherData.current.temperature,
-                condition: weatherData.current.condition,
-                icon: weatherData.current.icon,
-                humidity: weatherData.current.humidity,
-                windSpeed: weatherData.current.windSpeed
-            },
-            forecast: weatherData.forecast,
+            current: weatherData.current,
+            hourly: weatherData.hourly,
+            daily: weatherData.daily,
             timestamp: new Date().getTime(),
-            city: locationInfo.country,
-            country: locationInfo.city
+            city: locationInfo.city,
+            country: locationInfo.country,
         };
         localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(weatherInfo));
         console.log("Weather data saved to localStorage");
-        displayWeather(weatherInfo.current.temperature, weatherInfo.current.condition, weatherInfo.current.icon);
 
     } catch (err) {
         console.error("Error fetching weather:", err);
@@ -163,7 +162,7 @@ function displayLocation(country, countryCode, city){
     locationEl.textContent = location;
 }
 
-function displayWeather(temperature, condition, icon) {
+function displayCurrentWeather(temperature, condition, icon) {
     weather.innerHTML = `
         <img src="${icon}" alt="${condition}" class="weather-icon mx-3">
         <span class="condition mx-3">${condition}</span>
@@ -171,6 +170,26 @@ function displayWeather(temperature, condition, icon) {
     `;
 }
 
+function displayForecast(forecast) {
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Filter the hourly data to start from the current hour
+    const futureHours = hourlyData.filter(hour => new Date(hour.timestamp).getHours() >= currentHour);
+    
+    let forecastHTML = '';
+    futureHours.forEach(hour => {
+        forecastHTML += `
+            <div class="col-4 col-md-2 text-center p-3">
+                <h4>${new Date(hour.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</h4>
+                <img src="${hour.icon}" alt="${hour.condition}" class="img-fluid">
+                <p>${hour.condition}</p>
+                <p>${hour.temp}°C</p>
+            </div>
+        `;
+    });
+    forecastContainer.innerHTML = forecastHTML;
+}
 // Start the whole process
 init();
 
