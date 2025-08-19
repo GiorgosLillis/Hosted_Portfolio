@@ -1,5 +1,8 @@
-const List = document.getElementById('displayList');
-const list_items = List.children;
+import { addDragAndDropListeners } from "./list-features.js";
+import { saveShoppingListToLocalStorage, loadShoppingListFromLocalStorage} from "./memory-handle.js";
+
+export const List = document.getElementById('displayList');
+export const list_items = List.children;
 const itemInput = document.getElementById('item');
 const quantityInput = document.getElementById('quantity');
 const unitInput = document.getElementById('unit');
@@ -111,7 +114,7 @@ function saveList(e) {
   }
 }
 
-function updateItemNumbers() {
+export function updateItemNumbers() {
 
   for (let i = 0; i < list_items.length; i++) {
     const listItem = list_items[i];
@@ -199,7 +202,8 @@ function downloadList() {
         const item = li.dataset.originalItem;
         const quantity = li.dataset.quantity;
         const unit = li.dataset.unit;
-        return `${item} ${quantity}${unit}`.trim();
+        const checked = (li.dataset.checked === 'true') ? 'Got it!' : '';
+        return `${item} ${quantity}${unit} ${checked}`.trim();
     })
     .filter(line => line !== '') // Filter out empty lines
     .join('\n');
@@ -294,28 +298,31 @@ async function processUploadedFile(file) {
       return;
     }
 
-    // Clear existing list
-     
+    // Add items from file directly to the list, setting data attributes  
 
-    const List = document.getElementById('displayList');
-
-    // Add items from file directly to the list, setting data attributes
     lines.forEach(itemTextLine => {
+      itemTextLine.trim();
       const listItem = document.createElement('li');
       listItem.className = 'list-group-item fs-5 mb-3 rounded-3';
-
-      // Attempt to parse the line into item, quantity, unit for data attributes
-      // Assuming format like "ITEM QUANTITYUNIT" or just "ITEM"
-      const match = itemTextLine.trim().match(/^([A-Za-z\s]+)\s*(\d+(\.\d+)?)\s*([A-Za-z]+)?$/i); // Case-insensitive match
+      // Parse the line into item, quantity, unit for data attributes 
+      const match = itemTextLine.match(/^([A-Za-z\s]+)\s*(\d+(\.\d+)?)\s*([A-Za-z]+)?\s*(Got it!)?$/i); 
       if (match) {
           const item = match[1].trim();
           const quantity = match[2] || '';
-          const unit = match[4] || '';
+          const unit = match[4] || ''; 
+          console.log(match[5]); 
+          if (match[5]) {
+              listItem.dataset.checked = 'true';
+          } else {
+              listItem.dataset.checked = 'false';
+          }
           listItem.dataset.item = item.toUpperCase(); // Store uppercased for comparison
           listItem.dataset.originalItem = item; // Store original for display and saving
           listItem.dataset.quantity = quantity;
           listItem.dataset.unit = unit;
-          listItem.textContent = `${category} ${item} ${quantity}${unit}`.trim(); // Initial display using original casing
+        
+          listItem.textContent = `${category} ${item} ${quantity}${unit} ${match[6]}`.trim();
+          console.log(listItem); // Initial display using original casing
       } else {
           errorMessage.textContent = `Invalid format in line: "${itemTextLine}". Expected format: "ITEM QUANTITYUNIT"`;
           return; //Skip line
@@ -424,5 +431,18 @@ function filterListByName(){
       });
       successMessage.textContent = 'Items that match all filters!';
 }
+
+// Event listener to save the list when the page is about to be unloaded
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    saveShoppingListToLocalStorage();
+  }
+});
+
+// Fallback
+window.addEventListener('beforeunload', saveShoppingListToLocalStorage);
+
+// Load the shopping list when the DOM content is fully loaded
+document.addEventListener('DOMContentLoaded', loadShoppingListFromLocalStorage);
      
 

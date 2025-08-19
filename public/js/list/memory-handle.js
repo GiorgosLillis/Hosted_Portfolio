@@ -1,8 +1,10 @@
-function saveShoppingListToLocalStorage() {
+import {updateItemNumbers, List, list_items} from "./basic-controls-list.js";
+
+export function saveShoppingListToLocalStorage() {
     const list_items_dom = Array.from(list_items);
 
     // Populate the global shoppingList array from current DOM elements' data attributes
-    shoppingList = list_items_dom.map(li => {
+    const shoppingList = list_items_dom.map(li => {
         return {
             item: li.dataset.originalItem, // Always save the original casing
             quantity: li.dataset.quantity,
@@ -15,14 +17,13 @@ function saveShoppingListToLocalStorage() {
     localStorage.setItem('myShoppingList', JSON.stringify(shoppingList));
 }
 
-function loadShoppingListFromLocalStorage() {
+export function loadShoppingListFromLocalStorage() {
     const storedListJSON = localStorage.getItem('myShoppingList');
 
     if (storedListJSON) {
         try {
             const storedList = JSON.parse(storedListJSON); // Parse directly into a local variable
-
-   
+    
             List.innerHTML = ''; 
             storedList.forEach(itemData => {
                 let listItem = document.createElement('li');
@@ -43,19 +44,7 @@ function loadShoppingListFromLocalStorage() {
         }
     } else {
         console.log('No shopping list found in local storage. Starting with an empty list.');
-        List.innerHTML = ''; y
+        List.innerHTML = ''; 
     }
 }
 
-// Event listener to save the list when the page is about to be unloaded
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
-    saveShoppingListToLocalStorage();
-  }
-});
-
-// Fallback
-window.addEventListener('beforeunload', saveShoppingListToLocalStorage);
-
-// Load the shopping list when the DOM content is fully loaded
-document.addEventListener('DOMContentLoaded', loadShoppingListFromLocalStorage);

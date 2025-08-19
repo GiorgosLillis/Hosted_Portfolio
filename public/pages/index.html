@@ -28,7 +28,7 @@
     <link rel="stylesheet" href="../css/styles.css" />
     <script src="../js/common/effects.js" defer></script>
     <script src="../js/home/handler.js" defer></script>
-    <script src="../js/weather/weather-api.js" defer></script>
+    <script type="module" src="../js/home/main.js"></script>
     <title>Giorgos Lillis | Portfolio</title> 
     <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/icons/person-fill.svg" type="image/svg+xml">
 
@@ -136,7 +136,7 @@
     <main class="container-fluid p-0">
       <section
         id="welcome-section"
-        class="d-flex flex-column justify-content-center text-center vh-100 flex-wrap"
+        class="d-flex flex-column align-items-center justify-content-center text-center vh-100 flex-wrap px-2 px-md-5"
         data-aos="flip-down"
         data-aos-duration="2000"
       >
@@ -150,7 +150,7 @@
           interested in web dev
         </h2>
         <h2 class="fs-2 my-2" id="location"></h2>
-        <h2 class="fs-2 my-2 d-flex align-items-center justify-content-center" id="weather">
+        <h2 class="fs-2 my-2 d-flex align-items-center justify-content-center col-md-9 col-lg-7 col-xl-5" id="current_weather">
            <span id="loading">Loading weather</span>
         </h2>
       </section>
@@ -161,7 +161,7 @@
         data-aos-duration="1000"
       >
         <h1 class="display-3 mb-5">A bit of explanation regarding me</h3>    
-        <section class="row row-cols-1 row-cols-md-2 g-0">
+        <section class="row row-cols-1 row-cols-lg-2 g-0">
           <div class="col mb-5 d-flex justify-content-center">
             <div
               class="card shadow-sm hover-shadow h-100 w-75"
@@ -169,7 +169,7 @@
               data-aos-duration="1500"
             >
               <h3 class="card-title fs-1 my-3">About me:</h3>
-              <div class="card-body px-3">
+              <div class="card-body px-4">
                 <ul class="fs-4 card-text list-unstyled">
                   <li class="mb-3">
                     During my 3 year long studies, I have gained knowledge on
@@ -206,10 +206,10 @@
               data-aos-duration="1500"
             >
               <h3 class="card-title fs-1 my-3">Achievements:</h3>
-              <div class="card-body px-3">
+              <div class="card-body px-4">
                 <ul class="fs-4 card-text list-unstyled">
                   <li class="mb-3">
-                    Engaged on web development I have created some purely
+                    Engaging on web development I have created some
                     experimental websites and the website you are currently
                     visiting via Bootstrap.
                   </li>
@@ -241,18 +241,21 @@
             </div>
           </div>
 
-          <div class="col d-flex justify-content-center mb-5 my-3">
+          <div class="col d-flex justify-content-center mb-5">
             <div
               class="card shadow-sm hover-shadow h-100 w-75"
               data-aos="zoom-in"
               data-aos-duration="1500"
             >
               <h3 class="card-title fs-1 my-3">Current goals:</h3>
-              <div class="card-body px-3">
+              <div class="card-body px-4">
                 <ul class="fs-4 card-text list-unstyled">
                   <li class="mb-3">
                     Focus on the rest of my graduation process, with the aim of achieving
                     a higher GPA.
+                  </li>
+                  <li class="mb-3">
+                    Get any experience I can from my internship.
                   </li>
                   <li class="mb-3">
                     Soon enough, I will be part a team project involving the
@@ -270,11 +273,14 @@
               data-aos-duration="1500"
             >
               <h3 class="card-title fs-1 my-3">Future goals:</h3>
-              <div class="card-body px-3">
+              <div class="card-body px-4">
                 <ul class="fs-4 card-text list-unstyled">
                   <li class="mb-3">
                     Recently I realised that my main goal is to become a web
-                    application developer. The most possible career path I am
+                    application developer. 
+                  </li> 
+                   <li class="mb-3"> 
+                    The most possible career path I am
                     looking for is to work as a front-end developer, specifically
                     a Web Accessibility Specialist.
                   </li>

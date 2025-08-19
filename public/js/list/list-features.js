@@ -1,5 +1,7 @@
-// --- DRAG AND DROP LOGIC ---
+import {updateItemNumbers, List, list_items} from "./basic-controls-list.js";
 
+
+// --- DRAG AND DROP LOGIC ---
 
 // Variable to hold the currently dragged list item
 let currentDraggedElement = null;
@@ -12,14 +14,14 @@ let longPressTimer = null;
  */
 
 function cleanUpDragOverStyles() {
-    const allItems = Array.from(List.children);
+    const allItems = Array.from(list_items);
     allItems.forEach(item => {
         item.classList.remove('dragging');
         item.style.boxShadow = '';
     });
 }
 
-function addDragAndDropListeners(listItem) {
+export function addDragAndDropListeners(listItem) {
     // --- Mouse Drag Events ---
     listItem.addEventListener('dragstart', (e) => {
         currentDraggedElement = listItem;

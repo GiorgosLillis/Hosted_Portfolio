@@ -33,9 +33,9 @@ const PathtoIcons = 'public/assets/weather-icons/';
 module.exports = async (req, res) => {
     const lat = parseFloat(req.query.lat);
     const lon = parseFloat(req.query.lon);
-
+    
     if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
-        return res.status(400).json({ error: 'Latitude and longitude are required.' });
+        return res.status(400).json({ error: 'Valid Latitude and longitude are required.' });
     }
 
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,uv_index,apparent_temperature,is_day&daily=temperature_2m_max,temperature_2m_min&forecast_days=7&timezone=auto`;
