@@ -61,11 +61,11 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 - You can add and delete items, reset the list, download the list as a text file and upload a text file
 - It automatically numbers the items with the order they have been added
 
-  Features to add (List.html):
+  Features to add (list.html):
 - Drag-and-Drop Reordering: Allow users to reorder items in their list by dragging and dropping them.  ✅
 - Quantity/Unit Input: Add fields for quantity (e.g., "2x Apples") and units (e.g., "kg", "g", "pcs") next to each item. ✅
 - Categorization: Implement a way to categorize items (e.g., "Produce", "Dairy", "Meat") for easier shopping. ✅
-- Persistence (Local Storage/Server): Ensure shopping lists are saved between sessions. Currently, it seems to rely on download/upload.
+- Persistence (Local Storage/Server): Ensure shopping lists are saved between sessions. Currently, it seems to rely on download/upload. ✅
 - Local Storage: For a client-side solution, save lists to the user's browser's local storage. ✅
 - Backend Database: For cross-device sync and more robust features, consider a simple backend to store user lists (e.g., using Firebase, Supabase, or a custom Node.js/Express API with a database).
 - Sharing Functionality: Allow users to share their lists with others (e.g., via a unique URL or email if using a backend).
@@ -80,6 +80,22 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 - Accpents latitude and longitude, calls Open-Meteo API, maps the response according to weatherCodeMapping object 
   and returns current and forecast data on the combined Weather info object
 - Weather icons from https://github.com/visualcrossing/WeatherIcons
+
+  Features to add (weather.html):
+-   Daily forecast with:
+    Min-Max Temperature
+    Weather conditions at noon
+    Sunrise and sunset times
+
+-   Detailed 3-hour forecast with:
+    Day or night
+    Conditions
+    Temperature
+    Apparent temperature
+    Humidity
+    Wind direction and speed
+    UV index
+    Air quality
 ---
 
 ### Issues

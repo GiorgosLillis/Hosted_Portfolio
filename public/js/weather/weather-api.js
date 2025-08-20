@@ -1,18 +1,16 @@
-import { showError, showLoadingIndicator } from "../home/index-weather.js";
+import { showError, showLoadingIndicator } from "./display.js";
 
 // ------------ API CALLS ------------------------
 const LOCATION_CACHE_KEY = 'LocationInfo';
 export const WEATHER_CACHE_KEY = 'WeatherInfo';
-const TWENTY_FOUR_HOURS_IN_MILLIS = 24 * 60 * 60 * 1000;
-
 
 // Get location data from cache or API
 export async function getLocation() {
     let locationInfo;
-    const cachedLocation = JSON.parse(localStorage.getItem(LOCATION_CACHE_KEY));
+    const cachedLocation = JSON.parse(localStorage.getItem('LocationInfo'));
     const currentTime = new Date().getTime();
 
-    if (cachedLocation && (currentTime - cachedLocation.timestamp < TWENTY_FOUR_HOURS_IN_MILLIS)) {
+    if (cachedLocation && (currentTime - cachedLocation.timestamp < 24 * 60 * 60 * 1000)) {
         console.log("Location info is fresh, using from localStorage");
         return cachedLocation;
     } else {

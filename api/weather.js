@@ -1,33 +1,34 @@
+const PathtoImg = 'public/assets/weather-images/'
 const PathtoIcons = 'public/assets/weather-icons/';
         const weatherCodeMapping = {
-            0: { condition: 'Clear sky', dayIcon: PathtoIcons + 'clear-day.svg', nightIcon: PathtoIcons + 'clear-night.svg' },
-            1: { condition: 'Mainly clear', dayIcon: PathtoIcons + 'partly-cloudy-day.svg', nightIcon: PathtoIcons + 'partly-cloudy-night.svg'  },
-            2: { condition: 'Partly cloudy', dayIcon: PathtoIcons + 'partly-cloudy-day.svg', nightIcon: PathtoIcons + 'partly-cloudy-night.svg'  },
-            3: { condition: 'Overcast', dayIcon: PathtoIcons + 'cloudy.svg', nightIcon: PathtoIcons + 'cloudy-night.svg'  },
-            45: { condition: 'Fog', dayIcon: PathtoIcons + 'fog.svg', nightIcon: PathtoIcons + 'fog-night.svg'  },
-            48: { condition: 'Depositing rime fog', dayIcon: PathtoIcons + 'fog.svg', nightIcon: PathtoIcons + 'fog-night.svg'  },
-            51: { condition: 'Drizzle: Light', dayIcon: PathtoIcons + 'rain-showers-day.svg', nightIcon: PathtoIcons + 'rain-showers-night.svg'  },
-            53: { condition: 'Drizzle: Moderate', dayIcon: PathtoIcons + 'rain-showers-day.svg', nightIcon: PathtoIcons + 'rain-showers-night.svg'  },
-            55: { condition: 'Drizzle: Dense', dayIcon: PathtoIcons + 'rain.svg', nightIcon: PathtoIcons + 'rain-night.svg'  },
-            56: { condition: 'Freezing Drizzle: Light', dayIcon: PathtoIcons + 'sleet.svg', nightIcon: PathtoIcons + 'sleet-night.svg'  },
-            57: { condition: 'Freezing Drizzle: Dense', dayIcon: PathtoIcons + 'sleet.svg', nightIcon: PathtoIcons + 'sleet-night.svg'  },
-            61: { condition: 'Rain: Slight', dayIcon: PathtoIcons + 'rain-showers-day.svg', nightIcon: PathtoIcons + 'rain-showers-night.svg'  },
-            63: { condition: 'Rain: Moderate', dayIcon: PathtoIcons + 'rain-showers-day.svg', nightIcon: PathtoIcons + 'rain-showers-night.svg'  },
-            65: { condition: 'Rain: Heavy', dayIcon: PathtoIcons + 'rain.svg', nightIcon: PathtoIcons + 'rain-night.svg'  },
-            66: { condition: 'Freezing Rain: Light', dayIcon: PathtoIcons + 'sleet.svg', nightIcon: PathtoIcons + 'sleet-night.svg'  },
-            67: { condition: 'Freezing Rain: Heavy', dayIcon: PathtoIcons + 'sleet.svg', nightIcon: PathtoIcons + 'sleet-night.svg'  },
-            71: { condition: 'Snow fall: Slight', dayIcon: PathtoIcons + 'snow-showers-day.svg', nightIcon: PathtoIcons + 'snow-showers-night.svg'  },
-            73: { condition: 'Snow fall: Moderate', dayIcon: PathtoIcons + 'snow-showers-day.svg', nightIcon: PathtoIcons + 'snow-showers-night.svg'  },
-            75: { condition: 'Snow fall: Heavy', dayIcon: PathtoIcons + 'snow.svg', nightIcon: PathtoIcons + 'snow-night.svg'  },
-            77: { condition: 'Snow grains', dayIcon: PathtoIcons + 'snow-showers-day.svg', nightIcon: PathtoIcons + 'snow-showers-night.svg'  },
-            80: { condition: 'Rain showers: Slight', dayIcon: PathtoIcons + 'showers-day.svg', nightIcon: PathtoIcons + 'showers-night.svg'  },
-            81: { condition: 'Rain showers: Moderate', dayIcon: PathtoIcons + 'showers-day.svg', nightIcon: PathtoIcons + 'showers-night.svg'  },
-            82: { condition: 'Rain showers: Violent', dayIcon: PathtoIcons + 'rain.svg', nightIcon: PathtoIcons + 'rain-night.svg'  },
-            85: { condition: 'Snow showers: Slight', dayIcon: PathtoIcons + 'snow-showers-day.svg', nightIcon: PathtoIcons + 'snow-showers-night.svg'  },
-            86: { condition: 'Snow showers: Heavy', dayIcon: PathtoIcons + 'snow.svg', nightIcon: PathtoIcons + 'snow-night.svg'  },
-            95: { condition: 'Thunderstorm: Slight or moderate', dayIcon: PathtoIcons + 'thunder-showers-day.svg', nightIcon: PathtoIcons + 'thunder-showers-night.svg'  },
-            96: { condition: 'Thunderstorm with slight hail', dayIcon: PathtoIcons + 'thunder-rain.svg', nightIcon: PathtoIcons + 'thunder-rain-night.svg'  },
-            99: { condition: 'Thunderstorm with heavy hail', dayIcon: PathtoIcons + 'hail.svg', nightIcon: PathtoIcons + 'hail-night.svg'  },
+            0: { condition: 'Clear sky', dayIcon: PathtoIcons + 'clear-day.svg', nightIcon: PathtoIcons + 'clear-night.svg', dayImg: PathtoImg + 'clear-day.jpg', nightImg: PathtoImg + 'clear-night.jpg'},
+            1: { condition: 'Mainly clear', dayIcon: PathtoIcons + 'partly-cloudy-day.svg', nightIcon: PathtoIcons + 'partly-cloudy-night.svg', dayImg: PathtoImg + 'clouds-day.jpg', nightImg: PathtoImg + 'clouds-night.jpg'  },
+            2: { condition: 'Partly cloudy', dayIcon: PathtoIcons + 'partly-cloudy-day.svg', nightIcon: PathtoIcons + 'partly-cloudy-night.svg', dayImg: PathtoImg + 'clouds-day.jpg', nightImg: PathtoImg + 'clouds-night.jpg'  },
+            3: { condition: 'Overcast', dayIcon: PathtoIcons + 'cloudy.svg', nightIcon: PathtoIcons + 'cloudy.svg', dayImg: PathtoImg + 'overcast.jpg', nightImg: PathtoImg + 'overcast.jpg'  },
+            45: { condition: 'Fog', dayIcon: PathtoIcons + 'fog.svg', nightIcon: PathtoIcons + 'fog.svg', dayImg: PathtoImg + 'fog.jpg', nightImg: PathtoImg + 'fog.jpg'  },
+            48: { condition: 'Depositing rime fog', dayIcon: PathtoIcons + 'fog.svg', nightIcon: PathtoIcons + 'fog.svg', dayImg: PathtoImg + 'fog.jpg', nightImg: PathtoImg + 'fog.jpg'  },
+            51: { condition: 'Drizzle: Light', dayIcon: PathtoIcons + 'rain-showers-day.svg', nightIcon: PathtoIcons + 'rain-showers-night.svg', dayImg: PathtoImg + 'drizzle-day.jpg', nightImg: PathtoImg + 'drizzle-night.jpg'  },
+            53: { condition: 'Drizzle: Moderate', dayIcon: PathtoIcons + 'rain-showers-day.svg', nightIcon: PathtoIcons + 'rain-showers-night.svg', dayImg: PathtoImg + 'drizzle-day.jpg', nightImg: PathtoImg + 'drizzle-night.jpg'  },
+            55: { condition: 'Drizzle: Dense', dayIcon: PathtoIcons + 'rain.svg', nightIcon: PathtoIcons + 'rain.svg', dayImg: PathtoImg + 'drizzle-day.jpg', nightImg: PathtoImg + 'drizzle-night.jpg'  },
+            56: { condition: 'Freezing Drizzle: Light', dayIcon: PathtoIcons + 'sleet.svg', nightIcon: PathtoIcons + 'sleet-night.svg', dayImg: PathtoImg + 'sleet-day.jpg', nightImg: PathtoImg + 'sleet-day.jpg'  },
+            57: { condition: 'Freezing Drizzle: Dense', dayIcon: PathtoIcons + 'sleet.svg', nightIcon: PathtoIcons + 'sleet-night.svg', dayImg: PathtoImg + 'sleet-night.jpg', nightImg: PathtoImg + 'sleet-night.jpg'  },
+            61: { condition: 'Rain: Slight', dayIcon: PathtoIcons + 'rain-showers-day.svg', nightIcon: PathtoIcons + 'rain-showers-night.svg', dayImg: PathtoImg + 'rain-day.jpg', nightImg: PathtoImg + 'rain-night.jpg'  },
+            63: { condition: 'Rain: Moderate', dayIcon: PathtoIcons + 'rain-showers-day.svg', nightIcon: PathtoIcons + 'rain-showers-night.svg', dayImg: PathtoImg + 'rain-day.jpg', nightImg: PathtoImg + 'rain-night.jpg'  },
+            65: { condition: 'Rain: Heavy', dayIcon: PathtoIcons + 'rain.svg', nightIcon: PathtoIcons + 'rain.svg', dayImg: PathtoImg + 'rain.jpg', nightImg: PathtoImg + 'rain.jpg'  },
+            66: { condition: 'Freezing Rain: Light', dayIcon: PathtoIcons + 'sleet.svg', nightIcon: PathtoIcons + 'sleet-night.svg', dayImg: PathtoImg + 'sleet-day.jpg', nightImg: PathtoImg + 'sleet-night.jpg'  },
+            67: { condition: 'Freezing Rain: Heavy', dayIcon: PathtoIcons + 'sleet.svg', nightIcon: PathtoIcons + 'sleet-night.svg', dayImg: PathtoImg + 'sleet-day.jpg', nightImg: PathtoImg + 'sleet-night.jpg'  },
+            71: { condition: 'Snow fall: Slight', dayIcon: PathtoIcons + 'snow-showers-day.svg', nightIcon: PathtoIcons + 'snow-showers-night.svg', dayImg: PathtoImg + 'snow-day.jpg', nightImg: PathtoImg + 'snow-night.jpg'  },
+            73: { condition: 'Snow fall: Moderate', dayIcon: PathtoIcons + 'snow-showers-day.svg', nightIcon: PathtoIcons + 'snow-showers-night.svg', dayImg: PathtoImg + 'snow-day.jpg', nightImg: PathtoImg + 'snow-night.jpg'  },
+            75: { condition: 'Snow fall: Heavy', dayIcon: PathtoIcons + 'snow.svg', nightIcon: PathtoIcons + 'snow.svg', dayImg: PathtoImg + 'heavy-snow.jpg', nightImg: PathtoImg + 'heavy-snow.jpg'  },
+            77: { condition: 'Snow grains', dayIcon: PathtoIcons + 'snow-showers-day.svg', nightIcon: PathtoIcons + 'snow-showers-night.svg', dayImg: PathtoImg + 'snow-day.jpg', nightImg: PathtoImg + 'snow-night.jpg'  },
+            80: { condition: 'Rain showers: Slight', dayIcon: PathtoIcons + 'showers-day.svg', nightIcon: PathtoIcons + 'showers-night.svg', dayImg: PathtoImg + 'snow-day.jpg', nightImg: PathtoImg + 'snow-night.jpg'  },
+            81: { condition: 'Rain showers: Moderate', dayIcon: PathtoIcons + 'showers-day.svg', nightIcon: PathtoIcons + 'showers-night.svg', dayImg: PathtoImg + 'snow-day.jpg', nightImg: PathtoImg + 'snow-night.jpg'  },
+            82: { condition: 'Rain showers: Violent', dayIcon: PathtoIcons + 'rain.svg', nightIcon: PathtoIcons + 'rain.svg', dayImg: PathtoImg + 'rain.jpg', nightImg: PathtoImg + 'rain.jpg'  },
+            85: { condition: 'Snow showers: Slight', dayIcon: PathtoIcons + 'snow-showers-day.svg', nightIcon: PathtoIcons + 'snow-showers-night.svg', dayImg: PathtoImg + 'snow-day.jpg', nightImg: PathtoImg + 'snow-night.jpg'  },
+            86: { condition: 'Snow showers: Heavy', dayIcon: PathtoIcons + 'snow.svg', nightIcon: PathtoIcons + 'snow.svg', dayImg: PathtoImg + 'snow.jpg', nightImg: PathtoImg + 'snow.jpg'  },
+            95: { condition: 'Thunderstorm: Slight or moderate', dayIcon: PathtoIcons + 'thunder-showers-day.svg', nightIcon: PathtoIcons + 'thunder-showers-night.svg', dayImg: PathtoImg + 'thunder.jpg', nightImg: PathtoImg + 'thunder.jpg'  },
+            96: { condition: 'Thunderstorm with slight hail', dayIcon: PathtoIcons + 'thunder-rain.svg', nightIcon: PathtoIcons + 'thunder-rain-night.svg', dayImg: PathtoImg + 'thunder.jpg', nightImg: PathtoImg + 'thunder.jpg'  },
+            99: { condition: 'Thunderstorm with heavy hail', dayIcon: PathtoIcons + 'hail.svg', nightIcon: PathtoIcons + 'hail-night.svg', dayImg: PathtoImg + 'thunder.jpg', nightImg: PathtoImg + 'thunder.jpg'  },
         };
 
 module.exports = async (req, res) => {
@@ -38,18 +39,38 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Valid Latitude and longitude are required.' });
     }
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,uv_index,apparent_temperature,is_day&daily=temperature_2m_max,temperature_2m_min&forecast_days=7&timezone=auto`;
+    
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,uv_index,apparent_temperature,is_day&daily=temperature_2m_max,temperature_2m_min&forecast_days=7&timezone=auto`;
+    const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,sulphur_dioxide&timezone=auto`;
     try {
-        const response = await fetch(url);
-        if (response.status !== 200) {
-            return res.status(response.status).json({ error: 'Failed to fetch weather data from external API.' });
+        const [res1, res2] = await Promise.all([
+            fetch(url),
+            fetch(airQualityUrl)
+        ]);
+
+        console.log('Weather API response:', {
+            status: res1.status,
+            statusText: res1.statusText,
+            ok: res1.ok
+        });
+
+        console.log('Air Quality API response:', {
+            status: res2.status, 
+            statusText: res2.statusText,
+            ok: res2.ok
+        });
+
+        if (!res1.ok) {
+            throw new Error(`Failed to fetch weather data: ${res1.status}`);
+        }
+        if (!res2.ok) {
+            throw new Error(`Failed to fetch air quality data: ${res2.status}`);
         }
 
-        const data = await response.json();
-
-        if (data.error) {
-            return res.status(400).json({ error: data.reason });
-        }
+       const [weatherData, airQualityData] = await Promise.all([
+            res1.json(),
+            res2.json()
+        ]);
 
         function isDayTime(timestamp) {
             const hour = new Date(timestamp).getHours();
@@ -58,7 +79,7 @@ module.exports = async (req, res) => {
 
         // Find the index of the hourly entry closest to now
         const now = Date.now();
-        const hourlyTimestamps = data.hourly.time.map(ts => new Date(ts).getTime());
+        const hourlyTimestamps = weatherData.hourly.time.map(ts => new Date(ts).getTime());
         let closestIndex = 0;
         let minDiff = Math.abs(hourlyTimestamps[0] - now);
         for (let i = 1; i < hourlyTimestamps.length; i++) {
@@ -69,10 +90,11 @@ module.exports = async (req, res) => {
             }
         }
 
-        const hourlyInfo = data.hourly.time.map((timestamp, index) => {
-            const code = data.hourly.weather_code[index];
+        const hourlyInfo = weatherData.hourly.time.map((timestamp, index) => { 
+            const hasAirQualityData = index < 120;
+            const code = weatherData.hourly.weather_code[index];
             const condition = weatherCodeMapping[code];
-            let isDay = data.hourly.is_day[index];
+            let isDay = weatherData.hourly.is_day[index];
             
             if (index === closestIndex) {
                 const localIsDayTime = isDayTime(timestamp);
@@ -80,51 +102,61 @@ module.exports = async (req, res) => {
                     isDay = 1;
                 }
             }
-
             return {
                 timestamp,
                 time: new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 day: new Date(timestamp).toLocaleDateString(),
-                temp: data.hourly.temperature_2m[index],
-                apparentTemperature: data.hourly.apparent_temperature[index],
-                humidity: data.hourly.relative_humidity_2m[index],
-                windSpeed: data.hourly.wind_speed_10m[index],
-                uvIndex: data.hourly.uv_index[index],
+                temp: weatherData.hourly.temperature_2m[index],
+                apparentTemperature: weatherData.hourly.apparent_temperature[index],
+                humidity: weatherData.hourly.relative_humidity_2m[index],
+                windDirection: weatherData.hourly.wind_direction_10m[index],
+                windSpeed: weatherData.hourly.wind_speed_10m[index],
+                uvIndex: weatherData.hourly.uv_index[index],
                 isDay: isDay,
                 condition: condition.condition,
+                airQuality: hasAirQualityData ? {
+                    pm10: airQualityData.hourly.pm10[index],
+                    pm2_5: airQualityData.hourly.pm2_5[index],
+                    carbonMonoxide: airQualityData.hourly.carbon_monoxide[index],
+                    nitrogenDioxide: airQualityData.hourly.nitrogen_dioxide[index],
+                    ozone: airQualityData.hourly.ozone[index],
+                    sulphurDioxide: airQualityData.hourly.sulphur_dioxide[index],
+                } : null ,
                 icon: isDay ? condition.dayIcon : condition.nightIcon
             };
         });
 
-        const dailyInfo = data.daily.time.map((date, index) => ({
+        const dailyInfo = weatherData.daily.time.map((date, index) => ({
             date,
-            tempMax: data.daily.temperature_2m_max[index],
-            tempMin: data.daily.temperature_2m_min[index],
+            tempMax: weatherData.daily.temperature_2m_max[index],
+            tempMin: weatherData.daily.temperature_2m_min[index],
         }));
 
         // Use the closestIndex for current weather
         const isDayCurrent = hourlyInfo[closestIndex].isDay;
-        const currentCode = data.hourly.weather_code[closestIndex];
+        const currentCode = weatherData.hourly.weather_code[closestIndex];
         const currentCondition = weatherCodeMapping[currentCode];
 
         const weatherInfo = {
             current: {
-                temperature: data.hourly.temperature_2m[closestIndex],
-                apparentTemperature: data.hourly.apparent_temperature[closestIndex],
+                temperature: weatherData.hourly.temperature_2m[closestIndex],
+                apparentTemperature: weatherData.hourly.apparent_temperature[closestIndex],
                 condition: currentCondition.condition,
                 icon: isDayCurrent ? currentCondition.dayIcon : currentCondition.nightIcon,
-                windSpeed: data.hourly.wind_speed_10m[closestIndex],
-                humidity: data.hourly.relative_humidity_2m[closestIndex],
-                uvIndex: data.hourly.uv_index[closestIndex],
+                img: isDayCurrent ? currentCondition.dayImg : currentCondition.nightImg,
+                windSpeed: weatherData.hourly.wind_speed_10m[closestIndex],
+                humidity: weatherData.hourly.relative_humidity_2m[closestIndex],
+                uvIndex: weatherData.hourly.uv_index[closestIndex],
                 isDay: isDayCurrent,
             },
             hourly: hourlyInfo,
             daily: dailyInfo,
         };
+        console.log(weatherInfo.current);
 
         res.status(200).json(weatherInfo);
     } catch (error) {
-        console.error('Error fetching weather data:' + error);
+        console.error('Error fetching weather data: ' + error);
         res.status(500).json({ error: 'Failed to fetch weather data.' });
     }
 };

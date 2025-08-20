@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single:wght@100..900&family=Manrope&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
-    <script src="../js/weather/weather-api.js" defer></script>
+    <script src="../js/weather/main.js" type="module" defer></script>
     <link rel="stylesheet" href="../css/weather.css">
 
     <title>Weather Forecast</title>
@@ -44,25 +44,35 @@
     <meta property="og:url" content="https://www.giorgoslillis.com/weather.html"/>
   </head>
 </head>
-<body>
-    <header>
-        <nav
+  <body class="vh-100">
+      <header>
+      <nav
           id="navbar"
           class="navbar navbar-expand-lg fixed-top d-flex align-items-end"
-        >
-        <section class="container-fluid">
+      >
+          <div class="container-fluid">
               <ul class="navbar-nav ms-auto">
-                <li class="nav-item navbar-brand">
-                  <a
-                    class="nav-link fs-1"
-                    href="/"
-                    aria-label="Go to home"
-                    ><i class="bi bi-house-door-fill"></i></a
-                  >
-                </li>
+                  <li class="nav-item navbar-brand">
+                      <a
+                          class="nav-link fs-1"
+                          href="/"
+                          aria-label="Go to home"
+                      ><i class="bi bi-house-door-fill"></i></a
+                      >
+                  </li>
               </ul>
-          </section>
-        </nav>
-      </header>
+          </div>
+      </nav>
+  </header>
+
+  <main class="container-fluid p-0 " style="margin-top: 20vh;">
+    <section class="d-flex flex-column align-items-center justify-content-center text-center px-2 px-md-5">
+      <h2 class="fs-2 my-2 text-center" id="location"></h2>
+      <h2 class="fs-2 my-2 row d-flex align-items-center justify-content-center col-12 col-lg-9 col-xl-6 gx-0" id="current_weather">
+          <span id="loading">Loading weather</span>
+      </h2>
+    </section>
+    
+  </main>
 </body>
 </html>

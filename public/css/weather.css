@@ -1,0 +1,23 @@
+body{
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+#current_weather{
+  background-color: var(--bs-secondary-light);
+  border: 2px solid var(--bs-secondary);
+  color: var(--bs-text);
+  border-radius: 20px;
+}
+
+#current_weather img{
+   max-width: 40px;
+   max-height: 40px;
+}
+
+
+#loading::after {
+  content: '';
+  animation: dots 1.5s steps(5, end) infinite;
+}

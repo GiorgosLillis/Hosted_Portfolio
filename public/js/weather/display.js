@@ -1,16 +1,21 @@
-const current_weather = document.getElementById('current_weather');
-const location =  document.getElementById('location');
+import {current_weather, location} from '../home/main.js';
 
 export function displayLocation(country, countryCode, city){
     const locationMsg = `Greetings to the visitor from ${city}, ${country}!`;
     location.textContent = locationMsg ;
 }
 
-export function displayCurrentWeather(temperature, condition, icon) {
+export function displayCurrentWeather(temperature, condition, icon, timestamp) {
     current_weather.innerHTML = `
-        <img src="${icon}" alt="${condition}" class="weather-icon mx-3 py-1">
-        <span class="condition mx-3 py-1">${condition}</span>
-        <span class="temperature mx-3 py-1">${temperature}°C</span>
+        <div class="col-12 col-md-6 d-flex align-items-center justify-content-center py-1 mb-2 mb-md-0">
+            <img src="${icon}" alt="${condition}" class="weather-icon me-3 py-1 px-0">
+            <span class="mx-3">${condition}</span>
+            <span class="ms-3">${temperature}°C</span>
+        </div>
+
+        <div class="col-12 col-md-6 py-1 ">
+            <span>Last update: ${new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
     `;
 }
 
