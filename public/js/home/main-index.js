@@ -1,17 +1,16 @@
+// main-index.js
 import { getLocation, fetchWeather, WEATHER_CACHE_KEY } from '../weather/weather-api.js';
 import { displayLocation, displayCurrentWeather, showLoadingIndicator, showError } from '../weather/display.js';
 
-// ------------ MAIN INITIALIZATION FUNCTION ------------------------
 export const current_weather = document.getElementById('current_weather');
 export const location =  document.getElementById('location');
 
 const HOUR_IN_MILLIS = 60 * 60 * 1000;
 async function init() {
-    showLoadingIndicator();
+    showLoadingIndicator(current_weather);
 
     try {
         let locationInfo = await getLocation();
-
         const cachedWeather = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
         const currentTime = new Date().getTime();
         
@@ -27,13 +26,11 @@ async function init() {
             displayLocation(locationInfo.country, locationInfo.countryCode, locationInfo.city);
             displayCurrentWeather(freshWeather.current.temperature, freshWeather.current.condition, freshWeather.current.icon, freshWeather.timestamp);
         } else {
-            showError("Weather data is not available.");
+            showError("Weather data is not available.", current_weather);
         }
     } catch (err) {
         console.error("An error occurred during initialization:", err);
-        showError("Failed to get location or weather data.");
+        showError("Failed to get location or weather data.", current_weather);
     }
 }
-
-// Start the whole process
 init();

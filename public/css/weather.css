@@ -1,19 +1,16 @@
+@import url(./global.css);
+
 body{
-    background-size: cover;
     background-repeat: no-repeat;
-    background-position: center;
 }
 
-#current_weather{
-  background-color: var(--bs-secondary-light);
-  border: 2px solid var(--bs-secondary);
-  color: var(--bs-text);
-  border-radius: 20px;
+h2, .nav-link{
+  color: aliceblue;
 }
 
-#current_weather img{
-   max-width: 40px;
-   max-height: 40px;
+#current-weather-forecast img{
+   max-width: 50px;
+   max-height: 50px;
 }
 
 

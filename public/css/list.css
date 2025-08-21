@@ -1,3 +1,9 @@
+@import url(./global.css);
+
+body{
+    background-image: var(--image);
+}
+
 .item-input{
   background-color: var(--bs-primary);
   border: 2px solid var(--bs-secondary);

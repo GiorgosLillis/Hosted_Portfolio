@@ -1,5 +1,3 @@
-import { showError, showLoadingIndicator } from "./display.js";
-
 // ------------ API CALLS ------------------------
 const LOCATION_CACHE_KEY = 'LocationInfo';
 export const WEATHER_CACHE_KEY = 'WeatherInfo';
@@ -26,13 +24,10 @@ async function callLocationAPI() {
     
     if (!navigator.geolocation) {
         console.log("Geolocation is not supported by this browser.");
-        showError('Geolocation is not supported by this browser.');
-        return;
+        throw new Error ('Geolocation is not supported by this browser.');
     }
 
     try {
-        showLoadingIndicator();
-        
         const position = await getCurrentPositionPromise();
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
@@ -61,21 +56,13 @@ async function callLocationAPI() {
         // Robust error handling based on the GeolocationPositionError codes
         switch (err.code) {
             case err.PERMISSION_DENIED:
-                console.error("User denied the request for Geolocation.");
-                showError('User denied the request for Geolocation.');
-                break;
+                throw new Error ('User denied the request for Geolocation.');
             case err.POSITION_UNAVAILABLE:
-                console.error("Location information is unavailable.");
-                showError('Location information is unavailable.');
-                break;
+                throw new Error ('Location information is unavailable.');
             case err.TIMEOUT:
-                console.error("The request to get user location timed out.");
-                showError('The request to get user location timed out.');
-                break;
+                throw new Error ('The request to get user location timed out.');
             default:
-                console.error("An unknown error occurred during location retrieval:", err);
-                showError('An unknown error occurred. Showing weather for a default location.');
-                break;
+                throw new Error ('An unknown error occurred. Showing weather for a default location.');
         }
     }
 }
@@ -112,7 +99,7 @@ export async function fetchWeather(locationInfo) {
         console.log("Weather data saved to localStorage");
 
     } catch (err) {
-        console.error("Error fetching weather:", err);
+        throw new Error("Error fetching weather:", err);
     }
 }
 

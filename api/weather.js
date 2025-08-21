@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
             fetch(airQualityUrl)
         ]);
 
-        console.log('Weather API response:', {
+        console.log('\nWeather API response:', {
             status: res1.status,
             statusText: res1.statusText,
             ok: res1.ok
@@ -136,6 +136,14 @@ module.exports = async (req, res) => {
         const isDayCurrent = hourlyInfo[closestIndex].isDay;
         const currentCode = weatherData.hourly.weather_code[closestIndex];
         const currentCondition = weatherCodeMapping[currentCode];
+        const airQuality = {
+            pm10: airQualityData.hourly.pm10[closestIndex],
+            pm2_5: airQualityData.hourly.pm2_5[closestIndex],
+            carbonMonoxide: airQualityData.hourly.carbon_monoxide[closestIndex],
+            nitrogenDioxide: airQualityData.hourly.nitrogen_dioxide[closestIndex],
+            ozone: airQualityData.hourly.ozone[closestIndex],
+            sulphurDioxide: airQualityData.hourly.sulphur_dioxide[closestIndex],
+        };
 
         const weatherInfo = {
             current: {
@@ -148,12 +156,13 @@ module.exports = async (req, res) => {
                 humidity: weatherData.hourly.relative_humidity_2m[closestIndex],
                 uvIndex: weatherData.hourly.uv_index[closestIndex],
                 isDay: isDayCurrent,
+                airQuality: airQuality,
             },
             hourly: hourlyInfo,
+            
             daily: dailyInfo,
         };
         console.log(weatherInfo.current);
-
         res.status(200).json(weatherInfo);
     } catch (error) {
         console.error('Error fetching weather data: ' + error);

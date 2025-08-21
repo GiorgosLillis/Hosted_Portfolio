@@ -1,11 +1,35 @@
-import {current_weather, location} from '../home/main.js';
+import {current_weather, location} from '../home/main-index.js';
+import {CurrentWeatherForecast, LocationForecast} from './main-weather.js';
+
+
+export function setBackground(img, target){
+    if(target && target.id != 'current_weather'){
+        document.body.style.backgroundImage =  `url('${img}')`;
+    }
+}
 
 export function displayLocation(country, countryCode, city){
+    if (!location) {
+        return;
+    }
     const locationMsg = `Greetings to the visitor from ${city}, ${country}!`;
     location.textContent = locationMsg ;
 }
 
+export function displayCity(city){
+    if (!LocationForecast) {
+        return;
+    }
+    LocationForecast.textContent = '';
+    LocationForecast.textContent = city;
+}
+
 export function displayCurrentWeather(temperature, condition, icon, timestamp) {
+    if (!current_weather) {
+        console.log('Current weather cannot be displayed!');
+        showError('Current weather cannot be displayed!');
+        return;
+    }
     current_weather.innerHTML = `
         <div class="col-12 col-md-6 d-flex align-items-center justify-content-center py-1 mb-2 mb-md-0">
             <img src="${icon}" alt="${condition}" class="weather-icon me-3 py-1 px-0">
@@ -19,7 +43,32 @@ export function displayCurrentWeather(temperature, condition, icon, timestamp) {
     `;
 }
 
+export function CurrentWeatherInfo(temperature, condition, icon, timestamp){
+    if (!CurrentWeatherForecast) {
+        console.log('Current weather cannot be displayed!');
+        showError('Current weather cannot be displayed!');
+        return;
+    }
+    CurrentWeatherForecast.innerHTML = `
+        <div class="col-12">
+              <h1 class="display-2">${temperature}°C</h1>
+        </div>
+        <div class="col-12 d-flex align-items-center justify-content-center py-1 mb-2">
+            <img src="${icon}" alt="${condition}" class="weather-icon me-3 py-1 px-0">
+            <span class="mx-3">${condition}</span>
+        </div>
+        <div class="col-12">
+            <span>Last update: ${new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+    `;
+}
+
 export function displayForecast(forecast) {
+      if (!forecast) {
+        console.log('Forecast cannot be displayed!');
+        showError('Forecast cannot be displayed!');
+        return;
+    }
     const now = new Date();
     const currentHour = now.getHours();
 
@@ -41,10 +90,15 @@ export function displayForecast(forecast) {
 }
 
 // Additional helper functions for UI
-export function showLoadingIndicator() {
-    current_weather.innerHTML = `<span id="loading">Loading...</span>`;
+// display.js
+export function showLoadingIndicator(targetElement) {
+    if (targetElement) {
+        targetElement.innerHTML = `<span id="loading">Loading...</span>`;
+    }
 }
 
-export function showError(message) {
-    current_weather.innerHTML = `<span class="error">${message}</span>`;
+export function showError(message, targetElement) {
+    if (targetElement) {
+        targetElement.innerHTML = `<span class="error">${message}</span>`;
+    }
 }
