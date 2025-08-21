@@ -1,22 +1,23 @@
-import {current_weather, location} from '../home/main-index.js';
-import {CurrentWeatherForecast, LocationForecast} from './main-weather.js';
+const current_weather = document.getElementById('current_weather');
+const location = document.getElementById('location');
+const LocationForecast = document.getElementById('location-forecast');
+const CurrentWeatherForecast = document.getElementById('current-weather-forecast');
 
-
-export function setBackground(img, target){
-    if(target && target.id != 'current_weather'){
-        document.body.style.backgroundImage =  `url('${img}')`;
+export function setBackground(img, target) {
+    if (target && target.id != 'current_weather') {
+        document.body.style.backgroundImage = `url('${img}')`;
     }
 }
 
-export function displayLocation(country, countryCode, city){
+export function displayLocation(country, countryCode, city) {
     if (!location) {
         return;
     }
     const locationMsg = `Greetings to the visitor from ${city}, ${country}!`;
-    location.textContent = locationMsg ;
+    location.textContent = locationMsg;
 }
 
-export function displayCity(city){
+export function displayCity(city) {
     if (!LocationForecast) {
         return;
     }
@@ -43,7 +44,7 @@ export function displayCurrentWeather(temperature, condition, icon, timestamp) {
     `;
 }
 
-export function CurrentWeatherInfo(temperature, condition, icon, timestamp){
+export function CurrentWeatherInfo(temperature, condition, icon, timestamp) {
     if (!CurrentWeatherForecast) {
         console.log('Current weather cannot be displayed!');
         showError('Current weather cannot be displayed!');
@@ -64,7 +65,7 @@ export function CurrentWeatherInfo(temperature, condition, icon, timestamp){
 }
 
 export function displayForecast(forecast) {
-      if (!forecast) {
+    if (!forecast) {
         console.log('Forecast cannot be displayed!');
         showError('Forecast cannot be displayed!');
         return;
@@ -74,7 +75,7 @@ export function displayForecast(forecast) {
 
     // Filter the hourly data to start from the current hour
     const futureHours = hourlyData.filter(hour => new Date(hour.timestamp).getHours() >= currentHour);
-    
+
     let forecastHTML = '';
     futureHours.forEach(hour => {
         forecastHTML += `

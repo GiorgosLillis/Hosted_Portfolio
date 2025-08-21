@@ -1,6 +1,6 @@
 // main-weather.js
-import { getLocation, fetchWeather, WEATHER_CACHE_KEY } from './weather-api.js';
-import { displayCity, CurrentWeatherInfo, showError, showLoadingIndicator, setBackground } from './display.js';
+import { getLocation, fetchWeather, WEATHER_CACHE_KEY } from '/js/weather-api.js';
+import { displayCity, CurrentWeatherInfo, showError, showLoadingIndicator, setBackground } from '/js/display.js';
 
 export const LocationForecast = document.getElementById('location-forecast');
 export const CurrentWeatherForecast = document.getElementById('current-weather-forecast');
@@ -15,7 +15,7 @@ async function init() {
 
         const cachedWeather = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
         const currentTime = new Date().getTime();
-        
+
         if (cachedWeather && (currentTime - cachedWeather.timestamp < HOUR_IN_MILLIS)) {
             console.log("Weather info is fresh, displaying from localStorage");
         } else {
@@ -24,10 +24,10 @@ async function init() {
         }
 
         const freshWeather = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
-         if (freshWeather && freshWeather.current) {
+        if (freshWeather && freshWeather.current) {
             setBackground(freshWeather.current.img, CurrentWeatherForecast);
             displayCity(locationInfo.city);
-            CurrentWeatherInfo(freshWeather.current.temperature, freshWeather.current.condition, freshWeather.current.icon, freshWeather.timestamp, freshWeather.current.img );
+            CurrentWeatherInfo(freshWeather.current.temperature, freshWeather.current.condition, freshWeather.current.icon, freshWeather.timestamp, freshWeather.current.img);
         } else {
             showError("Weather data is not available.", CurrentWeatherForecast);
         }

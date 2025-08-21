@@ -3,10 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" 
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" 
-    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" 
-    crossorigin="anonymous">
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
@@ -17,33 +19,55 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.css"
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single:wght@100..900&family=Manrope&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/list.css">
-    <link rel="stylesheet" href="../css/styles.css">
-    <script src="../js/list/basic-controls-list.js" type="module" defer></script>
-    <script src="../js/common/effects.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single:wght@100..900&family=Manrope&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/list.css" />
+    <link rel="stylesheet" href="../css/styles.css" />
+    <script src="/js/basic-controls-list.js" type="module" defer></script>
+    <script src="/js/effects.js" defer></script>
     <title>SHOPPING LIST</title>
-    <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/icons/list-check.svg" type="image/svg+xml">
+    <link
+      rel="icon"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/icons/list-check.svg"
+      type="image/svg+xml"
+    />
 
-    <meta name="title" content="Shopping List App - Manage Your Groceries Easily">
-    <meta name="description" content="A simple and intuitive web-based shopping list application to help you keep track of your groceries and daily needs. Save, reset, download, and upload your lists.">
-    <meta name="keywords" content="shopping list, groceries, to-do list, web app, list manager, online shopping list">
-    <meta name="author" content="Giorgos Lillis"> 
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="../backgrounds/list-preview.png"/>
-    <meta property="og:url" content="https://www.giorgoslillis.com/list.html"> 
-    <meta property="og:title" content="Shopping List App - Manage Your Groceries Easily">
-    <meta property="og:description" content="A simple and intuitive web-based shopping list application to help you keep track of your groceries and daily needs. Save, reset, download, and upload your lists.">
+    <meta
+      name="title"
+      content="Shopping List App - Manage Your Groceries Easily"
+    />
+    <meta
+      name="description"
+      content="A simple and intuitive web-based shopping list application to help you keep track of your groceries and daily needs. Save, reset, download, and upload your lists."
+    />
+    <meta
+      name="keywords"
+      content="shopping list, groceries, to-do list, web app, list manager, online shopping list"
+    />
+    <meta name="author" content="Giorgos Lillis" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="../backgrounds/list-preview.png" />
+    <meta property="og:url" content="https://www.giorgoslillis.com/list.html" />
+    <meta
+      property="og:title"
+      content="Shopping List App - Manage Your Groceries Easily"
+    />
+    <meta
+      property="og:description"
+      content="A simple and intuitive web-based shopping list application to help you keep track of your groceries and daily needs. Save, reset, download, and upload your lists."
+    />
   </head>
 
-  <body class="theme-default mb-5 pb-4"> 
-      <header>
-        <nav
-          id="navbar"
-          class="navbar navbar-expand-lg fixed-top d-flex align-items-end"
-        >
+  <body class="theme-default mb-5 pb-4">
+    <header>
+      <nav
+        id="navbar"
+        class="navbar navbar-expand-lg fixed-top d-flex align-items-end"
+      >
         <section class="container-fluid">
           <a
             class="navbar-toggler-text fs-2 d-lg-none"
@@ -57,194 +81,253 @@
           </a>
           <div class="collapse navbar-collapse" id="navbarColor">
             <ul class="navbar-nav">
-                <li class="nav-item navbar-brand">
-                  <button
-                    type="button"
-                    class="btn fs-1"
-                    onclick="setTheme('light')"
-                    aria-label="Light Mode"
-                  >
-                    Light Mode
-                  </button>
-                </li>
-                <li class="nav-item navbar-brand">
-                  <button
-                    type="button"
-                    class="btn fs-1"
-                    onclick="setTheme('dark')"
-                    aria-label="Dark Mode"
-                  >
-                    Dark Mode
-                  </button>
-                </li>
-                <li class="nav-item navbar-brand">
-                  <button
-                    type="button"
-                    class="btn fs-1"
-                    onclick="setTheme('default')"
-                    aria-label="Default Mode"
-                  >
-                    Default
-                  </button>
-                </li>
-              </ul>
-            </div>
-            <a
-              class="navbar-toggler-text fs-2 d-lg-none"
-              data-bs-toggle="collapse"
-              data-bs-target="#navbarNav"
-              aria-controls="navbarNav"
-              aria-expanded="false"
-              aria-label="Toggle navigation"
+              <li class="nav-item navbar-brand">
+                <button
+                  type="button"
+                  class="btn fs-1"
+                  onclick="setTheme('light')"
+                  aria-label="Light Mode"
+                >
+                  Light Mode
+                </button>
+              </li>
+              <li class="nav-item navbar-brand">
+                <button
+                  type="button"
+                  class="btn fs-1"
+                  onclick="setTheme('dark')"
+                  aria-label="Dark Mode"
+                >
+                  Dark Mode
+                </button>
+              </li>
+              <li class="nav-item navbar-brand">
+                <button
+                  type="button"
+                  class="btn fs-1"
+                  onclick="setTheme('default')"
+                  aria-label="Default Mode"
+                >
+                  Default
+                </button>
+              </li>
+            </ul>
+          </div>
+          <a
+            class="navbar-toggler-text fs-2 d-lg-none"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNav"
+            aria-controls="navbarNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            Content ▼
+          </a>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+              <li class="nav-item navbar-brand">
+                <a class="nav-link fs-1" href="/" aria-label="Go to home"
+                  >Home</a
+                >
+              </li>
+              <li class="nav-item navbar-brand">
+                <a
+                  class="nav-link fs-1"
+                  href="weather.html"
+                  aria-label="Go to weather"
+                  >Weather</a
+                >
+              </li>
+            </ul>
+          </div>
+        </section>
+      </nav>
+    </header>
+
+    <main
+      class="container mt-5 pt-5 d-flex flex-column align-items-center justify-content-center"
+      data-aos="fade-in"
+      data-aos-duration="2000"
+    >
+      <form
+        class="my-5 p-0 item-input container col-12 col-md-8 col-lg-6 d-flex flex-column justify-content-center align-items-center"
+      >
+        <h1 class="p-0 mb-4 text-center">SHOPPING LIST</h1>
+        <div
+          class="row p-0 mb-3 w-100 d-flex justify-content-around align-items-center"
+          id="list-form"
+        >
+          <div class="col-6 mb-3">
+            <label class="form-label mb-0" for="category"
+              ><h2>Category</h2></label
             >
-              Content ▼
-            </a>
-            <div class="collapse navbar-collapse" id="navbarNav">
-              <ul class="navbar-nav ms-auto">
-                <li class="nav-item navbar-brand">
-                  <a
-                    class="nav-link fs-1"
-                    href="/"
-                    aria-label="Go to home"
-                    >Home</a
-                  >
-                </li>
-                 <li class="nav-item navbar-brand">
-                  <a
-                    class="nav-link fs-1"
-                    href="weather.html"
-                    aria-label="Go to weather"
-                    >Weather</a
-                  >
-                </li>
-              </ul>
-            </div>
-          </section>
-        </nav>
-      </header>
-
-      <main 
-        class="container mt-5 pt-5 d-flex flex-column align-items-center justify-content-center"
-        data-aos="fade-in"
-        data-aos-duration="2000"
-      > 
-        <form class="my-5 p-0 item-input container col-12 col-md-8 col-lg-6 d-flex flex-column justify-content-center align-items-center">
-            <h1 class="p-0 mb-4 text-center">SHOPPING LIST</h1>
-            <div class="row p-0 mb-3 w-100 d-flex justify-content-around align-items-center" id="list-form">
-              <div class="col-6 mb-3">
-                <label class="form-label mb-0" for="category"><h2>Category</h2></label>
-                <select class="form-select" id="category" aria-label="Category">
-                  <option value="">Select Category</option>
-                  <option value="Produce">Produce</option>
-                  <option value="Dairy">Dairy</option>
-                  <option value="Meat">Meat</option>
-                  <option value="Seafood">Seafood</option>
-                  <option value="Bakery">Bakery</option>
-                  <option value="Pantry">Pantry</option>
-                  <option value="Frozen">Frozen</option>
-                  <option value="Beverages">Beverages</option>
-                  <option value="Snacks">Snacks</option>
-                  <option value="Household">Household</option>
-                  <option value="Personal Care">Personal Care</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div class="col-6 mb-3">
-                  <label for="item" class="form-label mb-0"><h2>Item on cart</h2></label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="item"
-                    placeholder="Write your item here"
-                    aria-label= "Item on cart"
-                  />
-                </div>
-                <div class="col-6 col-md-3 mb-3">
-                  <label for="quantity" class="form-label mb-0"><h2>Quantity</h2></label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    id="quantity"
-                    aria-label="Quantity"
-                    placeholder="e.g. 2.5"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div class="col-6 col-md-3 mb-3">
-                  <label for="unit" class="form-label mb-0"><h2>Unit</h2></label>
-                  <select class="form-select" id="unit" aria-label="Unit">
-                      <option value="">Unit</option> 
-                      <option value="pcs">Pcs</option>
-                      <option value="kg">Kg</option>
-                      <option value="g">G</option>
-                      <option value="L">L</option>
-                      <option value="ml">Ml</option>
-                      <option value="packs">Packs</option>
-                      <option value="boxes">Boxes</option>
-                      <option value="bottles">Bottles</option>
-                      <option value="cans">Cans</option>
-                      <option value="rolls">Rolls</option>
-                      <option value="bags">Bags</option>
-                      <option value="units">Units</option>
-                      <option value="each">Each</option>
-                    </select>
-                </div>
-            </div>
-            <div class="row w-100 d-flex justify-content-center align-items-center mb-3 " >
-              <div class="col-4 d-flex justify-content-center align-items-center">
-                  <button type="button" class="btn btn-sm px-0  filter-btn text-center" id="filterCategory"><p class="d-flex text-center justify-content-center mb-0">Filter by category</p></button>
-              </div>
-              <div class="col-4 d-flex justify-content-center align-items-center">
-                  <button type="button" class="btn btn-sm px-1 filter-btn text-center" id="filterName"><p class="d-flex text-center justify-content-center mb-0">Filter by name</p></button>
-              </div>
-              <div class="col-4 d-flex justify-content-center align-items-center">
-                  <button type="button" class="btn btn-sm px-1  filter-btn text-center" id="filterAll"><p class="d-flex text-center justify-content-center mb-0">Filter by all</p></button>
-              </div>
-            </div>
-        </form>
-
-
-          <section class="row col-12 col-md-8 col-lg-6 row-cols-2 row-cols-md-4 g-0 d-flex justify-content-center align-items-center">
-            <div class="col d-flex justify-content-center align-items-center">
-              <button type="submit" class="btn btn-success my-3 border-3 list-btn text-center " id="submitBtn" aria-label="Add item to the list">
-                Add
-              </button>
-            </div>
-            <div class="col d-flex justify-content-center align-items-center">
-              <button type="reset" class="btn btn-primary my-3 border-3 list-btn text-center " id="resetBtn" aria-label="Reset the list">
-                Reset
-              </button>
-            </div>
-            <div class="col d-flex justify-content-center align-items-center">
-              <button type="button" class="btn btn-danger my-3 border-3 list-btn text-center" id="downloadBtn" aria-label="Download the list">
-                  Download
-              </button>
-            </div>
-            <div class="col d-flex justify-content-center align-items-center">
-              <button type="button" class="btn btn-info my-3 border-3 list-btn text-center" id="uploadBtn" aria-label="Upload a list">
-                Upload
-              </button>
-            </div>
-          </section>
-          <div class="row d-flex text-center">
-              <h3 class="text-danger" id="fileInfo"></h3>
-              <h3 class="text-success" id="successMessage"></h3>
-              <h3 class="text-danger" id="errorMessage"></h3> 
+            <select class="form-select" id="category" aria-label="Category">
+              <option value="">Select Category</option>
+              <option value="Produce">Produce</option>
+              <option value="Dairy">Dairy</option>
+              <option value="Meat">Meat</option>
+              <option value="Seafood">Seafood</option>
+              <option value="Bakery">Bakery</option>
+              <option value="Pantry">Pantry</option>
+              <option value="Frozen">Frozen</option>
+              <option value="Beverages">Beverages</option>
+              <option value="Snacks">Snacks</option>
+              <option value="Household">Household</option>
+              <option value="Personal Care">Personal Care</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
-          
-          <section class="row col-12 col-md-8 col-lg-6 d-flex flex-column justify-content-center align-items-center">
-            <ul class="list-group my-2 col-12 col-md-8 px-0" id="displayList"></ul>
-          </section>
-        
-      </main>
-      <div class="d-none d-lg-flex justify-content-left align-items-center fixed-bottom" id="time">
-          <div class="text-center d-flex mx-5 my-0">
-            <h2 class="fs-5 mb-0" id="current-date"></h2>
+          <div class="col-6 mb-3">
+            <label for="item" class="form-label mb-0"
+              ><h2>Item on cart</h2></label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="item"
+              placeholder="Write your item here"
+              aria-label="Item on cart"
+            />
           </div>
-          <div class="text-center d-flex mx-5 my-0">
-            <h2 class="fs-5 mb-0" id="current-time"></h2>
+          <div class="col-6 col-md-3 mb-3">
+            <label for="quantity" class="form-label mb-0"
+              ><h2>Quantity</h2></label
+            >
+            <input
+              type="number"
+              class="form-control"
+              id="quantity"
+              aria-label="Quantity"
+              placeholder="e.g. 2.5"
+              min="0"
+              step="0.01"
+            />
           </div>
+          <div class="col-6 col-md-3 mb-3">
+            <label for="unit" class="form-label mb-0"><h2>Unit</h2></label>
+            <select class="form-select" id="unit" aria-label="Unit">
+              <option value="">Unit</option>
+              <option value="pcs">Pcs</option>
+              <option value="kg">Kg</option>
+              <option value="g">G</option>
+              <option value="L">L</option>
+              <option value="ml">Ml</option>
+              <option value="packs">Packs</option>
+              <option value="boxes">Boxes</option>
+              <option value="bottles">Bottles</option>
+              <option value="cans">Cans</option>
+              <option value="rolls">Rolls</option>
+              <option value="bags">Bags</option>
+              <option value="units">Units</option>
+              <option value="each">Each</option>
+            </select>
+          </div>
+        </div>
+        <div
+          class="row w-100 d-flex justify-content-center align-items-center mb-3"
+        >
+          <div class="col-4 d-flex justify-content-center align-items-center">
+            <button
+              type="button"
+              class="btn btn-sm px-0 filter-btn text-center"
+              id="filterCategory"
+            >
+              <p class="d-flex text-center justify-content-center mb-0">
+                Filter by category
+              </p>
+            </button>
+          </div>
+          <div class="col-4 d-flex justify-content-center align-items-center">
+            <button
+              type="button"
+              class="btn btn-sm px-1 filter-btn text-center"
+              id="filterName"
+            >
+              <p class="d-flex text-center justify-content-center mb-0">
+                Filter by name
+              </p>
+            </button>
+          </div>
+          <div class="col-4 d-flex justify-content-center align-items-center">
+            <button
+              type="button"
+              class="btn btn-sm px-1 filter-btn text-center"
+              id="filterAll"
+            >
+              <p class="d-flex text-center justify-content-center mb-0">
+                Filter by all
+              </p>
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <section
+        class="row col-12 col-md-8 col-lg-6 row-cols-2 row-cols-md-4 g-0 d-flex justify-content-center align-items-center"
+      >
+        <div class="col d-flex justify-content-center align-items-center">
+          <button
+            type="submit"
+            class="btn btn-success my-3 border-3 list-btn text-center"
+            id="submitBtn"
+            aria-label="Add item to the list"
+          >
+            Add
+          </button>
+        </div>
+        <div class="col d-flex justify-content-center align-items-center">
+          <button
+            type="reset"
+            class="btn btn-primary my-3 border-3 list-btn text-center"
+            id="resetBtn"
+            aria-label="Reset the list"
+          >
+            Reset
+          </button>
+        </div>
+        <div class="col d-flex justify-content-center align-items-center">
+          <button
+            type="button"
+            class="btn btn-danger my-3 border-3 list-btn text-center"
+            id="downloadBtn"
+            aria-label="Download the list"
+          >
+            Download
+          </button>
+        </div>
+        <div class="col d-flex justify-content-center align-items-center">
+          <button
+            type="button"
+            class="btn btn-info my-3 border-3 list-btn text-center"
+            id="uploadBtn"
+            aria-label="Upload a list"
+          >
+            Upload
+          </button>
+        </div>
+      </section>
+      <div class="row d-flex text-center">
+        <h3 class="text-danger" id="fileInfo"></h3>
+        <h3 class="text-success" id="successMessage"></h3>
+        <h3 class="text-danger" id="errorMessage"></h3>
       </div>
+
+      <section
+        class="row col-12 col-md-8 col-lg-6 d-flex flex-column justify-content-center align-items-center"
+      >
+        <ul class="list-group my-2 col-12 col-md-8 px-0" id="displayList"></ul>
+      </section>
+    </main>
+    <div
+      class="d-none d-lg-flex justify-content-left align-items-center fixed-bottom"
+      id="time"
+    >
+      <div class="text-center d-flex mx-5 my-0">
+        <h2 class="fs-5 mb-0" id="current-date"></h2>
+      </div>
+      <div class="text-center d-flex mx-5 my-0">
+        <h2 class="fs-5 mb-0" id="current-time"></h2>
+      </div>
+    </div>
   </body>
 </html>
