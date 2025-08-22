@@ -33,4 +33,5 @@ async function init() {
         showError("Failed to get location or weather data.", current_weather);
     }
 }
-init();
+
+document.addEventListener('DOMContentLoaded', init);
