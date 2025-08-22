@@ -71,13 +71,11 @@ module.exports = async (req, res) => {
             res1.json(),
             res2.json()
         ]);
+        if(!weatherData || !weatherData.hourly || !weatherData.daily){
+            throw new Error('Incomplete weather data received from API');
+        } 
 
-        function isDayTime(timestamp) {
-            const hour = new Date(timestamp).getHours();
-            return hour >= 6 && hour < 20;
-        }
-
-        // Find the index of the hourly entry closest to now
+        // Find the index of the hourly entry closest to the current time
         const now = Date.now();
         const hourlyTimestamps = weatherData.hourly.time.map(ts => new Date(ts).getTime());
         let closestIndex = 0;
@@ -94,14 +92,10 @@ module.exports = async (req, res) => {
             const hasAirQualityData = index < 120;
             const code = weatherData.hourly.weather_code[index];
             const condition = weatherCodeMapping[code];
-            let isDay = weatherData.hourly.is_day[index];
+                
+            // Use the is_day value from the API directly
+            const isDay = weatherData.hourly.is_day[index];
             
-            if (index === closestIndex) {
-                const localIsDayTime = isDayTime(timestamp);
-                if (!isDay && localIsDayTime) {
-                    isDay = 1;
-                }
-            }
             return {
                 timestamp,
                 time: new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -132,7 +126,7 @@ module.exports = async (req, res) => {
             tempMin: weatherData.daily.temperature_2m_min[index],
         }));
 
-        // Use the closestIndex for current weather
+        // Use the index for current weather
         const isDayCurrent = hourlyInfo[closestIndex].isDay;
         const currentCode = weatherData.hourly.weather_code[closestIndex];
         const currentCondition = weatherCodeMapping[currentCode];
@@ -150,6 +144,7 @@ module.exports = async (req, res) => {
                 temperature: weatherData.hourly.temperature_2m[closestIndex],
                 apparentTemperature: weatherData.hourly.apparent_temperature[closestIndex],
                 condition: currentCondition.condition,
+                timestamp: weatherData.hourly.time[closestIndex],
                 icon: isDayCurrent ? currentCondition.dayIcon : currentCondition.nightIcon,
                 img: isDayCurrent ? currentCondition.dayImg : currentCondition.nightImg,
                 windSpeed: weatherData.hourly.wind_speed_10m[closestIndex],

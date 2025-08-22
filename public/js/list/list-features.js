@@ -1,4 +1,4 @@
-import {updateItemNumbers, List, list_items} from "./basic-controls-list.js";
+import { updateItemNumbers, List, list_items } from "/js/basic-controls-list.js";
 
 
 // --- DRAG AND DROP LOGIC ---
@@ -36,7 +36,7 @@ export function addDragAndDropListeners(listItem) {
 
     listItem.addEventListener('dragover', (e) => {
         e.preventDefault(); // Crucial: Allows a drop to happen
-         if (e.dataTransfer && typeof e.dataTransfer.effectAllowed !== 'undefined') {
+        if (e.dataTransfer && typeof e.dataTransfer.effectAllowed !== 'undefined') {
             e.dataTransfer.setData('text/plain', listItem.dataset.item || '');
         }
 
@@ -48,9 +48,9 @@ export function addDragAndDropListeners(listItem) {
             const boundingBox = targetLi.getBoundingClientRect();
             const offset = boundingBox.y + (boundingBox.height / 2); // Midpoint of the target li
 
-             if (e.clientY < offset) {
-               targetLi.style.boxShadow = 'inset 0 3px 0 0 var(--bs-effect)';
-               targetLi.style.borderBottom = '';
+            if (e.clientY < offset) {
+                targetLi.style.boxShadow = 'inset 0 3px 0 0 var(--bs-effect)';
+                targetLi.style.borderBottom = '';
             } else {
                 targetLi.style.boxShadow = 'inset 0 -3px 0 0 var(--bs-effect)';
                 targetLi.style.borderTop = '';
@@ -91,7 +91,7 @@ export function addDragAndDropListeners(listItem) {
     // --- Touch Drag Events ---
     listItem.addEventListener('touchstart', (e) => {
         // Only proceed if one finger is used for drag (multi-touch could be zoom/scroll)
-        
+
         if (e.touches.length === 1) {
             // Start a timer to distinguish between tap and drag
             if (longPressTimer) {
@@ -100,7 +100,7 @@ export function addDragAndDropListeners(listItem) {
 
             longPressTimer = setTimeout(() => {
                 currentDraggedElement = listItem;
-                listItem.classList.add('dragging'); 
+                listItem.classList.add('dragging');
                 e.preventDefault();
             }, 400); // 400ms threshold for drag vs tap
         }
@@ -115,14 +115,14 @@ export function addDragAndDropListeners(listItem) {
         const touch = e.touches[0];
         const clientX = touch.clientX;
         const clientY = touch.clientY;
-        
+
         // Find the element directly under the touch point
         const targetElement = document.elementFromPoint(clientX, clientY);
-        const newTouchDropTarget =  targetElement.closest('li');
+        const newTouchDropTarget = targetElement.closest('li');
 
-   
+
         cleanUpDragOverStyles();
-        
+
         if (newTouchDropTarget && newTouchDropTarget !== currentDraggedElement) {
             // Apply drag-over styling based on touch position
             const boundingBox = newTouchDropTarget.getBoundingClientRect();
@@ -136,23 +136,23 @@ export function addDragAndDropListeners(listItem) {
                 newTouchDropTarget.style.borderTop = '';
             }
             currentTouchDropTarget = newTouchDropTarget;
-        } 
+        }
         clearTimeout(longPressTimer);
         longPressTimer = null;
-    }); 
-    
+    });
+
     listItem.addEventListener('touchend', (e) => {
 
-       
+
         // Clear drag timer if touch ends quickly (it's a tap, not a drag)
-         if (longPressTimer) { 
-            clearTimeout(longPressTimer); 
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
             longPressTimer = null;
             return;
         }
-       
+
         if (!currentDraggedElement) return;
-         
+
         e.preventDefault(); // Prevent default action on touchend
 
         currentDraggedElement.classList.remove('dragging');

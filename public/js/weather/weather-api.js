@@ -91,7 +91,7 @@ export async function fetchWeather(locationInfo) {
             current: weatherData.current,
             hourly: weatherData.hourly,
             daily: weatherData.daily,
-            timestamp: new Date().getTime(),
+            time: Date.now(),
             city: locationInfo.city,
             country: locationInfo.country,
         };
