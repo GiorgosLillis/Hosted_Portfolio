@@ -5,24 +5,14 @@
     { "src": "api/email.js", "use": "@vercel/node" },
     { "src": "api/weather.js", "use": "@vercel/node" },
     { "src": "api/location.js", "use": "@vercel/node" },
-    { "src": "public/**/*", "use": "@vercel/static" }
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build"
+    }
   ],
   "routes": [
-    { "src": "/api/send-email", "dest": "/api/email.js"},
+    { "src": "/api/send-email", "dest": "/api/email.js" },
     { "src": "/api/weather", "dest": "/api/weather.js" },
-    { "src": "/api/location", "dest": "/api/location.js" },
-    { "src": "/css/(.*)", "dest": "/public/css/$1" },
-    { "src": "/js/effects.js", "dest": "/public/js/common/effects.js" },
-    { "src": "/js/handler.js", "dest": "/public/js/home/handler.js" },
-    { "src": "/js/main-index.js", "dest": "/public/js/home/main-index.js" },
-    { "src": "/js/basic-controls-list.js", "dest": "/public/js/list/basic-controls-list.js" },
-    { "src": "/js/list-features.js", "dest": "/public/js/list/list-features.js" },
-    { "src": "/js/memory-handle.js", "dest": "/public/js/list/memory-handle.js" },
-    { "src": "/js/display.js", "dest": "/public/js/weather/display.js" },
-    { "src": "/js/weather-api.js", "dest": "/public/js/weather/weather-api.js" },
-    { "src": "/js/main-weather.js", "dest": "/public/js/weather/main-weather.js" },
-    { "src": "/", "dest": "public/pages/index.html" },
-    { "src": "/list.html", "dest": "public/pages/list.html" },
-    { "src": "/weather.html", "dest": "public/pages/weather.html" }
+    { "src": "/api/location", "dest": "/api/location.js" }
   ]
 }

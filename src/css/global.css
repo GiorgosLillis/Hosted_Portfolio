@@ -1,0 +1,52 @@
+ body{
+    box-sizing: border-box;
+    font-family: "Tinos", system-ui;
+    font-optical-sizing: auto;
+    font-style: normal;
+    font-weight: 400;
+    font-variation-settings:
+      "slnt" 0,
+      "CRSV" 0.5,
+      "ELSH" 0,
+      "ELXP" 0;
+    background-size: cover;
+    background-position: center; 
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+  
+  .theme-default{
+    --bs-secondary: #D99F0D;
+    --bs-primary: #060642;
+    --bs-primary-light: #200242;
+    --bs-secondary-light: #fcbd1dd8;
+    --bs-effect: 	#75B6FF;
+    --bs-effect-secondary: #060642;
+    --bs-text: azure; 
+    --bs-text-secondary: #D99F0D;
+    --image: url('/backgrounds/graph-paper-blue.png');
+  }
+
+  .theme-dark{
+    --bs-secondary: #06682f;
+    --bs-primary: #0d0d0d;
+    --bs-primary-light: #20202083;
+    --bs-secondary-light: #00b64c8c;
+    --bs-effect: #0adf63;
+    --bs-effect-secondary: #222222;
+    --bs-text: #babbbb;
+    --bs-text-secondary: #058038;
+    --image: url('/backgrounds/graph-paper-dark.png');
+  }
+
+ .theme-light{
+    --bs-secondary: #E4DCDC;
+    --bs-primary: #f0ffff;
+    --bs-primary-light: white;
+    --bs-secondary-light: #d6c8c8;
+    --bs-effect: red;
+    --bs-effect-secondary: #f0ffff;
+    --bs-text: #740B20;
+    --bs-text-secondary: black;
+    --image: url('/backgrounds/graph-paper-white.png');
+  }

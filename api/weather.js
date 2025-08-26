@@ -1,5 +1,5 @@
-const PathtoImg = 'public/assets/weather-images/'
-const PathtoIcons = 'public/assets/weather-icons/';
+const PathtoImg = 'assets/weather-images/'
+const PathtoIcons = 'assets/weather-icons/';
         const weatherCodeMapping = {
             0: { condition: 'Clear sky', dayIcon: PathtoIcons + 'clear-day.svg', nightIcon: PathtoIcons + 'clear-night.svg', dayImg: PathtoImg + 'clear-day.jpg', nightImg: PathtoImg + 'clear-night.jpg'},
             1: { condition: 'Mainly clear', dayIcon: PathtoIcons + 'partly-cloudy-day.svg', nightIcon: PathtoIcons + 'partly-cloudy-night.svg', dayImg: PathtoImg + 'clouds-day.jpg', nightImg: PathtoImg + 'clouds-night.jpg'  },

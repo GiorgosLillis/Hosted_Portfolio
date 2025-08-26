@@ -1,0 +1,19 @@
+
+body{
+    background-repeat: no-repeat;
+}
+
+header{
+  height: 15vh;
+}
+
+h2, .nav-link{
+  color: aliceblue;
+}
+
+#current-weather-forecast img{
+   max-width: 50px;
+   max-height: 50px;
+}
+
+
