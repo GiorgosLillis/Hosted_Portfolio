@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Import the components from the new file.
-import { CurrentWeather, LoadingIndicator, ErrorMessage, setBackgroundImage } from './display.jsx';
-import { fetchWeather, getLocation, getCachedWeather } from './weather-api.js';
+import {LoadingIndicator, ErrorMessage, setBackgroundImage } from './display.jsx';
+import CurrentWeather from './current-weather.jsx';
+import { fetchWeather, getLocation, getCachedWeather } from '../weather/weather-api.js';
+import WeatherForecast  from './daily-card.jsx';
+import ViewToggle from './view-toggle.jsx';
+import  HourlyForecast  from './hourly-card.jsx';
 
 // Main application component
 function WeatherApp() {
@@ -12,6 +16,7 @@ function WeatherApp() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [lastUpdate, setLastUpdate] = useState(null);
+    const [viewMode, setViewMode] = useState('daily');
 
     // Import the weather API function
 
@@ -28,12 +33,13 @@ function WeatherApp() {
                     // Fetch weather data from API
                     const cachedWeather = getCachedWeather();
                     if (cachedWeather){
-                        console.log('Using cached weather data');
+                        console.log('Weather data is fresh, using from localStorage');
                         setLocationInfo(location);
                         setWeatherData(cachedWeather);
                         setLastUpdate(new Date(cachedWeather.time));
                         return;
                     }
+
                     const weatherData = await fetchWeather(location);
                     if (!weatherData) {
                         throw new Error("Unable to fetch weather data");
@@ -70,18 +76,26 @@ function WeatherApp() {
 
     if (!weatherData) {
         return (
-            <div className="alert alert-warning">
+            <div className="text-danger text-center fs-3">
                 No weather data available
             </div>
         );
     }
 
     return (
+        <>
         <CurrentWeather
             locationInfo={locationInfo}
             weatherData={weatherData}
             lastUpdate={lastUpdate}
         />
+        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+        {viewMode === 'daily' ? (
+            <WeatherForecast dailyForecast={weatherData.daily} />
+        ) : (
+            <HourlyForecast hourlyForecast={weatherData.hourly} />
+        )}
+         </>
     );
 }
 

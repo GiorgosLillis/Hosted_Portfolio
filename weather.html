@@ -42,14 +42,13 @@
     <meta property="og:type" content="website"/>
     <meta property="og:url" content="https://www.giorgoslillis.com/weather.html"/>
 </head>
-  <body class="vh-100">
+  <body class="vh-100 d-flex flex-column">
       <header>
       <nav
           id="navbar"
           class="navbar navbar-expand-lg fixed-top d-flex align-items-end"
       >
           <div class="container-fluid">
-              
               <ul class="navbar-nav ms-auto">
                   <li class="nav-item navbar-brand">
                       <a
@@ -64,8 +63,10 @@
       </nav>
   </header>
 
-
-  <div id="weather-app"></div> 
-  <script type="module" src="src/js/weather/weather-react.jsx" defer></script>
+   <main class="container p-0 ">
+     <div id="weather-app" class="d-flex flex-column"></div>
+   </main>
+   
+  <script type="module" src="src/js/forecast/forecast.jsx" defer></script>
 </body>
 </html>

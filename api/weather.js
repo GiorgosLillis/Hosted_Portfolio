@@ -31,6 +31,21 @@ const PathtoIcons = 'assets/weather-icons/';
             99: { condition: 'Thunderstorm with heavy hail', dayIcon: PathtoIcons + 'hail.svg', nightIcon: PathtoIcons + 'hail-night.svg', dayImg: PathtoImg + 'thunder.jpg', nightImg: PathtoImg + 'thunder.jpg'  },
         };
 
+function getNoonInfo(currentDate, hourlyTimes, hourlyWeatherCodes){
+    const noonIndex = hourlyTimes.findIndex(hourlyTime => {
+        const hourlyDate = new Date(hourlyTime);
+        return hourlyDate.getDate() === currentDate.getDate() && hourlyDate.getHours() === 12;
+    });
+
+    if (noonIndex !== -1) {
+        const noonWeatherCode = hourlyWeatherCodes[noonIndex];
+        const dayInfo = weatherCodeMapping[noonWeatherCode];
+        return dayInfo || null;
+    }
+    return null;
+
+}
+
 module.exports = async (req, res) => {
     const lat = parseFloat(req.query.lat);
     const lon = parseFloat(req.query.lon);
@@ -95,10 +110,10 @@ module.exports = async (req, res) => {
                 
             // Use the is_day value from the API directly
             const isDay = weatherData.hourly.is_day[index];
-            
+
             return {
                 timestamp,
-                time: new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                time: new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'}),
                 day: new Date(timestamp).toLocaleDateString(),
                 temp: weatherData.hourly.temperature_2m[index],
                 apparentTemperature: weatherData.hourly.apparent_temperature[index],
@@ -120,11 +135,21 @@ module.exports = async (req, res) => {
             };
         });
 
-        const dailyInfo = weatherData.daily.time.map((date, index) => ({
-            date,
-            tempMax: weatherData.daily.temperature_2m_max[index],
-            tempMin: weatherData.daily.temperature_2m_min[index],
-        }));
+        const dailyInfo = weatherData.daily.time.map((date, index) => {
+            const currentDate = new Date(date);
+            const noonInfo = getNoonInfo(currentDate, weatherData.hourly.time, weatherData.hourly.weather_code);
+            const noonCondition = noonInfo ? noonInfo.condition : 'Unknown';
+            const noonIcon = noonInfo ? noonInfo.dayIcon : PathtoIcons + 'unknown.svg';
+
+            return {
+                index,
+                date,
+                condition: noonCondition,
+                icon: noonIcon,
+                tempMax: weatherData.daily.temperature_2m_max[index],
+                tempMin: weatherData.daily.temperature_2m_min[index],
+            }
+        });
 
         // Use the index for current weather
         const isDayCurrent = hourlyInfo[closestIndex].isDay;
@@ -157,7 +182,6 @@ module.exports = async (req, res) => {
             
             daily: dailyInfo,
         };
-        console.log(weatherInfo.current);
         res.status(200).json(weatherInfo);
     } catch (error) {
         console.error('Error fetching weather data: ' + error);

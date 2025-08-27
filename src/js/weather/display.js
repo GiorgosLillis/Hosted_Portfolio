@@ -17,8 +17,6 @@ export function displayLocation(country, city) {
 
 // Current weather display functions
 export function displayCurrentWeather(temperature, condition, icon, time) {
-
-    
     const weatherMsg = `
         <div class="col-12 col-md-6 d-flex align-items-center justify-content-center py-1 mb-2 mb-md-0">
             <img src="${icon}" alt="${condition}" class="weather-icon me-3 py-1 px-0">
