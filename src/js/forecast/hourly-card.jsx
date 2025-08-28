@@ -1,13 +1,59 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './card.css'
 
-export const HourlyForecastCard = ({ hour }) => {
+const HourDetails = ({ hour, onClose }) => {
+    if (!hour) return null;
+
+    const getWindDirection = (degrees) => {
+        if (degrees >= 337.5 || degrees < 22.5) {
+            return 'N';
+        } else if (degrees >= 22.5 && degrees < 67.5) {
+            return 'NE';
+        } else if (degrees >= 67.5 && degrees < 112.5) {
+            return 'E';
+        } else if (degrees >= 112.5 && degrees < 157.5) {
+            return 'SE';
+        } else if (degrees >= 157.5 && degrees < 202.5) {
+            return 'S';
+        } else if (degrees >= 202.5 && degrees < 247.5) {
+            return 'SW';
+        } else if (degrees >= 247.5 && degrees < 292.5) {
+            return 'W';
+        } else { // 292.5 - 337.5
+            return 'NW';
+        }
+    };
+
+    // They might need to be adjusted if the 'hour' object has different property names.
+    return (   
+    <> 
+        <div className='h-100 hour-details '>
+            <button onClick={onClose} className="btn-close btn-close-white" aria-label="Close"></button>
+            <h3 className="mt-3 mb-4 mb-lg-5">{hour.time}</h3>
+            <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start">
+                <li className='hour-detail col-md-4 col-lg-12'><p>Temperature: {hour.temp}°C</p></li>
+                <li className='hour-detail col-md-4 col-lg-12'><p>Feels Like: {hour.apparentTemperature}°C</p></li>
+                <li className='hour-detail col-md-4 col-lg-12'><p>Condition: {hour.condition}</p></li>
+                <li className='hour-detail col-md-4 col-lg-12'><p>Humidity: {hour.humidity}%</p></li>
+                <li className='hour-detail col-md-4 col-lg-12'><p>Wind Direction: {getWindDirection(hour.windDirection)}</p></li>
+                <li className='hour-detail col-md-4 col-lg-12'><p>Wind Speed: {hour.windSpeed} mph</p></li>
+                <li className='hour-detail col-md-4 col-lg-12'><p>UV Index: {hour.uvIndex}</p></li>
+            </ul>
+        </div>
+        
+    </>
+       
+    );
+};
+
+// Individual hourly forecast card component
+export const HourlyForecastCard = ({ hour, onClick }) => { // Added onClick
     if (!hour || !hour.time || !hour.temp || !hour.icon) {
         return <div className="p-4">No hourly weather available.</div>;
     }
 
     return (
-        <div className='col-3 d-flex justify-content-center align-items-center'>
+        <div className='col-3 d-flex justify-content-center align-items-center' onClick={onClick}> {/* Added onClick */}
             <div className="card text-white card-daily mb-3 daily-card col-11 col-xl-9 rounded-3">
                 <div className="card-body text-center py-2 px-0 d-flex flex-column justify-content-center align-items-center">
                     <h5 className="card-title mb-1">{hour.time}</h5>
@@ -28,10 +74,49 @@ export function HourlyForecast({ hourlyForecast}) {
         return <div className="p-4">No hourly forecast available.</div>;
     }
 
-    const visibleCards = 4;
-    const [startIndex, setStartIndex] = React.useState(0);
-    const [touchStartX, setTouchStartX] = React.useState(0);
+    const [selectedHour, setSelectedHour] = useState(null);
 
+    const handleHourClick = (hour) => {
+        setSelectedHour(hour);
+    };
+
+    const handleCloseDetails = () => {
+        setSelectedHour(null);
+    };
+
+    const visibleCards = 4;
+
+    // Start index to show the next 4 hours from current time
+    const [startIndex, setStartIndex] = useState(() => {
+        const currentHour = new Date().getHours();
+        const initialIndex = hourlyForecast.findIndex(
+          (hour) => new Date(hour.timestamp).getHours() > currentHour
+        );
+        if (initialIndex === -1) {
+          return hourlyForecast.length;
+        }
+        return initialIndex;
+    }); 
+
+    // Handlers for next and previous buttons, it skips to the next/previous set of 4 hours
+    const handleNextHours = () => {
+        let i = startIndex + 1;
+        while (i % 4 !== 0 && i < hourlyForecast.length) {
+            i++;
+        }
+        const maxStart = Math.max(0, hourlyForecast.length - visibleCards);
+        setStartIndex(Math.min(Math.max(i, 0), maxStart));
+    };
+
+    const handlePreviousHours = () => {
+        let i = startIndex - 1;
+        while (i > 0 && i % 4 !== 0) {
+            i--;
+        }
+        setStartIndex(i);
+    };
+
+    const [touchStartX, setTouchStartX] = useState(0);
     const handleTouchStart = (e) => {
         setTouchStartX(e.touches[0].clientX);
     };
@@ -42,27 +127,29 @@ export function HourlyForecast({ hourlyForecast}) {
         const swipeThreshold = 50; // Minimum distance for a recognized swipe
 
         if (swipeDistance > swipeThreshold) { // Swiping left (next hours)
-            setStartIndex(prevIndex => Math.min(prevIndex + visibleCards, hourlyForecast.length - visibleCards));
+            handleNextHours();
         } else if (swipeDistance < -swipeThreshold) { // Swiping right (previous hours)
-            setStartIndex(prevIndex => Math.max(0, prevIndex - visibleCards));
+             handlePreviousHours();
         }
     };
 
-    const handleNextHours = () => {
-        setStartIndex(prevIndex => Math.min(prevIndex + visibleCards, hourlyForecast.length - visibleCards));
-    };
+   
 
-    const handlePreviousHours = () => {
-        setStartIndex(prevIndex => Math.max(0, prevIndex - visibleCards));
-    };
-
+    // Define hours to display
     const visibleHours = hourlyForecast.slice(startIndex, startIndex + visibleCards );
-    const currentDayDate = new Date(hourlyForecast[startIndex].timestamp);
+    if (visibleHours.length === 0) {
+        return <div className="p-4">No more hourly forecast for today.</div>;
+    }
+    
+    // Format the display day as "DD/MM/YYYY"
+    const currentDayDate = new Date(visibleHours[0].timestamp);
     const formattedDate = `${currentDayDate.getDate()}/${currentDayDate.getMonth() + 1}/${currentDayDate.getFullYear()}`;
 
+
+    // The hourly forecast section
     return (
         <>  
-            <h2 className='mx-auto'>{formattedDate}</h2>
+            <h2 className='mx-auto mb-0'>{formattedDate}</h2>
             <section className="row d-flex flex-row justify-self-center jusify-content-between align-items-center daily-row my-3 mx-0 px-2">
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-end'>
                     <button 
@@ -76,12 +163,12 @@ export function HourlyForecast({ hourlyForecast}) {
                 
                 </div>
                 <div
-                    className="col-12 col-md-10 col-lg-8 d-flex flex-row overflow-hidden justify-content-center align-items-center gx-5"
+                    className="col-12 col-md-10 col-lg-8 d-flex flex-row overflow-hidden justify-content-center align-items-center gx-5 px-0"
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                 >
                     {visibleHours.map((hour, index) => (
-                        <HourlyForecastCard key={index} hour={hour} />
+                        <HourlyForecastCard key={index} hour={hour} onClick={() => handleHourClick(hour)} />
                     ))}
                 </div>
             <div className='col-1 col-lg-2 d-none d-md-flex justify-content-start'>
@@ -95,6 +182,9 @@ export function HourlyForecast({ hourlyForecast}) {
                     </button>
                 </div>
             </section>
+            <div className="hour-details-container">
+                <HourDetails hour={selectedHour} onClose={handleCloseDetails} />
+            </div>
         </>
         
     );

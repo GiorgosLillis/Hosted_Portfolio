@@ -1,11 +1,18 @@
-.daily-card{
+.daily-card {
     background-color: rgba(199, 197, 197, 0.3);
     backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+}
+
+.daily-card:hover {
+    background-color: rgba(163, 163, 163, 0.5);
+    transform: scale(1.05);
 }
 
 .bi-caret-right-fill, .bi-caret-left-fill{
     width: 30px;
     height: 30px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
 .weather-icon{
@@ -13,4 +20,34 @@
     height: 50px;
     max-width: 50px;
     max-height: 50px;
+}
+
+.hour-details-container {
+    padding: 0;
+}
+
+.hour-details {
+    padding: 20px;
+    font-size: 20px;
+    background-color: rgba(199, 197, 197, 0.3);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    color: white;
+}
+
+@media screen and (min-width: 992px) { /* lg breakpoint for desktop */
+    .hour-details-container {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 20vw;
+        height: 100vh;
+        z-index: 1030; /* Higher than navbar if needed */
+        pointer-events: none; /* Allow clicks to pass through the container */
+    }
+
+    .hour-details {
+        pointer-events: auto; /* Re-enable pointer events for the details content */
+        width: 100%;
+    }
 }

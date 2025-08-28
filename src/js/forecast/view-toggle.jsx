@@ -1,5 +1,4 @@
-import React from 'react';
-
+// View toggle component
 const ViewToggle = ({ viewMode, setViewMode }) => {
   return (
     <div className="view-toggle-container d-flex flex-column justify-content-center my-3 col-10 col-md-6 col-lg-3 mx-auto">

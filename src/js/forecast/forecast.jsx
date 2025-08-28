@@ -17,6 +17,8 @@ function WeatherApp() {
     const [error, setError] = useState(null);
     const [lastUpdate, setLastUpdate] = useState(null);
     const [viewMode, setViewMode] = useState('daily');
+    const [selectedDayHourly, setSelectedDayHourly] = useState(null);
+    const [selectedDate, setSelectedDate] = useState(null);
 
     // Import the weather API function
 
@@ -59,12 +61,23 @@ function WeatherApp() {
     };
 
     useEffect(() => {
-            initializeWeather();
+        initializeWeather();
     }, []);
 
     useEffect(() => {
         setBackgroundImage(weatherData?.current?.img);
     }, [weatherData?.current?.img]);
+
+    const handleDayClick = (day) => {
+        const selectedDay = new Date(day.date).getDate();
+        const hourlyForSelectedDay = weatherData.hourly.filter(hour => {
+            const hourDay = new Date(hour.timestamp).getDate();
+            return hourDay === selectedDay;
+        });
+        setSelectedDayHourly(hourlyForSelectedDay);
+        setSelectedDate(new Date(day.date));
+        setViewMode('hourly');
+    };
     
     if (loading) {
         return <LoadingIndicator />;
@@ -89,12 +102,17 @@ function WeatherApp() {
             weatherData={weatherData}
             lastUpdate={lastUpdate}
         />
-        <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
-        {viewMode === 'daily' ? (
-            <WeatherForecast dailyForecast={weatherData.daily} />
-        ) : (
-            <HourlyForecast hourlyForecast={weatherData.hourly} />
-        )}
+        <div className="flex-grow-1 d-flex flex-column justify-content-end mb-5 pb-5"> 
+            <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+            {viewMode === 'daily' ? (
+                <WeatherForecast dailyForecast={weatherData.daily} onDayClick={handleDayClick} />
+            ) : (
+                <HourlyForecast
+                    hourlyForecast={selectedDayHourly || weatherData.hourly}
+                    isToday={selectedDate ? new Date().toDateString() === selectedDate.toDateString() : true}
+                />
+            )}
+        </div>
          </>
     );
 }

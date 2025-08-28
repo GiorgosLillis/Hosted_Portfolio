@@ -1,22 +1,23 @@
 import React from 'react';
 import './card.css'
 
-export const DailyForecastCard = ({ day }) => {
+
+// Individual daily forecast card component
+export const DailyForecastCard = ({ day, onClick }) => {
     if (!day || !day.date || !day.tempMax || !day.tempMin) {
         return <div className="p-4">No daily weather available.</div>;
     }
+    // Format the date as "DD//MM"
     const date = new Date(day.date);
     let Day = date.getDate();
     let month = date.getMonth() + 1;
     let formattedDate = `${Day}/${month}`;
 
     return (
-        <div className='col-3 d-flex justify-content-center align-items-center'>
+        <div className='col-3 d-flex justify-content-center align-items-center' onClick={onClick}>
             <div className="card text-white card-daily mb-3 daily-card col-11 col-xl-9 rounded-3">
                 <div className="card-body text-center py-2 px-0 d-flex flex-column justify-content-center align-items-center">
-                    {/* Display the day of the week */}
                     <h5 className="card-title mb-1">{formattedDate}</h5>
-                    {/* Display the temperature and condition */}
                     <img
                         src={day.icon}
                         alt={day.condition}
@@ -26,14 +27,14 @@ export const DailyForecastCard = ({ day }) => {
                         <p className="card-text mb-0">{day.tempMin}°C</p>
                         <p className="card-text mb-0">{day.tempMax}°C</p>
                     </div>   
-                   
+
                 </div>
             </div>
         </div>
     );
 };
 
-export function WeatherForecast({ dailyForecast }) {
+export function WeatherForecast({ dailyForecast, onDayClick }) {
     if (!dailyForecast || dailyForecast.length === 0) {
         return <div className="p-4">No daily forecast available.</div>;
     }
@@ -59,39 +60,39 @@ export function WeatherForecast({ dailyForecast }) {
         }
     };
 
-    // Ensure we don't go out of bounds
+    // Determine the days to display
     const visibleDays = dailyForecast.slice(startIndex, startIndex + visibleCards );
-    
-    let formattedWeekRange = "";
-    if (dailyForecast.length > 0) {
-        const firstDayOfWeek = new Date(dailyForecast[0].date);
-        const lastDayOfWeek = new Date(dailyForecast[dailyForecast.length - 1].date);
 
-        formattedWeekRange = `${firstDayOfWeek.getDate().toString().padStart(2, '0')}/${(firstDayOfWeek.getMonth() + 1).toString().padStart(2, '0')}-${lastDayOfWeek.getDate().toString().padStart(2, '0')}/${(lastDayOfWeek.getMonth() + 1).toString().padStart(2, '0')}`;
-    }
+    // Display weeek range as "DD/MM/YYYY - DD/MM/YYYY"
+    const firstDayOfWeek = new Date(dailyForecast[0].date); // First day as refernce
+    const lastDayOfWeek = new Date(dailyForecast[dailyForecast.length - 1].date); // Last day as refernce
+    const WeekStart = `${firstDayOfWeek.getDate().toString()}/${(firstDayOfWeek.getMonth() + 1).toString()}/${firstDayOfWeek.getFullYear().toString()}`;
+    const WeekEnd = `${lastDayOfWeek.getDate().toString()}/${(lastDayOfWeek.getMonth() + 1).toString()}/${lastDayOfWeek.getFullYear().toString()}`;
+    const formattedWeekRange = `${WeekStart} - ${WeekEnd}`;
+   
 
+    // The daily forecast section
     return (
         <>
-            <h2 className='mx-auto'>{formattedWeekRange}</h2>
+            <h2 className='mx-auto mb-0'>{formattedWeekRange}</h2>
             <section className="row d-flex flex-row justify-self-center jusify-content-between align-items-center daily-row my-3 mx-0 px-2">
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-end'>
                     <button 
                         className="btn btn-link p-0 text-white col-4"
                         disabled={startIndex == 0}
                         onClick={() => setStartIndex(startIndex - 1)}>
-                        <i className="bi bi-caret-left-fill" 
-                        style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+                        <i className="bi bi-caret-left-fill">
                         </i>
                     </button>
                 
                 </div>
                 <div
-                    className="col-12 col-md-10 col-lg-8 d-flex flex-row overflow-hidden justify-content-center align-items-center gx-5"
+                    className="col-12 col-md-10 col-lg-8 d-flex flex-row overflow-hidden justify-content-center align-items-center gx-5 px-0"
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                 >
                     {visibleDays.map((day, index) => (
-                        <DailyForecastCard key={index} day={day} />
+                        <DailyForecastCard key={index} day={day} onClick={() => onDayClick(day)} />
                     ))}
                 </div>
                 {/* Example controls to change starting day */}
@@ -100,8 +101,7 @@ export function WeatherForecast({ dailyForecast }) {
                         className="btn btn-link p-0 text-white col-4"
                         disabled={startIndex + visibleCards >= dailyForecast.length}
                         onClick={() => setStartIndex(startIndex + 1)}>
-                        <i className="bi bi-caret-right-fill" 
-                        style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>   
+                        <i className="bi bi-caret-right-fill">   
                         </i>
                     </button>
                 </div>
