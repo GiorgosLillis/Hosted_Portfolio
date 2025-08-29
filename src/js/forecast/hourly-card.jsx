@@ -1,48 +1,41 @@
 import React, { useState } from 'react';
 import './card.css'
+import { getUvIndexWarning, getHumidityWaring, getWindSpeedWarning, getWindDirection, getPM10Warning, getPM2_5Warning,
+    getCarbonMonoxideWarning, getNitrogenDioxideWarning, getOzoneWarning, getSulphurDioxideWarning } from './functions';
 
 const HourDetails = ({ hour, onClose }) => {
     if (!hour) return null;
 
-    const getWindDirection = (degrees) => {
-        if (degrees >= 337.5 || degrees < 22.5) {
-            return 'N';
-        } else if (degrees >= 22.5 && degrees < 67.5) {
-            return 'NE';
-        } else if (degrees >= 67.5 && degrees < 112.5) {
-            return 'E';
-        } else if (degrees >= 112.5 && degrees < 157.5) {
-            return 'SE';
-        } else if (degrees >= 157.5 && degrees < 202.5) {
-            return 'S';
-        } else if (degrees >= 202.5 && degrees < 247.5) {
-            return 'SW';
-        } else if (degrees >= 247.5 && degrees < 292.5) {
-            return 'W';
-        } else { // 292.5 - 337.5
-            return 'NW';
-        }
-    };
 
+    const ItemProp = 'list-item col-6 col-md-4 col-lg-12 d-flex';
+    const ItemMargin = 'me-2 me-md-3 d-flex align-items-center';
     // They might need to be adjusted if the 'hour' object has different property names.
     return (   
     <> 
         <div className='h-100 hour-details '>
             <button onClick={onClose} className="btn-close btn-close-white" aria-label="Close"></button>
             <h3 className="mt-3 mb-4 mb-lg-5">{hour.time}</h3>
+            <h4 className="mt-3 mb-3">Weather</h4>
             <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start">
-                <li className='hour-detail col-md-4 col-lg-12'><p>Temperature: {hour.temp}°C</p></li>
-                <li className='hour-detail col-md-4 col-lg-12'><p>Feels Like: {hour.apparentTemperature}°C</p></li>
-                <li className='hour-detail col-md-4 col-lg-12'><p>Condition: {hour.condition}</p></li>
-                <li className='hour-detail col-md-4 col-lg-12'><p>Humidity: {hour.humidity}%</p></li>
-                <li className='hour-detail col-md-4 col-lg-12'><p>Wind Direction: {getWindDirection(hour.windDirection)}</p></li>
-                <li className='hour-detail col-md-4 col-lg-12'><p>Wind Speed: {hour.windSpeed} mph</p></li>
-                <li className='hour-detail col-md-4 col-lg-12'><p>UV Index: {hour.uvIndex}</p></li>
+                <li className={ItemProp}><p className={ItemMargin}>Temperature: {hour.temp}°C</p></li>
+                <li className={ItemProp}><p className={ItemMargin}>Feels Like: {hour.apparentTemperature}°C</p></li>
+                <li className={ItemProp}><p className={ItemMargin}>Condition: {hour.condition}</p><img src={hour.icon} alt={hour.condition} className='weather-icon-small'/></li>
+                <li className={ItemProp}><p className={ItemMargin}>Humidity: {hour.humidity}%</p>{getHumidityWaring(hour.humidity)}</li>
+                <li className={ItemProp}><p className={ItemMargin}>Wind Direction: {getWindDirection(hour.windDirection)}</p></li>
+                <li className={ItemProp}><p className={ItemMargin}>Wind Speed: {hour.windSpeed} km/h</p>{getWindSpeedWarning(hour.windSpeed)}</li>
+                <li className={ItemProp}><p className={ItemMargin}>UV Index: {hour.uvIndex}</p>{getUvIndexWarning(hour.uvIndex)}</li>
+            </ul>    
+            <h4 className="mt-3 mb-3">Air Quality</h4>
+            <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start">
+                <li className={ItemProp}><p className={ItemMargin}>PM10: {hour.airQuality.pm10}</p>{getPM10Warning(hour.airQuality.pm10)}</li>
+                <li className={ItemProp}><p className={ItemMargin}>PM2.5: {hour.airQuality.pm2_5}</p>{getPM2_5Warning(hour.airQuality.pm2_5)}</li>
+                <li className={ItemProp}><p className={ItemMargin}>Carbon Monoxide: {hour.airQuality.carbonMonoxide}</p>{getCarbonMonoxideWarning(hour.airQuality.carbonMonoxide)}</li>
+                <li className={ItemProp}><p className={ItemMargin}>Nitrogen Dioxide: {hour.airQuality.nitrogenDioxide}</p>{getNitrogenDioxideWarning(hour.airQuality.nitrogenDioxide)}</li>
+                <li className={ItemProp}><p className={ItemMargin}>Ozone: {hour.airQuality.ozone}</p>{getOzoneWarning(hour.airQuality.ozone)}</li>
+                <li className={ItemProp}><p className={ItemMargin}>Sulphur Dioxide: {hour.airQuality.sulphurDioxide}</p>{getSulphurDioxideWarning(hour.airQuality.sulphurDioxide)}</li>
             </ul>
         </div>
-        
     </>
-       
     );
 };
 

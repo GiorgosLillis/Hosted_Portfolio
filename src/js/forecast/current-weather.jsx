@@ -1,23 +1,7 @@
-import { formatters } from "./display.jsx";
+import { formatters, getThermometer } from "./functions.jsx";
 
 // The main component that fetches and displays current weather data.
-export const CurrentWeather = ({ locationInfo, weatherData, lastUpdate }) => {
-
-    // Function to get thermometer
-    function getThermometer(temp){
-        if(temp <= 0){
-            return <i className="bi bi-thermometer-snow mx-3"></i>
-        }
-        else if(temp <=15){
-            return <i className="bi bi-thermometer-low mx-3"></i>
-        }
-        else if(temp <=30){
-            return <i className="bi bi-thermometer-half mx-3"></i>
-        } 
-        else{
-            return <i className="bi bi-thermometer-high mx-3"></i>
-        }
-    }    
+export const CurrentWeather = ({ locationInfo, weatherData, lastUpdate }) => { 
     return(
         <> 
         <section className="d-flex flex-column align-items-center justify-content-center text-center px-2 px-md-5">  

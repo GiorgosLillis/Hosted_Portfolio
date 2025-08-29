@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Import the components from the new file.
-import {LoadingIndicator, ErrorMessage, setBackgroundImage } from './display.jsx';
+import {LoadingIndicator, ErrorMessage, setBackgroundImage } from './functions.jsx';
 import CurrentWeather from './current-weather.jsx';
 import { fetchWeather, getLocation, getCachedWeather } from '../weather/weather-api.js';
 import WeatherForecast  from './daily-card.jsx';
@@ -102,7 +102,7 @@ function WeatherApp() {
             weatherData={weatherData}
             lastUpdate={lastUpdate}
         />
-        <div className="flex-grow-1 d-flex flex-column justify-content-end mb-5 pb-5"> 
+        <div className="flex-grow-1 d-flex flex-column justify-content-end mt-3 mt-lg-4 pt-5"> 
             <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
             {viewMode === 'daily' ? (
                 <WeatherForecast dailyForecast={weatherData.daily} onDayClick={handleDayClick} />

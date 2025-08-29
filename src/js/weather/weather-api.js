@@ -135,3 +135,7 @@ export function isWeatherDataFresh() {
     return cachedWeather && (currentTime - cachedWeather.time < HOUR_IN_MILLIS);
 }
 
+
+
+
+

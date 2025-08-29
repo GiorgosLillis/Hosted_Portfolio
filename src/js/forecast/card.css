@@ -22,15 +22,23 @@
     max-height: 50px;
 }
 
+.weather-icon-small{
+    width: 25px;
+    height: 25px;
+    max-width: 25px;
+    max-height: 25px;
+}
+
 .hour-details-container {
+    width: 100%;
     padding: 0;
 }
 
 .hour-details {
-    padding: 20px;
-    font-size: 20px;
+    padding: 15px;
+    font-size: 16px;
     background-color: rgba(199, 197, 197, 0.3);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(15px);
     transition: all 0.3s ease;
     color: white;
 }
@@ -49,5 +57,6 @@
     .hour-details {
         pointer-events: auto; /* Re-enable pointer events for the details content */
         width: 100%;
+        font-size: 20px;
     }
 }

@@ -1,5 +1,10 @@
 body{
     background-repeat: no-repeat;
+    min-height: 100vh;
+    padding: 5vh 0;
+    background-size: cover;
+    background-position: center;
+    
 }
 
 header{
