@@ -81,7 +81,8 @@ export function WeatherForecast({ dailyForecast, onDayClick }) {
                         className="btn btn-link p-0 text-white col-4"
                         disabled={startIndex == 0}
                         onClick={() => setStartIndex(startIndex - 1)}>
-                        <i className="bi bi-caret-left-fill">
+                         <i className="bi bi-caret-left-fill" 
+                            style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>   
                         </i>
                     </button>
                 
@@ -96,12 +97,13 @@ export function WeatherForecast({ dailyForecast, onDayClick }) {
                     ))}
                 </div>
                 {/* Example controls to change starting day */}
-            <div className='col-1 col-lg-2 d-none d-md-flex justify-content-start'>
+                <div className='col-1 col-lg-2 d-none d-md-flex justify-content-start'>
                     <button 
                         className="btn btn-link p-0 text-white col-4"
                         disabled={startIndex + visibleCards >= dailyForecast.length}
                         onClick={() => setStartIndex(startIndex + 1)}>
-                        <i className="bi bi-caret-right-fill">   
+                        <i className="bi bi-caret-right-fill" 
+                            style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>   
                         </i>
                     </button>
                 </div>

@@ -45,6 +45,7 @@
 
 @media screen and (min-width: 992px) { /* lg breakpoint for desktop */
     .hour-details-container {
+        padding: 25px;
         position: fixed;
         left: 0;
         top: 0;

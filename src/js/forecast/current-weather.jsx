@@ -9,7 +9,7 @@ export const CurrentWeather = ({ locationInfo, weatherData, lastUpdate }) => {
             <div className="fs-2 my-2 row d-flex align-items-center justify-content-center col-12 col-lg-9 col-xl-6 gx-0">
                 <div className="col-12 d-flex align-items-center justify-content-center py-1 mb-2">
                     {getThermometer(weatherData.current.temperature)}
-                    <h1 className="display-2">{weatherData.current.temperature}°C</h1>
+                    <h1 className="display-2 mb-0">{weatherData.current.temperature}°C</h1>
                 </div>
                 <div className="col-12 d-flex align-items-center justify-content-center py-1 mb-2">
                     <img

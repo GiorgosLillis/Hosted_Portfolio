@@ -8,7 +8,7 @@ const HourDetails = ({ hour, onClose }) => {
 
 
     const ItemProp = 'list-item col-6 col-md-4 col-lg-12 d-flex';
-    const ItemMargin = 'me-2 me-md-3 d-flex align-items-center';
+    const ItemMargin = 'me-md-3 d-flex align-items-center';
     // They might need to be adjusted if the 'hour' object has different property names.
     return (   
     <> 
@@ -19,7 +19,7 @@ const HourDetails = ({ hour, onClose }) => {
             <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start">
                 <li className={ItemProp}><p className={ItemMargin}>Temperature: {hour.temp}°C</p></li>
                 <li className={ItemProp}><p className={ItemMargin}>Feels Like: {hour.apparentTemperature}°C</p></li>
-                <li className={ItemProp}><p className={ItemMargin}>Condition: {hour.condition}</p><img src={hour.icon} alt={hour.condition} className='weather-icon-small'/></li>
+                <li className={ItemProp}><p className={ItemMargin}>Condition: {hour.condition}</p><img src={hour.icon} alt={hour.condition} className='weather-icon-small mx-1'/></li>
                 <li className={ItemProp}><p className={ItemMargin}>Humidity: {hour.humidity}%</p>{getHumidityWaring(hour.humidity)}</li>
                 <li className={ItemProp}><p className={ItemMargin}>Wind Direction: {getWindDirection(hour.windDirection)}</p></li>
                 <li className={ItemProp}><p className={ItemMargin}>Wind Speed: {hour.windSpeed} km/h</p>{getWindSpeedWarning(hour.windSpeed)}</li>
@@ -27,12 +27,18 @@ const HourDetails = ({ hour, onClose }) => {
             </ul>    
             <h4 className="mt-3 mb-3">Air Quality</h4>
             <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start">
-                <li className={ItemProp}><p className={ItemMargin}>PM10: {hour.airQuality.pm10}</p>{getPM10Warning(hour.airQuality.pm10)}</li>
-                <li className={ItemProp}><p className={ItemMargin}>PM2.5: {hour.airQuality.pm2_5}</p>{getPM2_5Warning(hour.airQuality.pm2_5)}</li>
-                <li className={ItemProp}><p className={ItemMargin}>Carbon Monoxide: {hour.airQuality.carbonMonoxide}</p>{getCarbonMonoxideWarning(hour.airQuality.carbonMonoxide)}</li>
-                <li className={ItemProp}><p className={ItemMargin}>Nitrogen Dioxide: {hour.airQuality.nitrogenDioxide}</p>{getNitrogenDioxideWarning(hour.airQuality.nitrogenDioxide)}</li>
-                <li className={ItemProp}><p className={ItemMargin}>Ozone: {hour.airQuality.ozone}</p>{getOzoneWarning(hour.airQuality.ozone)}</li>
-                <li className={ItemProp}><p className={ItemMargin}>Sulphur Dioxide: {hour.airQuality.sulphurDioxide}</p>{getSulphurDioxideWarning(hour.airQuality.sulphurDioxide)}</li>
+                {!hour?.airQuality ? (
+                    <li className={ItemProp}><p className={ItemMargin}>No air quality data available.</p></li>
+                ) : (
+                    <>
+                        <li className={ItemProp}><p className={ItemMargin}>PM10: {hour.airQuality.pm10}</p>{getPM10Warning(hour.airQuality.pm10)}</li>
+                        <li className={ItemProp}><p className={ItemMargin}>PM2.5: {hour.airQuality.pm2_5}</p>{getPM2_5Warning(hour.airQuality.pm2_5)}</li>
+                        <li className={ItemProp}><p className={ItemMargin}>Carbon Monoxide: {hour.airQuality.carbonMonoxide}</p>{getCarbonMonoxideWarning(hour.airQuality.carbonMonoxide)}</li>
+                        <li className={ItemProp}><p className={ItemMargin}>Nitrogen Dioxide: {hour.airQuality.nitrogenDioxide}</p>{getNitrogenDioxideWarning(hour.airQuality.nitrogenDioxide)}</li>
+                        <li className={ItemProp}><p className={ItemMargin}>Ozone: {hour.airQuality.ozone}</p>{getOzoneWarning(hour.airQuality.ozone)}</li>
+                        <li className={ItemProp}><p className={ItemMargin}>Sulphur Dioxide: {hour.airQuality.sulphurDioxide}</p>{getSulphurDioxideWarning(hour.airQuality.sulphurDioxide)}</li>
+                    </>
+                )}
             </ul>
         </div>
     </>
@@ -164,15 +170,15 @@ export function HourlyForecast({ hourlyForecast}) {
                         <HourlyForecastCard key={index} hour={hour} onClick={() => handleHourClick(hour)} />
                     ))}
                 </div>
-            <div className='col-1 col-lg-2 d-none d-md-flex justify-content-start'>
-                    <button 
-                        className="btn btn-link p-0 text-white col-4"
-                        disabled={startIndex + visibleCards >= hourlyForecast.length}
-                        onClick={handleNextHours}>
-                        <i className="bi bi-caret-right-fill" 
-                        style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>   
-                        </i>
-                    </button>
+                <div className='col-1 col-lg-2 d-none d-md-flex justify-content-start'>
+                        <button 
+                            className="btn btn-link p-0 text-white col-4"
+                            disabled={startIndex + visibleCards >= hourlyForecast.length}
+                            onClick={handleNextHours}>
+                            <i className="bi bi-caret-right-fill" 
+                            style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>   
+                            </i>
+                        </button>
                 </div>
             </section>
             <div className="hour-details-container">

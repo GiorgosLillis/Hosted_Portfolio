@@ -6,6 +6,7 @@ export const formatters = {
 
 export const setBackgroundImage = (imageUrl) => {
     document.body.style.backgroundImage = `url('${imageUrl}')`;
+    
 }
 
 
@@ -27,7 +28,7 @@ export const ErrorMessage = ({ error }) => (
 );
 
 
-    // Function to get thermometer
+// Function to get thermometer
 export function getThermometer(temp){
     if(temp <= 0){
         return <i className="bi bi-thermometer-snow mx-3"></i>
@@ -38,8 +39,11 @@ export function getThermometer(temp){
     else if(temp <=30){
         return <i className="bi bi-thermometer-half mx-3"></i>
     } 
+    else if(temp <=40){
+        return <i className="bi bi-thermometer-high mx-3 text-warning"></i>
+    }
     else{
-        return <i className="bi bi-thermometer-high mx-3"></i>
+         return <i className="bi bi-thermometer-high mx-3 text-danger"></i>
     }
 }  
 

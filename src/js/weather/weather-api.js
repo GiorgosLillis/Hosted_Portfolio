@@ -121,7 +121,11 @@ export async function fetchWeather(locationInfo) {
 // Get cached weather data
 export function getCachedWeather() {
     if (isWeatherDataFresh()){
-        return JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
+        const weather_temp = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
+        /* if(!localStorage.getItem('searched-city' || weather_temp.city === localStorage.getItem('searched-city') )){
+            return weather_temp;
+        } */
+        return weather_temp;
     }
     return null;
 }
@@ -131,7 +135,7 @@ export function isWeatherDataFresh() {
     const cachedWeather = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
     const currentTime = new Date().getTime();
     const HOUR_IN_MILLIS = 60 * 60 * 1000;
-
+    
     return cachedWeather && (currentTime - cachedWeather.time < HOUR_IN_MILLIS);
 }
 

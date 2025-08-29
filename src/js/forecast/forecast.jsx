@@ -8,6 +8,8 @@ import { fetchWeather, getLocation, getCachedWeather } from '../weather/weather-
 import WeatherForecast  from './daily-card.jsx';
 import ViewToggle from './view-toggle.jsx';
 import  HourlyForecast  from './hourly-card.jsx';
+import {toogleSearchInput, Search} from './search.jsx';
+
 
 // Main application component
 function WeatherApp() {
@@ -27,6 +29,16 @@ function WeatherApp() {
                     setLoading(true);
                     setError(null);
 
+                    /* if(localStorage.getItem('searched-city')){
+                        console.log('Using searched city from localStorage');
+                        const city = localStorage.getItem('searched-city');
+                    }else{
+                        const location = await getLocation();
+                        if (!location){
+                            throw new Error("Unable to retrieve location");
+                        }
+                    } Need to reverse geolocation for the citycoords   */
+
                     const location = await getLocation();
                     if (!location){
                         throw new Error("Unable to retrieve location");
@@ -41,7 +53,7 @@ function WeatherApp() {
                         setLastUpdate(new Date(cachedWeather.time));
                         return;
                     }
-
+                    
                     const weatherData = await fetchWeather(location);
                     if (!weatherData) {
                         throw new Error("Unable to fetch weather data");
