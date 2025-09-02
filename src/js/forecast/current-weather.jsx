@@ -1,11 +1,13 @@
-import { formatters, getThermometer } from "./functions.jsx";
+import { formatters, getThermometer, WarningMessage, ErrorMessage} from "./functions.jsx";
 
 // The main component that fetches and displays current weather data.
-export const CurrentWeather = ({ locationInfo, weatherData, lastUpdate }) => { 
+export const CurrentWeather = ({ locationInfo, weatherData, lastUpdate, warning, error }) => { 
     return(
         <> 
         <section className="d-flex flex-column align-items-center justify-content-center text-center px-2 px-md-5">  
-            <h2 className="fs-2 my-0 text-center"> {locationInfo ? locationInfo.city : 'Loading...'} </h2>
+            <ErrorMessage error={error} />
+            <WarningMessage warning={warning} />
+            <h2 className="fs-2 my-0 text-center"> {locationInfo.city}, {locationInfo.country}  </h2>
             <div className="fs-2 my-2 row d-flex align-items-center justify-content-center col-12 col-lg-9 col-xl-6 gx-0">
                 <div className="col-12 d-flex align-items-center justify-content-center py-1 mb-2">
                     {getThermometer(weatherData.current.temperature)}

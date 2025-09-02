@@ -16,7 +16,7 @@ const HourDetails = ({ hour, onClose }) => {
             <button onClick={onClose} className="btn-close btn-close-white" aria-label="Close"></button>
             <h3 className="mt-3 mb-4 mb-lg-5">{hour.time}</h3>
             <h4 className="mt-3 mb-3">Weather</h4>
-            <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start">
+            <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start mb-2 mb-lg-3 mb-xl-4">
                 <li className={ItemProp}><p className={ItemMargin}>Temperature: {hour.temp}°C</p></li>
                 <li className={ItemProp}><p className={ItemMargin}>Feels Like: {hour.apparentTemperature}°C</p></li>
                 <li className={ItemProp}><p className={ItemMargin}>Condition: {hour.condition}</p><img src={hour.icon} alt={hour.condition} className='weather-icon-small mx-1'/></li>

@@ -82,20 +82,26 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 - Weather icons from https://github.com/visualcrossing/WeatherIcons
 
   Features to add (weather.html):
--   Daily forecast with:
-    Min-Max Temperature
-    Weather conditions at noon
-    Sunrise and sunset times
+-   Daily forecast with: ✅
+    Min-Max Temperature ✅
+    Weather conditions at noon ✅
+    Sunrise and sunset times ✅
 
 -   Detailed 3-hour forecast with:
-    Day or night
-    Conditions
-    Temperature
-    Apparent temperature
-    Humidity
-    Wind direction and speed
-    UV index
-    Air quality
+    Day or night ✅
+    Conditions ✅
+    Temperature ✅
+    Apparent temperature ✅
+    Humidity ✅
+    Wind direction and speed ✅
+    UV index ✅ 
+    Air quality ✅
+
+-   Searching for cities:
+    Search a city by name and optionally by country for more accurate results ✅
+      Weather data for the searched city 
+      Table look-up to find the needed country code 
+      Searching with both fields empty defaults to the users location 
 ---
 
 ### Issues

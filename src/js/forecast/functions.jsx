@@ -12,19 +12,20 @@ export const setBackgroundImage = (imageUrl) => {
 
 export const LoadingIndicator = () => (
     <div className="text-center p-5">
-        <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
+        <div className="spinner-border text-warning" role="status">
+            <span className="visually-hidden text-warning">Loading...</span>
         </div>
-        <p className="mt-3">Loading weather data...</p>
+        <p className="mt-3 text-warning fs-3">Loading weather data...</p>
     </div>
 );
 
 
 export const ErrorMessage = ({ error }) => (
-    <div className="alert alert-danger" role="alert">
-        <h4 className="alert-heading">Weather Error</h4>
-        <p>{error}</p>
-    </div>
+    <h2 className="alert-heading fs-2 mb-3 text-danger">{error}</h2>
+);
+
+export const WarningMessage = ({ warning }) => (
+    <h2 className="alert-heading fs-2 mb-3 text-white">{warning}</h2>
 );
 
 
