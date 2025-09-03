@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import './card.css'
-import { getUvIndexWarning, getHumidityWaring, getWindSpeedWarning, getWindDirection, getPM10Warning, getPM2_5Warning,
+import { formatters, getUvIndexWarning, getHumidityWaring, getWindSpeedWarning, getWindDirection, getPM10Warning, getPM2_5Warning,
     getCarbonMonoxideWarning, getNitrogenDioxideWarning, getOzoneWarning, getSulphurDioxideWarning } from './functions';
 
-const HourDetails = ({ hour, onClose }) => {
+    const HourDetails = ({ hour, onClose, tempUnit }) => {
     if (!hour) return null;
 
 
@@ -14,11 +14,11 @@ const HourDetails = ({ hour, onClose }) => {
     <> 
         <div className='h-100 hour-details '>
             <button onClick={onClose} className="btn-close btn-close-white" aria-label="Close"></button>
-            <h3 className="mt-3 mb-4 mb-lg-5">{hour.time}</h3>
+            <h3 className="mt-3 mb-4 mb-lg-5">{formatters.time(hour.timestamp)}</h3>
             <h4 className="mt-3 mb-3">Weather</h4>
             <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start mb-2 mb-lg-3 mb-xl-4">
-                <li className={ItemProp}><p className={ItemMargin}>Temperature: {hour.temp}°C</p></li>
-                <li className={ItemProp}><p className={ItemMargin}>Feels Like: {hour.apparentTemperature}°C</p></li>
+                <li className={ItemProp}><p className={ItemMargin}>temperature: {formatters.temperature(hour.temp, tempUnit)}</p></li>
+                <li className={ItemProp}><p className={ItemMargin}>Feels Like: {formatters.temperature(hour.apparentTemperature, tempUnit)}</p></li>
                 <li className={ItemProp}><p className={ItemMargin}>Condition: {hour.condition}</p><img src={hour.icon} alt={hour.condition} className='weather-icon-small mx-1'/></li>
                 <li className={ItemProp}><p className={ItemMargin}>Humidity: {hour.humidity}%</p>{getHumidityWaring(hour.humidity)}</li>
                 <li className={ItemProp}><p className={ItemMargin}>Wind Direction: {getWindDirection(hour.windDirection)}</p></li>
@@ -46,7 +46,7 @@ const HourDetails = ({ hour, onClose }) => {
 };
 
 // Individual hourly forecast card component
-export const HourlyForecastCard = ({ hour, onClick }) => { // Added onClick
+export const HourlyForecastCard = ({ hour, onClick, tempUnit }) => { // Added onClick
     if (!hour || !hour.time || !hour.temp || !hour.icon) {
         return <div className="p-4">No hourly weather available.</div>;
     }
@@ -55,20 +55,20 @@ export const HourlyForecastCard = ({ hour, onClick }) => { // Added onClick
         <div className='col-3 d-flex justify-content-center align-items-center' onClick={onClick}> {/* Added onClick */}
             <div className="card text-white card-daily mb-3 daily-card col-11 col-xl-9 rounded-3">
                 <div className="card-body text-center py-2 px-0 d-flex flex-column justify-content-center align-items-center">
-                    <h5 className="card-title mb-1">{hour.time}</h5>
+                    <h5 className="card-title mb-1">{formatters.time(hour.timestamp)}</h5>
                     <img
                         src={hour.icon}
                         alt={hour.condition}
                         className="weather-icon my-2"
                      />
-                    <p className="card-text mb-0">{hour.temp}°C</p>
+                    <p className="card-text mb-0">{formatters.temperature(hour.temp, tempUnit)}</p>
                 </div>
             </div>
         </div>
     );
 };
 
-export function HourlyForecast({ hourlyForecast}) {
+export function HourlyForecast({ hourlyForecast, tempUnit, dailyForecast}) {
     if (!hourlyForecast || hourlyForecast.length === 0) {
         return <div className="p-4">No hourly forecast available.</div>;
     }
@@ -140,15 +140,35 @@ export function HourlyForecast({ hourlyForecast}) {
         return <div className="p-4">No more hourly forecast for today.</div>;
     }
     
-    // Format the display day as "DD/MM/YYYY"
-    const currentDayDate = new Date(visibleHours[0].timestamp);
+    const currentDayTimestamp = visibleHours[0].timestamp;
+    const currentDayDate = new Date(currentDayTimestamp);
+    
+    // Find the corresponding daily forecast
+    const dailyDataForCurrentDay = dailyForecast.find(day => {
+        const dayDate = new Date(day.date);
+        return dayDate.getFullYear() === currentDayDate.getFullYear() &&
+               dayDate.getMonth() === currentDayDate.getMonth() &&
+               dayDate.getDate() === currentDayDate.getDate();
+    });
+
     const formattedDate = `${currentDayDate.getDate()}/${currentDayDate.getMonth() + 1}/${currentDayDate.getFullYear()}`;
+    
+    let sunrise = null;
+    let sunset = null;
+
+    if (dailyDataForCurrentDay) {
+        sunrise = formatters.time(dailyDataForCurrentDay.sunrise);
+        sunset = formatters.time(dailyDataForCurrentDay.sunset);
+    }
 
 
     // The hourly forecast section
     return (
         <>  
-            <h2 className='mx-auto mb-0'>{formattedDate}</h2>
+            <h2 className='mx-auto mb-2'>{formattedDate}</h2>
+            {sunrise && sunset && (
+                <h2 className='mx-auto mb-2'>Sunrise: {sunrise} - Sunset: {sunset}</h2>
+            )}
             <section className="row d-flex flex-row justify-self-center jusify-content-between align-items-center daily-row my-3 mx-0 px-2">
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-end'>
                     <button 
@@ -167,7 +187,7 @@ export function HourlyForecast({ hourlyForecast}) {
                     onTouchEnd={handleTouchEnd}
                 >
                     {visibleHours.map((hour, index) => (
-                        <HourlyForecastCard key={index} hour={hour} onClick={() => handleHourClick(hour)} />
+                        <HourlyForecastCard key={index} hour={hour} onClick={() => handleHourClick(hour)} tempUnit={tempUnit} />
                     ))}
                 </div>
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-start'>
@@ -182,7 +202,7 @@ export function HourlyForecast({ hourlyForecast}) {
                 </div>
             </section>
             <div className="hour-details-container">
-                <HourDetails hour={selectedHour} onClose={handleCloseDetails} />
+                <HourDetails hour={selectedHour} onClose={handleCloseDetails} tempUnit={tempUnit} />
             </div>
         </>
         

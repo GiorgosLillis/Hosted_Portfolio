@@ -1,43 +1,38 @@
 const cityInput = document.getElementById('city-input');
 const countryInput = document.getElementById('country-input');
 const searchButton = document.getElementById('search-button');
+const searchSection = document.getElementById('search-section');
 searchButton.addEventListener('click', toogleSearchInput);
 
 export function toogleSearchInput() {
-    const isHiddenCity = cityInput.className.includes('search-input-hidden');
+    const isHidden = (searchSection.className.includes('search-section-hidden'));
     
-
-    if (isHiddenCity) {
+    if (isHidden) {
+        searchSection.className = searchSection.className.replace('search-section-hidden', 'search-section-visible');
         cityInput.className = cityInput.className.replace('search-input-hidden', 'search-input-visible');
-        cityInput.style.display = 'inline-block';
         countryInput.className = countryInput.className.replace('search-input-hidden', 'search-input-visible');
-        countryInput.style.display = 'inline-block';
-        cityInput.focus();
+        searchSection.focus();
     } else {
         Search();
+        searchSection.className = searchSection.className.replace('search-section-visible', 'search-section-hidden');
         cityInput.className = cityInput.className.replace('search-input-visible', 'search-input-hidden');
-        cityInput.style.display = 'none';
-        countryInput.className = countryInput.className.replace('search-input-visible', 'search-input-hidden');
-        countryInput.style.display = 'none';
+        countryInput .className = countryInput .className.replace('search-input-visible', 'search-input-hidden');
     }
     cityInput.addEventListener('keydown', function(event){
         if (event.key === 'Enter') {
             event.preventDefault();
             Search();
+            searchSection.className = searchSection.className.replace('search-section-visible', 'search-section-hidden');
             cityInput.className = cityInput.className.replace('search-input-visible', 'search-input-hidden');
-            cityInput.style.display = 'none';
-            countryInput.className = countryInput.className.replace('search-input-visible', 'search-input-hidden');
-            countryInput.style.display = 'none';
+            countryInput .className = countryInput .className.replace('search-input-visible', 'search-input-hidden');
         }
     });
     countryInput.addEventListener('keydown', function(event){
         if (event.key === 'Enter') {
-            event.preventDefault();
             Search();
+            searchSection.className = searchSection.className.replace('search-section-visible', 'search-section-hidden');
             cityInput.className = cityInput.className.replace('search-input-visible', 'search-input-hidden');
-            cityInput.style.display = 'none';
-            countryInput.className = countryInput.className.replace('search-input-visible', 'search-input-hidden');
-            countryInput.style.display = 'none';
+            countryInput .className = countryInput.className.replace('search-input-visible', 'search-input-hidden');
         }
     });
 }

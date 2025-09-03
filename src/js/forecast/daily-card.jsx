@@ -1,9 +1,10 @@
 import React from 'react';
 import './card.css'
+import { formatters } from './functions';
 
 
 // Individual daily forecast card component
-export const DailyForecastCard = ({ day, onClick }) => {
+export const DailyForecastCard = ({ day, onClick, Unit }) => {
     if (!day || !day.date || !day.tempMax || !day.tempMin) {
         return <div className="p-4">No daily weather available.</div>;
     }
@@ -24,8 +25,8 @@ export const DailyForecastCard = ({ day, onClick }) => {
                         className="weather-icon my-2"
                      />
                     <div className='d-flex flex-column flex-md-row justify-content-around align-items-center mt-1 w-100'> 
-                        <p className="card-text mb-0">{day.tempMin}°C</p>
-                        <p className="card-text mb-0">{day.tempMax}°C</p>
+                        <p className="card-text mb-0">{formatters.temperature(day.tempMin, Unit)}</p>
+                        <p className="card-text mb-0">{formatters.temperature(day.tempMax, Unit)}</p>
                     </div>   
 
                 </div>
@@ -34,7 +35,7 @@ export const DailyForecastCard = ({ day, onClick }) => {
     );
 };
 
-export function WeatherForecast({ dailyForecast, onDayClick }) {
+export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
     if (!dailyForecast || dailyForecast.length === 0) {
         return <div className="p-4">No daily forecast available.</div>;
     }
@@ -93,7 +94,7 @@ export function WeatherForecast({ dailyForecast, onDayClick }) {
                     onTouchEnd={handleTouchEnd}
                 >
                     {visibleDays.map((day, index) => (
-                        <DailyForecastCard key={index} day={day} onClick={() => onDayClick(day)} />
+                        <DailyForecastCard key={index} day={day} onClick={() => onDayClick(day)} Unit={Unit} />
                     ))}
                 </div>
                 {/* Example controls to change starting day */}

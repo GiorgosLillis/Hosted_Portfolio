@@ -1,7 +1,8 @@
 import { formatters, getThermometer, WarningMessage, ErrorMessage} from "./functions.jsx";
+import UnitToggle from "./temp-toggle.jsx";
 
 // The main component that fetches and displays current weather data.
-export const CurrentWeather = ({ locationInfo, weatherData, lastUpdate, warning, error }) => { 
+export const CurrentWeather = ({ locationInfo, weatherData, lastUpdate, warning, error, Unit, setUnit}) => { 
     return(
         <> 
         <section className="d-flex flex-column align-items-center justify-content-center text-center px-2 px-md-5">  
@@ -9,10 +10,11 @@ export const CurrentWeather = ({ locationInfo, weatherData, lastUpdate, warning,
             <WarningMessage warning={warning} />
             <h2 className="fs-2 my-0 text-center"> {locationInfo.city}, {locationInfo.country}  </h2>
             <div className="fs-2 my-2 row d-flex align-items-center justify-content-center col-12 col-lg-9 col-xl-6 gx-0">
-                <div className="col-12 d-flex align-items-center justify-content-center py-1 mb-2">
+                <div className="col-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end py-1 mb-md-2">
                     {getThermometer(weatherData.current.temperature)}
-                    <h1 className="display-2 mb-0">{weatherData.current.temperature}°C</h1>
-                </div>
+                    <h1 className="display-2 mb-0 me-md-3">{formatters.temperature(weatherData.current.temperature, Unit)}</h1>
+                </div> 
+                 <UnitToggle Unit={Unit} setUnit={setUnit} />
                 <div className="col-12 d-flex align-items-center justify-content-center py-1 mb-2">
                     <img
                         src={weatherData.current.icon}

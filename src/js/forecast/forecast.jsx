@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Import the components from the new file.
-import {LoadingIndicator, ErrorMessage, WarningMessage, setBackgroundImage } from './functions.jsx';
+import {LoadingIndicator, ErrorMessage, setBackgroundImage } from './functions.jsx';
 import CurrentWeather from './current-weather.jsx';
 import { fetchWeather, getLocation, getCachedWeather, getCityLocation} from '../weather/weather-api.js';
 import WeatherForecast  from './daily-card.jsx';
 import ViewToggle from './view-toggle.jsx';
 import  HourlyForecast  from './hourly-card.jsx';
-import {toogleSearchInput, Search} from './search.jsx';
+import  './search.jsx';
+
 
 
 // Main application component
@@ -20,6 +21,7 @@ function WeatherApp() {
     const [warning, setWarning] = useState(null);
     const [lastUpdate, setLastUpdate] = useState(null);
     const [viewMode, setViewMode] = useState('daily');
+    const [Unit, setUnit] = useState('celsius');
     const [selectedDayHourly, setSelectedDayHourly] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
     const [search, setSearch] = useState(null);
@@ -40,7 +42,7 @@ function WeatherApp() {
         try {
             setLoading(true);
             setError(null);
-
+            setWarning(null);
          
             const location = await getCityLocation(city, country);
             if (!location) {
@@ -77,7 +79,7 @@ function WeatherApp() {
                 initializeWeather();
             } else if (search.city === '') {
                 setWarning("City field is empty. Cannot search only by country. Showing your current location.");
-                initializeWeather();
+                initializeWeather(); 
             } else {
                 fetchWeatherDataForCity(search.city, search.country);
             }
@@ -174,15 +176,19 @@ function WeatherApp() {
             locationInfo={locationInfo}
             weatherData={weatherData}
             lastUpdate={lastUpdate}
+            Unit={Unit}
+            setUnit={setUnit}
         />
         <div className="flex-grow-1 d-flex flex-column justify-content-end mt-3 mt-lg-4 pt-5"> 
             <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
             {viewMode === 'daily' ? (
-                <WeatherForecast dailyForecast={weatherData.daily} onDayClick={handleDayClick} />
+                <WeatherForecast dailyForecast={weatherData.daily} onDayClick={handleDayClick} Unit={Unit} />
             ) : (
                 <HourlyForecast
                     hourlyForecast={selectedDayHourly || weatherData.hourly}
                     isToday={selectedDate ? new Date().toDateString() === selectedDate.toDateString() : true}
+                    Unit={Unit}
+                    dailyForecast={weatherData.daily}
                 />
             )}
         </div>

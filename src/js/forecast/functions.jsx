@@ -1,7 +1,13 @@
 // Helper functions for displaying states and icons
 export const formatters = {
-    temperature: (temp) => `${temp}°C`,
-    time: (timestamp) => new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    temperature: (temp, unit) => {
+        if (unit === 'celsius') {
+            return `${temp.toFixed(1)}°C`;
+        }
+        const fahrenheit = (temp * 9/5) + 32;
+        return `${fahrenheit.toFixed(1)}°F`;
+    },
+    time: (timestamp) => new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
 };
 
 export const setBackgroundImage = (imageUrl) => {

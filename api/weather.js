@@ -55,7 +55,7 @@ module.exports = async (req, res) => {
     }
 
     
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,uv_index,apparent_temperature,is_day&daily=temperature_2m_max,temperature_2m_min&forecast_days=7&timezone=auto`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,uv_index,apparent_temperature,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&forecast_days=7&timezone=auto`;
     const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,sulphur_dioxide&timezone=auto`;
     try {
         const [res1, res2] = await Promise.all([
@@ -148,6 +148,8 @@ module.exports = async (req, res) => {
                 icon: noonIcon,
                 tempMax: weatherData.daily.temperature_2m_max[index],
                 tempMin: weatherData.daily.temperature_2m_min[index],
+                sunrise: weatherData.daily.sunrise[index],
+                sunset: weatherData.daily.sunset[index]
             }
         });
 
