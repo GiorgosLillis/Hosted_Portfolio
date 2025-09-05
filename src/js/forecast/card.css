@@ -36,11 +36,25 @@
 
 .hour-details {
     padding: 15px;
-    font-size: 16px;
+    font-size: 18px;
     background-color: rgba(199, 197, 197, 0.3);
     backdrop-filter: blur(15px);
     transition: all 0.3s ease-in-out;
     color: white;
+}
+
+#day-duration{
+    font-size: 16px;
+}
+
+@media screen and (min-width: 768px) {
+     #day-duration{
+        font-size: 24px;
+    }
+
+    .hour-details{
+        font-size: 20px;
+    }
 }
 
 @media screen and (min-width: 992px) { /* lg breakpoint for desktop */
@@ -57,7 +71,8 @@
 
     .hour-details {
         pointer-events: auto; /* Re-enable pointer events for the details content */
+        padding-right: 0;
         width: 100%;
-        font-size: 20px;
+        font-size: 22px;
     }
 }

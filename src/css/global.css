@@ -50,3 +50,14 @@
     --bs-text-secondary: black;
     --image: url('/backgrounds/graph-paper-white.png');
   }
+
+.text-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}

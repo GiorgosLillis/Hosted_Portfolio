@@ -78,7 +78,7 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 - For the purpose of deeper involvement with REST APIs and their data handling, an experimental weather forecast app will be developed.
 - 7-days forecast with 3-hour steps 
 - Accpents latitude and longitude, calls Open-Meteo API, maps the response according to weatherCodeMapping object 
-  and returns current and forecast data on the combined Weather info object
+  and returns current and forecast data on the combined weatherInfo object
 - Weather icons from https://github.com/visualcrossing/WeatherIcons
 
   Features to add (weather.html):
@@ -102,6 +102,7 @@ You must set up a `.env` file in the `/server` folder to setup the same function
       Weather data for the searched city 
       Table look-up to find the needed country code 
       Searching with both fields empty defaults to the users location 
+      Saving favorite cities
 ---
 
 ### Issues

@@ -39,6 +39,7 @@
     <meta name="keywords" content="weather, forecast, web application, HTML, CSS, JavaScript, React, OpenWeatherMap API" />
     <meta name="author" content="Giorgos Lillis">
     <meta property="og:site_name" content="Weather Forecast"/>
+    <meta property="og:image" content="public/backgrounds/Weather.png" />
     <meta property="og:type" content="website"/>
     <meta property="og:url" content="https://www.giorgoslillis.com/weather.html"/>
 </head>
@@ -48,15 +49,17 @@
           id="navbar"
           class="navbar navbar-expand d-flex align-items-start"
       >
-          <section class="container-fluid d-flex justify-content-end align-items-center col-12">
-              <ul class="navbar-nav d-flex align-items-center justify-content-end col-3">
-                <li class="nav-item navbar-brand d-flex align-items-center justify-content-around">
-                  <i id="search-button" class="bi bi-search fs-2 ms-3" style="cursor:pointer;"></i> 
-                  
+          <section class="container-fluid d-flex justify-content-end align-items-center px-0">
+              <ul class="navbar-nav d-flex align-items-center justify-content-end">
+                <li class="nav-link navbar-brand">
+                   <button id="favorite-button" class="icon-button mx-md-3" aria-label="Show favorite locations"><i class="bi bi-star-fill fs-2"></i></button> 
+                </li>
+                <li class="nav-item navbar-brand">
+                  <button id="search-button" class="icon-button" aria-label="Search for a location"><i class="bi bi-search fs-2"></i></button> 
                 </li>
                 <li class="nav-item navbar-brand">
                   <a
-                        class="nav-link fs-1"
+                        class="nav-link fs-1 mx-md-3"
                         href="./index.html"
                         aria-label="Go to home"
                     ><i class="bi bi-house-door-fill"></i></a
@@ -66,9 +69,14 @@
           </section>
           
       </nav> 
-      <section id="search-section" class="container-fluid search-section-hidden col-12">
-        <input type="text" id="city-input" class="form-control fs-5 search-input-hidden" placeholder="Enter city" aria-label="City name input">
-        <input type="text" id="country-input" class="form-control fs-5 search-input-hidden" placeholder="Enter country" aria-label="Country name input">
+      <section id="search-section" class="container-fluid search-section-hidden">
+        <label for="city-input" class="sr-only">City name</label>
+        <input type="text" id="city-input" class="form-control fs-5 search-input-hidden" placeholder="Enter city">
+        <label for="country-input" class="sr-only">Country name</label>
+        <input type="text" id="country-input" class="form-control fs-5 search-input-hidden" placeholder="Enter country">
+      </section>
+      <section id="favorite-section" class="container-fluid search-section-hidden d-flex flex-wrap">
+
       </section>
   </header>
 

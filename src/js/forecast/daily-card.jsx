@@ -15,10 +15,10 @@ export const DailyForecastCard = ({ day, onClick, Unit }) => {
     let formattedDate = `${Day}/${month}`;
 
     return (
-        <div className='col-3 d-flex justify-content-center align-items-center' onClick={onClick}>
+        <div className='col-3 d-flex justify-content-center align-items-center' onClick={onClick} aria-label='Press for more daily weather details'>
             <div className="card text-white card-daily mb-3 daily-card col-11 col-xl-9 rounded-3">
                 <div className="card-body text-center py-2 px-0 d-flex flex-column justify-content-center align-items-center">
-                    <h5 className="card-title mb-1">{formattedDate}</h5>
+                    <h4 className="card-title mb-1">{formattedDate}</h4>
                     <img
                         src={day.icon}
                         alt={day.condition}
@@ -81,7 +81,8 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
                     <button 
                         className="btn btn-link p-0 text-white col-4"
                         disabled={startIndex == 0}
-                        onClick={() => setStartIndex(startIndex - 1)}>
+                        onClick={() => setStartIndex(startIndex - 1)} 
+                        aria-label = "Previous hours">
                          <i className="bi bi-caret-left-fill" 
                             style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>   
                         </i>
@@ -102,7 +103,8 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
                     <button 
                         className="btn btn-link p-0 text-white col-4"
                         disabled={startIndex + visibleCards >= dailyForecast.length}
-                        onClick={() => setStartIndex(startIndex + 1)}>
+                        onClick={() => setStartIndex(startIndex + 1)}
+                        aria-label = "Next hours">
                         <i className="bi bi-caret-right-fill" 
                             style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>   
                         </i>

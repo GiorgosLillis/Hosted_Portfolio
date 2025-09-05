@@ -2,18 +2,16 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Import the components from the new file.
-import {LoadingIndicator, ErrorMessage, setBackgroundImage } from './functions.jsx';
+import {LoadingIndicator, ErrorMessage, setBackgroundImage, isFavorite, addToFavorites, removeFromFavorites } from './functions.jsx';
 import CurrentWeather from './current-weather.jsx';
 import { fetchWeather, getLocation, getCachedWeather, getCityLocation} from '../weather/weather-api.js';
 import WeatherForecast  from './daily-card.jsx';
 import ViewToggle from './view-toggle.jsx';
 import  HourlyForecast  from './hourly-card.jsx';
 import  './search.jsx';
+import  './favorite.jsx';
 
-
-
-// Main application component
-function WeatherApp() {
+function Forecast() {
     const [weatherData, setWeatherData] = useState(null);
     const [locationInfo, setLocationInfo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -25,6 +23,14 @@ function WeatherApp() {
     const [selectedDayHourly, setSelectedDayHourly] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
     const [search, setSearch] = useState(null);
+    const [selectedFav, setSelectedFav] = useState(null);
+    const [favorites, setFavorites] = useState([]);
+
+
+    useEffect(() => {
+        const storedFavorites = JSON.parse(localStorage.getItem('favoriteLocations')) || [];
+        setFavorites(storedFavorites);
+    }, []);
 
     useEffect(() => {
         const handleCitySearch = (event) => {
@@ -38,9 +44,20 @@ function WeatherApp() {
         };
     }, []);
 
+    useEffect(() => {
+        const favCitySearch = (event) => {
+            setSelectedFav(event.detail);
+        };
+
+        document.addEventListener('favSearch', favCitySearch);
+
+        return () => {
+            document.removeEventListener('favSearch', favCitySearch);
+        };
+    }, []);
+
     const fetchWeatherDataForCity = async (city, country) => {
         try {
-            setLoading(true);
             setError(null);
             setWarning(null);
          
@@ -73,7 +90,9 @@ function WeatherApp() {
     };
 
     useEffect(() => {
-        if (search) { 
+      
+        if (search) {   
+            setLoading(true);
             if (search.city === '' && search.country === '') {
                 setWarning("Search fields are empty. Showing your current location.");
                 initializeWeather();
@@ -83,20 +102,31 @@ function WeatherApp() {
             } else {
                 fetchWeatherDataForCity(search.city, search.country);
             }
-        } else { 
-            setError("Something went wrong while searching for your city :(");
+            setSearch(null);
+        } else if(selectedFav) { 
+                setLoading(true);
+            if (selectedFav.city === '' && selectedFav.country === '') {
+                setWarning("Favorite button is empty. Showing your current location.");
+                initializeWeather();
+            } else if (selectedFav.city === '') {
+                setWarning("Favorite city is empty. Cannot search only by country. Showing your current location.");
+                initializeWeather(); 
+            } else {
+                fetchWeatherDataForCity(selectedFav.city , selectedFav.city ); // Will need the coords of the favorite city
+            }
+            setSelectedFav(null);
         }
-    }, [search]);
+        else{
+           initializeWeather(); 
+        } 
+    }, [search, selectedFav]);
 
     const initializeWeather = async () => {
             try {
-                    setLoading(true);
                     setError(null);
 
                     let location;
                     location = await getLocation();
-                    
-                    
                     if (!location){
                         throw new Error("Unable to retrieve location");
                     }
@@ -128,10 +158,6 @@ function WeatherApp() {
                     setLoading(false);
             }
     };
-
-    useEffect(() => {
-        initializeWeather();
-    }, []);
 
     useEffect(() => {
         if (weatherData?.current?.img) {
@@ -178,6 +204,9 @@ function WeatherApp() {
             lastUpdate={lastUpdate}
             Unit={Unit}
             setUnit={setUnit}
+            isFavorite={isFavorite(locationInfo?.city, locationInfo?.country, favorites,  setFavorites)}
+            addToFavorites={() => addToFavorites({city: locationInfo?.city, country: locationInfo?.country}, favorites, setFavorites)}
+            removeFromFavorites={() => removeFromFavorites({city: locationInfo?.city, country: locationInfo?.country}, favorites,  setFavorites)}
         />
         <div className="flex-grow-1 d-flex flex-column justify-content-end mt-3 mt-lg-4 pt-5"> 
             <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
@@ -201,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('weather-app');
   if (container) {
     const root = ReactDOM.createRoot(container);
-    root.render(<WeatherApp />);
+    root.render(<Forecast />); 
   } else {
     console.error('Root container not found in the DOM.');
   }

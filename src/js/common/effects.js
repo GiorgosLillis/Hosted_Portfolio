@@ -8,11 +8,12 @@ AOS.init({
 });
     
 
-function setTheme(theme) {
+export function setTheme(theme) {
   document.body.classList.remove('theme-default', 'theme-light', 'theme-dark');
   document.body.classList.add(`theme-${theme}`);
   localStorage.setItem('site-theme', theme);
 }
+window.setTheme = setTheme;
 
 function getSystemPreferredTheme() {
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {

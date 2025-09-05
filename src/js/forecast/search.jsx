@@ -2,16 +2,18 @@ const cityInput = document.getElementById('city-input');
 const countryInput = document.getElementById('country-input');
 const searchButton = document.getElementById('search-button');
 const searchSection = document.getElementById('search-section');
+const favoriteSection = document.getElementById('favorite-section');
 searchButton.addEventListener('click', toogleSearchInput);
 
 export function toogleSearchInput() {
     const isHidden = (searchSection.className.includes('search-section-hidden'));
-    
-    if (isHidden) {
+
+    if (isHidden) { 
+        favoriteSection.className = favoriteSection.className.replace('search-section-visible', 'search-section-hidden');
         searchSection.className = searchSection.className.replace('search-section-hidden', 'search-section-visible');
         cityInput.className = cityInput.className.replace('search-input-hidden', 'search-input-visible');
         countryInput.className = countryInput.className.replace('search-input-hidden', 'search-input-visible');
-        searchSection.focus();
+        cityInput.focus();
     } else {
         Search();
         searchSection.className = searchSection.className.replace('search-section-visible', 'search-section-hidden');

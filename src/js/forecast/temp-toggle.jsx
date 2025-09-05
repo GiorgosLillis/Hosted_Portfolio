@@ -6,6 +6,7 @@ const UnitToggle = ({ Unit, setUnit}) => {
         <button
           type="button"
           className={`btn btn-outline-light col-6 col-md-12 m-0 rounded-0 ${Unit === 'celsius' ? 'active' : ''}`}
+          aria-label="Celsius"
           onClick={() => setUnit('celsius')}
         >
           Celsius
@@ -13,6 +14,7 @@ const UnitToggle = ({ Unit, setUnit}) => {
         <button
           type="button"
           className={`btn btn-outline-light col-6 col-md-12 m-0 rounded-0 ${Unit === 'fahrenheit' ? 'active' : ''}`}
+          aria-label="Fahrenheit"
           onClick={() => setUnit('fahrenheit')}
         >
           Fahrenheit

@@ -27,11 +27,11 @@ export const LoadingIndicator = () => (
 
 
 export const ErrorMessage = ({ error }) => (
-    <h2 className="alert-heading fs-2 mb-3 text-danger">{error}</h2>
+    <h2 className="alert-heading fs-2 mb-3 text-danger" aria-label={error}  role="alert" aria-atomic="true" aria-live="assetive">{error}</h2>
 );
 
 export const WarningMessage = ({ warning }) => (
-    <h2 className="alert-heading fs-2 mb-3 text-white">{warning}</h2>
+    <h2 className="alert-heading fs-2 mb-3 text-white" aria-label={warning} role="alert" aria-atomic="true" aria-live="polite">{warning}</h2>
 );
 
 
@@ -74,8 +74,8 @@ export function getWindDirection (degrees) {
     }
 };
 
-const warningIcon = <i className="bi bi-exclamation-triangle-fill text-warning mx-2"></i>;
-const dangerIcon = <i className="bi bi-exclamation-triangle-fill text-danger mx-2"></i>;
+const warningIcon = <i className="bi bi-exclamation-triangle-fill text-warning mx-1 mx-lg-2"></i>;
+const dangerIcon = <i className="bi bi-exclamation-triangle-fill text-danger mx-1 mx-lg-2"></i>;
 
 export function getHumidityWaring(humidity){
     if (humidity >= 60){
@@ -160,3 +160,22 @@ export function getSulphurDioxideWarning(SO2) {
     }                                                                                                                 
     return null;                                                                                                                                  
 } 
+
+export function isFavorite  (city, country, favorites) {
+    if (!city || !country) return false;
+    return favorites.some(fav => fav.city.toLowerCase() === city.toLowerCase() && fav.country.toLowerCase() === country.toLowerCase());
+};
+
+ 
+export function addToFavorites (location, favorites,  setFavorites){
+    const updatedFavorites = [...favorites, location];
+    setFavorites(updatedFavorites);
+    localStorage.setItem('favoriteLocations', JSON.stringify(updatedFavorites));
+};
+
+ 
+export function removeFromFavorites (location, favorites, setFavorites){
+    const updatedFavorites = favorites.filter(fav => fav.city.toLowerCase() !== location.city.toLowerCase() || fav.country.toLowerCase() !== location.country.toLowerCase());
+    setFavorites(updatedFavorites);
+    localStorage.setItem('favoriteLocations', JSON.stringify(updatedFavorites));
+};

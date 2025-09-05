@@ -152,6 +152,7 @@ function createBtn() {
   let btn = document.createElement('button');
   btn.innerHTML = '<i class="bi bi-trash"></i>';
   btn.className = 'btn btn-danger btn-sm float-end ms-2';
+  btn.ariaLabel = 'Delete this item';
   btn.onclick = function () {
     this.parentElement.remove();
     clearMessages();
