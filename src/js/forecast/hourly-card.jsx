@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import { useState, memo, React} from 'react';
 import './card.css'
 import { formatters, getUvIndexWarning, getHumidityWaring, getWindSpeedWarning, getWindDirection, getPM10Warning, getPM2_5Warning,
-    getCarbonMonoxideWarning, getNitrogenDioxideWarning, getOzoneWarning, getSulphurDioxideWarning } from './functions';
+    getCarbonMonoxideWarning, getNitrogenDioxideWarning, getOzoneWarning, getSulphurDioxideWarning, useScrollEffect } from './functions';
+import {useIntersectionObserver} from './useIntersectionObserver';
 
-    const HourDetails = ({ hour, onClose, Unit }) => {
+const HourDetails = ({ hour, onClose, Unit }) => {
     if (!hour) return null;
-
+   
 
     const ItemPropWeather = 'list-item col-6 col-md-4 col-lg-12 d-flex justify-content-start';
     const ItemPropAQI = 'list-item col-4 col-md-3 col-lg-12 d-flex justify-content-start';
@@ -44,17 +45,18 @@ import { formatters, getUvIndexWarning, getHumidityWaring, getWindSpeedWarning, 
         </div>
     </>
     );
-};
+    };
 
 // Individual hourly forecast card component
-export const HourlyForecastCard = ({ hour, onClick, Unit }) => { // Added onClick
+const HourlyForecastCard = memo(({ hour, onClick, Unit }) => { // Added onClick
     if (!hour || !hour.time || !hour.temp || !hour.icon) {
         return <div className="p-4">No hourly weather available.</div>;
-    }
+    } 
+    const [ref, isIntersecting] = useIntersectionObserver({ threshold: 0.1 });    
 
     return (
-        <div className='col-3 d-flex justify-content-center align-items-center' onClick={onClick} aria-label="Press for more weather details"> {/* Added onClick */}
-            <div className="card text-white card-daily mb-3 daily-card col-11 col-xl-9 rounded-3">
+       <div ref={ref} className={`d-flex justify-content-center align-items-center card-fade-in ${isIntersecting ? 'is-visible' : ''}`} onClick={onClick} aria-label='Press for more hourly weather details'>
+            <div className="card text-white card-daily mb-3 daily-card col-12 rounded-3">
                 <div className="card-body text-center py-2 px-0 d-flex flex-column justify-content-center align-items-center">
                     <h4 className="card-title mb-1">{formatters.time(hour.timestamp)}</h4>
                     <img
@@ -67,7 +69,7 @@ export const HourlyForecastCard = ({ hour, onClick, Unit }) => { // Added onClic
             </div>
         </div>
     );
-};
+});
 
 export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
     if (!hourlyForecast || hourlyForecast.length === 0) {
@@ -75,6 +77,7 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
     }
 
     const [selectedHour, setSelectedHour] = useState(null);
+    const scrollRef = useScrollEffect(!!selectedHour);
 
     const handleHourClick = (hour) => {
         setSelectedHour(hour);
@@ -85,6 +88,7 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
     };
 
     const visibleCards = 4;
+
 
     // Start index to show the next 4 hours from current time
     const [startIndex, setStartIndex] = useState(() => {
@@ -134,9 +138,7 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
     };
 
    
-
-    // Define hours to display
-    const visibleHours = hourlyForecast.slice(startIndex, startIndex + visibleCards );
+    const visibleHours = hourlyForecast.slice(startIndex, startIndex + visibleCards);
     if (visibleHours.length === 0) {
         return <div className="p-4">No more hourly forecast for today.</div>;
     }
@@ -170,10 +172,10 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
             {sunrise && sunset && (
                 <h3 className='mx-auto mb-2' id='day-duration'>Sunrise: {sunrise} - Sunset: {sunset}</h3>
             )}
-            <section className="row d-flex flex-row justify-self-center jusify-content-between align-items-center daily-row my-3 mx-0 px-2">
+            <section ref={scrollRef} className="row d-flex flex-row justify-self-center jusify-content-between align-items-center daily-row my-3 mx-0">
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-end'>
                     <button 
-                        className="btn btn-link p-0 text-white col-4"
+                        className="btn btn-link p-0 text-white col-4 nav-button"
                         disabled={startIndex === 0}
                         onClick={handlePreviousHours}
                         aria-label = "Previous hours">
@@ -184,17 +186,28 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
                 
                 </div>
                 <div
-                    className="col-12 col-md-10 col-lg-8 d-flex flex-row overflow-hidden justify-content-center align-items-center gx-5 px-0"
-                    onTouchStart={handleTouchStart}
-                    onTouchEnd={handleTouchEnd}
+                    className="col-12 col-md-10 col-lg-8"
+                    style={{ overflow: 'hidden' }}
+                    onTouchStart={!selectedHour ? handleTouchStart : null}
+                    onTouchEnd={!selectedHour ? handleTouchEnd : null}
                 >
-                    {visibleHours.map((hour, index) => (
-                        <HourlyForecastCard key={index} hour={hour} onClick={() => handleHourClick(hour)} Unit={Unit} />
-                    ))}
+                    <div
+                        style={{
+                            display: 'flex',
+                            transition: 'transform 0.3s ease-in-out',
+                            transform: `translateX(-${startIndex * 25}%)`,
+                        }}
+                    >
+                        {hourlyForecast.map((hour, index) => (
+                            <div key={index} style={{ flex: '0 0 25%', padding: '0 15px' }}>
+                                <HourlyForecastCard hour={hour} onClick={() => handleHourClick(hour)} Unit={Unit} />
+                            </div>
+                        ))}
+                    </div>
                 </div>
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-start'>
                         <button 
-                            className="btn btn-link p-0 text-white col-4"
+                            className="btn btn-link p-0 text-white col-4 nav-button"
                             disabled={startIndex + visibleCards >= hourlyForecast.length}
                             onClick={handleNextHours}
                             aria-label = "Next hours">

@@ -36,17 +36,18 @@ body{
 
 
 #list-form .form-control, #list-form .form-select{
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .dragging {
       opacity: 0.5;
+      pointer-events: none;
 }
 
 @media screen and (min-width: 426px){
     #list-form .form-control, #list-form .form-select{
-    font-size: 20px;
-}
+        font-size: 20px;
+    }
 }
 
 @media  screen and (min-width: 1440px) {
@@ -119,8 +120,6 @@ body{
         font-size: 1.1em !important; 
     }
 
-    /* --- Drag and Drop Styles --- */
-    
   
     #displayList {
         list-style-type: decimal !important; 

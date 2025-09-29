@@ -1,8 +1,9 @@
+import { memo } from "react";
 import { formatters, getThermometer, WarningMessage, ErrorMessage} from "./functions.jsx";
 import UnitToggle from "./temp-toggle.jsx";
 
 // The main component that fetches and displays current weather data.
-export const CurrentWeather = ({ locationInfo, weatherData, lastUpdate, warning, error, Unit, setUnit, isFavorite, addToFavorites, removeFromFavorites}) => { 
+const CurrentWeather = memo( ({ locationInfo, weatherData, lastUpdate, warning, error, Unit, setUnit, isFavorite, addToFavorites, removeFromFavorites}) => { 
     
     const handleFavoriteClick = () => {
         if (isFavorite) {
@@ -44,7 +45,7 @@ export const CurrentWeather = ({ locationInfo, weatherData, lastUpdate, warning,
         </section>
         </>
     );
-};
+});
 
 export default CurrentWeather;
 

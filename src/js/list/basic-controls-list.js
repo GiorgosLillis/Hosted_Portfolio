@@ -79,7 +79,6 @@ function saveList(e) {
   const categoryValue = categoryInput.value.trim() || 'Other';
 
   if (!inputValidation(itemValue, quantityValue, unitValue, errorMessage)) {
-    itemInput.focus();
     return;
   }
 
@@ -92,7 +91,6 @@ function saveList(e) {
   if (isDuplicate) {
     errorMessage.textContent = 'Item already exists in the list';
     itemInput.value = '';
-    itemInput.focus();
     return;
   }
 

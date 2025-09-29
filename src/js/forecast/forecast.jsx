@@ -11,6 +11,9 @@ import  HourlyForecast  from './hourly-card.jsx';
 import  './search.jsx';
 import  './favorite.jsx';
 
+
+
+
 function Forecast() {
     const [weatherData, setWeatherData] = useState(null);
     const [locationInfo, setLocationInfo] = useState(null);
@@ -232,6 +235,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const root = ReactDOM.createRoot(container);
     root.render(<Forecast />); 
   } else {
-    console.error('Root container not found in the DOM.');
+    const newContainer = document.createElement('div');
+    newContainer.id = 'weather-app';
+    document.body.appendChild(newContainer);
+    
+    const root = ReactDOM.createRoot(newContainer);
+    root.render(<Forecast />);
   }
 });

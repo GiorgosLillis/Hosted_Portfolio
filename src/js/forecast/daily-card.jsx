@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { memo } from 'react';
 import './card.css'
-import { formatters } from './functions';
-
+import { formatters, useScrollEffect } from './functions';
+import { useIntersectionObserver } from './useIntersectionObserver';
 
 // Individual daily forecast card component
-export const DailyForecastCard = ({ day, onClick, Unit }) => {
+const DailyForecastCard = memo (({ day, onClick, Unit }) => {
+    const [ref, isIntersecting] = useIntersectionObserver({ threshold: 0.1 });
+
     if (!day || !day.date || !day.tempMax || !day.tempMin) {
         return <div className="p-4">No daily weather available.</div>;
     }
@@ -15,8 +17,8 @@ export const DailyForecastCard = ({ day, onClick, Unit }) => {
     let formattedDate = `${Day}/${month}`;
 
     return (
-        <div className='col-3 d-flex justify-content-center align-items-center' onClick={onClick} aria-label='Press for more daily weather details'>
-            <div className="card text-white card-daily mb-3 daily-card col-11 col-xl-9 rounded-3">
+        <div ref={ref} className={`d-flex justify-content-center align-items-center card-fade-in ${isIntersecting ? 'is-visible' : ''}`} onClick={onClick} aria-label='Press for more daily weather details'>
+            <div className="card text-white card-daily mb-3 daily-card col-12 rounded-3">
                 <div className="card-body text-center py-2 px-0 d-flex flex-column justify-content-center align-items-center">
                     <h4 className="card-title mb-1">{formattedDate}</h4>
                     <img
@@ -33,13 +35,14 @@ export const DailyForecastCard = ({ day, onClick, Unit }) => {
             </div>
         </div>
     );
-};
+});
 
 export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
     if (!dailyForecast || dailyForecast.length === 0) {
         return <div className="p-4">No daily forecast available.</div>;
     }
     
+    const scrollRef = useScrollEffect();
     let visibleCards = 4;
     // Show up to 4 days starting from a given index (default 0)
     const [startIndex, setStartIndex] = React.useState(0);
@@ -61,9 +64,6 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
         }
     };
 
-    // Determine the days to display
-    const visibleDays = dailyForecast.slice(startIndex, startIndex + visibleCards );
-
     // Display weeek range as "DD/MM/YYYY - DD/MM/YYYY"
     const firstDayOfWeek = new Date(dailyForecast[0].date); // First day as refernce
     const lastDayOfWeek = new Date(dailyForecast[dailyForecast.length - 1].date); // Last day as refernce
@@ -76,10 +76,10 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
     return (
         <>
             <h2 className='mx-auto mb-0'>{formattedWeekRange}</h2>
-            <section className="row d-flex flex-row justify-self-center jusify-content-between align-items-center daily-row my-3 mx-0 px-2">
+            <section ref={scrollRef} className="row d-flex flex-row justify-self-center jusify-content-between align-items-center daily-row my-3 mx-0">
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-end'>
                     <button 
-                        className="btn btn-link p-0 text-white col-4"
+                        className="btn btn-link p-0 text-white col-4 nav-button"
                         disabled={startIndex == 0}
                         onClick={() => setStartIndex(startIndex - 1)} 
                         aria-label = "Previous hours">
@@ -90,18 +90,29 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
                 
                 </div>
                 <div
-                    className="col-12 col-md-10 col-lg-8 d-flex flex-row overflow-hidden justify-content-center align-items-center gx-5 px-0"
+                    className="col-12 col-md-10 col-lg-8"
+                    style={{ overflow: 'hidden' }}
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                 >
-                    {visibleDays.map((day, index) => (
-                        <DailyForecastCard key={index} day={day} onClick={() => onDayClick(day)} Unit={Unit} />
-                    ))}
+                    <div
+                        style={{
+                            display: 'flex',
+                            transition: 'transform 0.3s ease-in-out',
+                            transform: `translateX(-${startIndex * 25}%)`,
+                        }}
+                    >
+                        {dailyForecast.map((day, index) => (
+                            <div key={index} style={{ flex: '0 0 25%', padding: '0 15px' }}>
+                                <DailyForecastCard day={day} onClick={() => onDayClick(day)} Unit={Unit} />
+                            </div>
+                        ))}
+                    </div>
                 </div>
                 {/* Example controls to change starting day */}
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-start'>
                     <button 
-                        className="btn btn-link p-0 text-white col-4"
+                        className="btn btn-link p-0 text-white col-4 nav-button"
                         disabled={startIndex + visibleCards >= dailyForecast.length}
                         onClick={() => setStartIndex(startIndex + 1)}
                         aria-label = "Next hours">
@@ -114,6 +125,7 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
         </>
     );
 }
+
 
 // Export the main component as default
 export default WeatherForecast;

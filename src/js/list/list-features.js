@@ -1,5 +1,18 @@
 import { updateItemNumbers, List, list_items } from "./basic-controls-list.js";
 
+// --- UTILITY FUNCTION: THROTTLING ---
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const context = this;
+        const args = arguments;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    }
+}
 
 // --- DRAG AND DROP LOGIC ---
 
@@ -7,6 +20,9 @@ import { updateItemNumbers, List, list_items } from "./basic-controls-list.js";
 let currentDraggedElement = null;
 let currentTouchDropTarget = null;
 let longPressTimer = null;
+let touchStartX = 0;
+let touchStartY = 0;
+const dragThreshold = 10; 
 
 /**
  * Attaches drag and drop event listeners (mouse and touch) to a given list item.
@@ -20,6 +36,41 @@ function cleanUpDragOverStyles() {
         item.style.boxShadow = '';
     });
 }
+
+function handleReorderLogic(clientX, clientY, targetElement) {
+    const dropTarget = targetElement ? targetElement.closest('li') : null;
+
+    if (dropTarget && currentDraggedElement && dropTarget !== currentDraggedElement) {
+        const boundingBox = dropTarget.getBoundingClientRect();
+        const offset = boundingBox.y + (boundingBox.height / 2);
+
+        // Remove previous drag-over visual indicator
+        cleanUpDragOverStyles();
+        
+        if (clientY < offset) {
+            // Drop above the target
+            dropTarget.style.boxShadow = `0 -4px 0 var(--bs-effect)`; // Blue line above
+        } else {
+            // Drop below the target
+            dropTarget.style.boxShadow = `0 4px 0 var(--bs-effect)`; // Blue line below
+        }
+        currentTouchDropTarget = dropTarget; // Keep track of the highlighted target
+    } else {
+        cleanUpDragOverStyles();
+        currentTouchDropTarget = null;
+    }
+}
+
+// Throttled version of the drag/reorder logic (limits heavy calculations)
+const throttledReorderLogic = throttle((e) => {
+     if (!currentDraggedElement || e.touches.length === 0) return;
+
+    const touch = e.touches[0];
+    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+    handleReorderLogic(touch.clientX, touch.clientY, targetElement);
+}, 50); // Execute at most every 50ms (20 times per second)
+
+
 
 export function addDragAndDropListeners(listItem) {
     // --- Mouse Drag Events ---
@@ -36,64 +87,53 @@ export function addDragAndDropListeners(listItem) {
 
     listItem.addEventListener('dragover', (e) => {
         e.preventDefault(); // Crucial: Allows a drop to happen
-        if (e.dataTransfer && typeof e.dataTransfer.effectAllowed !== 'undefined') {
-            e.dataTransfer.setData('text/plain', listItem.dataset.item || '');
+        if (currentDraggedElement) {
+            const targetElement = document.elementFromPoint(e.clientX, e.clientY);
+            handleReorderLogic(e.clientX, e.clientY, targetElement);
         }
-
-        cleanUpDragOverStyles();
-
-        const targetLi = e.target.closest('li');
-        // Apply dynamic border for insertion point
-        if (targetLi && targetLi !== currentDraggedElement) {
-            const boundingBox = targetLi.getBoundingClientRect();
-            const offset = boundingBox.y + (boundingBox.height / 2); // Midpoint of the target li
-
-            if (e.clientY < offset) {
-                targetLi.style.boxShadow = 'inset 0 3px 0 0 var(--bs-effect)';
-                targetLi.style.borderBottom = '';
-            } else {
-                targetLi.style.boxShadow = 'inset 0 -3px 0 0 var(--bs-effect)';
-                targetLi.style.borderTop = '';
-            }
+        if (e.dataTransfer && typeof e.dataTransfer.effectAllowed !== 'undefined') {
+            e.dataTransfer.effectAllowed = 'move';
         }
     });
 
     listItem.addEventListener('drop', (e) => {
         e.preventDefault();
-        const dropTarget = e.target.closest('li');
-
-        // Clean up drag-over styling from all items
         cleanUpDragOverStyles();
 
-        if (dropTarget && currentDraggedElement && dropTarget !== currentDraggedElement) {
-            const boundingBox = dropTarget.getBoundingClientRect();
+        // The drop logic is now simplified since we track the desired drop target in handleReorderLogic
+        if (currentDraggedElement && currentTouchDropTarget) {
+            const boundingBox = currentTouchDropTarget.getBoundingClientRect();
+            const clientY = e.clientY;
             const offset = boundingBox.y + (boundingBox.height / 2);
 
-            if (e.clientY < offset) {
-                List.insertBefore(currentDraggedElement, dropTarget);
+            if (clientY < offset) {
+                List.insertBefore(currentDraggedElement, currentTouchDropTarget);
             } else {
-                List.insertBefore(currentDraggedElement, dropTarget.nextSibling);
+                List.insertBefore(currentDraggedElement, currentTouchDropTarget.nextSibling);
             }
-            updateItemNumbers();
-            currentDraggedElement = null;
+            updateItemNumbers(); 
         }
+        currentDraggedElement = null;
+        currentTouchDropTarget = null;
     });
 
     listItem.addEventListener('dragend', () => {
         if (currentDraggedElement) {
             currentDraggedElement.classList.remove('dragging');
         }
-        cleanUpDragOverStyles(); // Ensure all drag-over styles are removed
-        currentDraggedElement = null; // Clear the dragged item reference
+        cleanUpDragOverStyles(); 
+        currentDraggedElement = null; 
+        currentTouchDropTarget = null;
     });
 
-
-    // --- Touch Drag Events ---
     listItem.addEventListener('touchstart', (e) => {
-        // Only proceed if one finger is used for drag (multi-touch could be zoom/scroll)
-
         if (e.touches.length === 1) {
-            // Start a timer to distinguish between tap and drag
+            e.preventDefault(); 
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+
+
             if (longPressTimer) {
                 clearTimeout(longPressTimer);
             }
@@ -101,88 +141,60 @@ export function addDragAndDropListeners(listItem) {
             longPressTimer = setTimeout(() => {
                 currentDraggedElement = listItem;
                 listItem.classList.add('dragging');
-                e.preventDefault();
-            }, 400); // 400ms threshold for drag vs tap
+            }, 400); // 400ms threshold
         }
     });
 
 
     listItem.addEventListener('touchmove', (e) => {
-
-        if (!currentDraggedElement) return;
-        e.preventDefault(); // Prevent scrolling while dragging
-
         const touch = e.touches[0];
-        const clientX = touch.clientX;
-        const clientY = touch.clientY;
-
-        // Find the element directly under the touch point
-        const targetElement = document.elementFromPoint(clientX, clientY);
-        const newTouchDropTarget = targetElement.closest('li');
-
-
-        cleanUpDragOverStyles();
-
-        if (newTouchDropTarget && newTouchDropTarget !== currentDraggedElement) {
-            // Apply drag-over styling based on touch position
-            const boundingBox = newTouchDropTarget.getBoundingClientRect();
-            const offset = boundingBox.y + (boundingBox.height / 2);
-
-            if (clientY < offset) {
-                newTouchDropTarget.style.boxShadow = 'inset 0 3px 0 0 var(--bs-effect)';
-                newTouchDropTarget.style.borderBottom = '';
-            } else {
-                newTouchDropTarget.style.boxShadow = 'inset 0 -3px 0 0 var(--bs-effect)';
-                newTouchDropTarget.style.borderTop = '';
+        if (longPressTimer) {
+            const deltaX = Math.abs(touch.clientX - touchStartX);
+            const deltaY = Math.abs(touch.clientY - touchStartY);
+            if (deltaX > dragThreshold || deltaY > dragThreshold) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+                return;
             }
-            currentTouchDropTarget = newTouchDropTarget;
         }
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
+
+        if (currentDraggedElement) {
+            e.preventDefault(); 
+            currentDraggedElement.classList.add('dragging');
+            throttledReorderLogic(e); 
+        }
+
+       
     });
 
     listItem.addEventListener('touchend', (e) => {
-
-
-        // Clear drag timer if touch ends quickly (it's a tap, not a drag)
         if (longPressTimer) {
             clearTimeout(longPressTimer);
             longPressTimer = null;
-            return;
         }
 
-        if (!currentDraggedElement) return;
-
-        e.preventDefault(); // Prevent default action on touchend
-
-        currentDraggedElement.classList.remove('dragging');
-        cleanUpDragOverStyles(); // Remove any lingering drag-over styles
-
-        // Determine the final drop target
-        const lastTouch = e.changedTouches[0];
-        const finalTargetElement = document.elementFromPoint(lastTouch.clientX, lastTouch.clientY);
-        const finalDropTarget = finalTargetElement ? finalTargetElement.closest('li') : null;
-
-        if (finalDropTarget && currentDraggedElement && finalDropTarget !== currentDraggedElement) {
-            const boundingBox = finalDropTarget.getBoundingClientRect();
+       if (currentDraggedElement && currentTouchDropTarget) {
+            const boundingBox = currentTouchDropTarget.getBoundingClientRect();
+            const lastTouch = e.changedTouches[0];
             const offset = boundingBox.y + (boundingBox.height / 2);
 
             if (lastTouch.clientY < offset) {
-                // Drop above the target
-                List.insertBefore(currentDraggedElement, finalDropTarget);
+                List.insertBefore(currentDraggedElement, currentTouchDropTarget);
             } else {
-                // Drop below the target
-                List.insertBefore(currentDraggedElement, finalDropTarget.nextSibling);
+                List.insertBefore(currentDraggedElement, currentTouchDropTarget.nextSibling);
             }
-            updateItemNumbers(); // Re-number and save the new order
+            updateItemNumbers(); 
         }
-        // Reset global variables
+        
+        if (currentDraggedElement) {
+            currentDraggedElement.classList.remove('dragging');
+        }
+        cleanUpDragOverStyles();
         currentDraggedElement = null;
         currentTouchDropTarget = null;
     });
 
     listItem.addEventListener('touchcancel', () => {
-        // Clean up on touch cancel (e.g., if phone call comes in)
         if (longPressTimer) {
             clearTimeout(longPressTimer);
             longPressTimer = null;

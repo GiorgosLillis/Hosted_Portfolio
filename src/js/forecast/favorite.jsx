@@ -7,11 +7,12 @@ favoriteButton.addEventListener('click', toogleFavorites);
 
 export function toogleFavorites(){
     const isHidden = (favoriteSection.className.includes('search-section-hidden'));
+    searchSection.className = searchSection.className.replace('search-section-visible', 'search-section-hidden');
+    cityInput.className = cityInput.className.replace('search-input-visible', 'search-input-hidden');
+    countryInput .className = countryInput .className.replace('search-input-visible', 'search-input-hidden');
 
     if(isHidden){
-      searchSection.className = searchSection.className.replace('search-section-visible', 'search-section-hidden');
-      cityInput.className = cityInput.className.replace('search-input-visible', 'search-input-hidden');
-      countryInput .className = countryInput .className.replace('search-input-visible', 'search-input-hidden');
+      
       favoriteSection.className = favoriteSection.className.replace('search-section-hidden', 'search-section-visible');   
       showFavorites();
     }else{

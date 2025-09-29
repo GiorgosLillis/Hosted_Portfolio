@@ -7,9 +7,11 @@ searchButton.addEventListener('click', toogleSearchInput);
 
 export function toogleSearchInput() {
     const isHidden = (searchSection.className.includes('search-section-hidden'));
+    favoriteSection.innerHTML = ''; 
+    favoriteSection.className = favoriteSection.className.replace('search-section-visible', 'search-section-hidden');
 
     if (isHidden) { 
-        favoriteSection.className = favoriteSection.className.replace('search-section-visible', 'search-section-hidden');
+        
         searchSection.className = searchSection.className.replace('search-section-hidden', 'search-section-visible');
         cityInput.className = cityInput.className.replace('search-input-hidden', 'search-input-visible');
         countryInput.className = countryInput.className.replace('search-input-hidden', 'search-input-visible');

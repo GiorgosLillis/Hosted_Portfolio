@@ -1,3 +1,29 @@
+import { useEffect, useRef } from 'react';
+
+export const useScrollEffect = (disabled) => {
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (ref.current && !disabled) {
+                const scrollY = window.scrollY;
+                const transformValue = `translateX(${scrollY * 0.1}px)`; // Adjust the multiplier for desired effect
+                ref.current.style.transform = transformValue;
+            } else if (ref.current && disabled) {
+                ref.current.style.transform = 'translateX(0px)';
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, [disabled]);
+
+    return ref;
+};
+
 // Helper functions for displaying states and icons
 export const formatters = {
     temperature: (temp, unit) => {
