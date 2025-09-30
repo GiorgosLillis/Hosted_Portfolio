@@ -23,7 +23,6 @@ export async function getCityLocation(city, country) {
 
     const cachedCity =  JSON.parse(localStorage.getItem(CITY_CACHE_KEY));
     const currentTime = new Date().getTime();
-
     if(cachedCity && currentTime - cachedCity.timestamp < 24 * 60 * 60 * 1000 && cachedCity.city === city && cachedCity.country === country){
       console.log("City info is fresh and viable, using from localStorage");
       return cachedCity;
@@ -175,10 +174,13 @@ export function getCachedWeather() {
     if (isWeatherDataFresh()){
         const weather_temp = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
         const cachedLocation = JSON.parse(localStorage.getItem(LOCATION_CACHE_KEY));
-        if(localStorage.getItem('searched-city') && weather_temp.city === localStorage.getItem('searched-city') ){
+        const cashedCity = JSON.parse(localStorage.getItem(CITY_CACHE_KEY));
+        if(cashedCity && weather_temp.city === cashedCity.city && weather_temp.country === cashedCity.country){
+            console.log('Using cached weather for searched city');
             return weather_temp;
         } 
         else if(cachedLocation && weather_temp.city === cachedLocation.city){
+            console.log('Using cached weather for current location');
             return weather_temp;
         }
         return null;

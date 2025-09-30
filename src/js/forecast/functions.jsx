@@ -53,11 +53,11 @@ export const LoadingIndicator = () => (
 
 
 export const ErrorMessage = ({ error }) => (
-    <h2 className="alert-heading fs-2 mb-3 text-danger" aria-label={error}  role="alert" aria-atomic="true" aria-live="assetive">{error}</h2>
+    <h2 className="alert-heading fs-2 mb-3 text-danger text-center" aria-label={error}  role="alert" aria-atomic="true" aria-live="assetive">{error}</h2>
 );
 
 export const WarningMessage = ({ warning }) => (
-    <h2 className="alert-heading fs-2 mb-3 text-white" aria-label={warning} role="alert" aria-atomic="true" aria-live="polite">{warning}</h2>
+    <h2 className="alert-heading fs-2 mb-3 text-white text-center" aria-label={warning} role="alert" aria-atomic="true" aria-live="polite">{warning}</h2>
 );
 
 

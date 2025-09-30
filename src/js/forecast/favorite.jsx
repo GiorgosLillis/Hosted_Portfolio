@@ -46,8 +46,8 @@ function showFavorites(){
 }
 
 export function selectFav(fav){
-    const country = fav.country ? fav.country : '';
-    const city = fav.city ? fav.city : '';
+    const city = fav.city.trim();
+    const country = fav.country.trim();
     const searchEvent = new CustomEvent('favSearch', { detail: { city, country } });
     document.dispatchEvent(searchEvent);
 }

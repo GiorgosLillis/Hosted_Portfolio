@@ -59,21 +59,65 @@ function Forecast() {
         };
     }, []);
 
+    useEffect(() => {
+        console.log("No search or favorite selected, initializing weather for current location");
+        initializeWeather();
+    }, []);
+
+    useEffect(() => {
+        if (search) {
+            setLoading(true);
+            if (search.city === '' && search.country === '') {
+                setWarning("Search fields are empty. Showing your current location.");
+                initializeWeather();
+            } else if (search.city === '') {
+                setWarning("City field is empty. Cannot search only by country. Showing your current location.");
+                initializeWeather();
+            } else {
+                fetchWeatherDataForCity(search.city, search.country);
+            }
+            setSearch(null);
+        }
+    }, [search]);
+
+    useEffect(() => {
+        if (selectedFav) {
+            setLoading(true);
+            if (selectedFav.city === '' && selectedFav.country === '') {
+                setWarning("Favorite button is empty. Showing your current location.");
+                initializeWeather();
+            } else if (selectedFav.city === '') {
+                setWarning("Favorite city is empty. Cannot search only by country. Showing your current location.");
+                initializeWeather();
+            } else {
+                fetchWeatherDataForCity(selectedFav.city, selectedFav.country); // Will need the coords of the favorite city
+            }
+            setSelectedFav(null);
+        }
+    }, [selectedFav]); 
+    
     const fetchWeatherDataForCity = async (city, country) => {
         try {
             setError(null);
             setWarning(null);
-         
+
             const location = await getCityLocation(city, country);
             if (!location) {
                 throw new Error("Unable to retrieve location for the specified city");
             }
 
-            const weatherData = await fetchWeather(location);
-            if (!weatherData) {
+            // Fetch weather data from API
+            let weatherData;
+            const cachedWeather = getCachedWeather();
+            if(cachedWeather !== null){
+                weatherData = cachedWeather;
+            }
+            else{
+                weatherData = await fetchWeather(location);
+            }
+            if (!weatherData){
                 throw new Error("Unable to fetch weather data");
             }
-
             setLocationInfo(location);
             setWeatherData(weatherData);
             setLastUpdate(new Date(weatherData.time));
@@ -92,42 +136,9 @@ function Forecast() {
         }
     };
 
-    useEffect(() => {
-      
-        if (search) {   
-            setLoading(true);
-            if (search.city === '' && search.country === '') {
-                setWarning("Search fields are empty. Showing your current location.");
-                initializeWeather();
-            } else if (search.city === '') {
-                setWarning("City field is empty. Cannot search only by country. Showing your current location.");
-                initializeWeather(); 
-            } else {
-                fetchWeatherDataForCity(search.city, search.country);
-            }
-            setSearch(null);
-        } else if(selectedFav) { 
-                setLoading(true);
-            if (selectedFav.city === '' && selectedFav.country === '') {
-                setWarning("Favorite button is empty. Showing your current location.");
-                initializeWeather();
-            } else if (selectedFav.city === '') {
-                setWarning("Favorite city is empty. Cannot search only by country. Showing your current location.");
-                initializeWeather(); 
-            } else {
-                fetchWeatherDataForCity(selectedFav.city , selectedFav.city ); // Will need the coords of the favorite city
-            }
-            setSelectedFav(null);
-        }
-        else{
-           initializeWeather(); 
-        } 
-    }, [search, selectedFav]);
-
     const initializeWeather = async () => {
             try {
                     setError(null);
-
                     let location;
                     location = await getLocation();
                     if (!location){
@@ -135,24 +146,21 @@ function Forecast() {
                     }
 
                     // Fetch weather data from API
+                    let weatherData;
                     const cachedWeather = getCachedWeather();
-                    if (cachedWeather){
-                        console.log('Weather data is fresh, using from localStorage');
-                        setLocationInfo(location);
-                        setWeatherData(cachedWeather);
-                        setLastUpdate(new Date(cachedWeather.time));
-                        return;
+                    if(cachedWeather !== null){
+                        weatherData = cachedWeather;
                     }
-                    
-                    const weatherData = await fetchWeather(location);
-                    if (!weatherData) {
+                    else{
+                        weatherData = await fetchWeather(location);
+                    }
+                    if (!weatherData){
                         throw new Error("Unable to fetch weather data");
                     }
-
-                    // Assume data contains { weatherData, locationInfo, time }
                     setLocationInfo(location);
                     setWeatherData(weatherData);
                     setLastUpdate(new Date(weatherData.time));
+                    
 
             } catch (err) {
                     console.error("Weather initialization failed:", err);
