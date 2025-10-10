@@ -3,9 +3,14 @@
   "version": 2,
   "builds": [
     { "src": "api/email.js", "use": "@vercel/node" },
-    { "src": "api/weather.js", "use": "@vercel/node" },
-    { "src": "api/Reverse_Location.js", "use": "@vercel/node" },
-    { "src": "api/Forward_Location.js", "use": "@vercel/node" },
+    { "src": "api/weather/weather.js", "use": "@vercel/node" },
+    { "src": "api/weather/Reverse_Location.js", "use": "@vercel/node" },
+    { "src": "api/weather/Forward_Location.js", "use": "@vercel/node" },
+    { "src": "api/database/login.js", "use": "@vercel/node" },
+    { "src": "api/database/edit.js", "use": "@vercel/node" },
+    { "src": "api/database/register.js", "use": "@vercel/node" },
+    { "src": "api/database/list.js", "use": "@vercel/node" },
+    { "src": "api/database/cities.js", "use": "@vercel/node" },
     {
       "src": "package.json",
       "use": "@vercel/static-build",
@@ -17,8 +22,13 @@
   ],
   "routes": [
     { "src": "/api/send-email", "dest": "/api/email.js" },
-    { "src": "/api/weather", "dest": "/api/weather.js" },
-    { "src": "/api/Reverse_Location", "dest": "/api/Reverse_Location.js" },
-    { "src": "/api/Forward_Location", "dest": "/api/Forward_Location.js" }
+    { "src": "/api/weather", "dest": "/api/weather/weather.js" },
+    { "src": "/api/Reverse_Location", "dest": "/api/weather/Reverse_Location.js" },
+    { "src": "/api/Forward_Location", "dest": "/api/weather/Forward_Location.js" },
+    { "src": "/api/login", "dest": "/api/database/login.js" },
+    { "src": "/api/sign-up", "dest": "/api/database/register.js" },
+    { "src": "/api/edit", "dest": "/api/database/edit.js" },
+    { "src": "/api/list", "dest": "/api/database/list.js" },
+    { "src": "/api/cities", "dest": "/api/database/cities.js" }
   ]
 }

@@ -104,21 +104,23 @@ async function callLocationAPI(city, country) {
   } catch (err) {
     // Check for geolocation errors
     if (err.code) {
+      let message;
       switch (err.code) {
         case err.PERMISSION_DENIED:
-          console.error("User denied the request for Geolocation.");
+          message = "User denied the request for Geolocation. Please enable location services in your browser settings.";
           break;
         case err.POSITION_UNAVAILABLE:
-          console.error("Location information is unavailable.");
+          message = "Location information is unavailable. Please check your network connection.";
           break;
         case err.TIMEOUT:
-          console.error("The request to get user location timed out.");
+          message = "The request to get user location timed out.";
           break;
         default:
-          console.error("An unknown geolocation error occurred.");
+          message = "An unknown geolocation error occurred.";
       }
+      console.error(message);
       // Re-throw the error so it can be handled by the caller.
-      throw new Error("Geolocation failed.");
+      throw new Error(message);
     } else {
       // This is the crucial part: if the error doesn't have a `.code`, 
       // it's likely a network or server-side error.

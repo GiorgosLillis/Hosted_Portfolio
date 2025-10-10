@@ -123,7 +123,7 @@ export function showLoadingIndicator() {
 }
 
 export function showError(message) {
-    error = `<div class="error-message alert alert-danger">${message}</div>`;
+    let error = `<div class="error-message alert alert-danger">${message}</div>`;
     console.error(message);
     return error;
 }

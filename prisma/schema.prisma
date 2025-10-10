@@ -1,0 +1,86 @@
+// schema.prisma
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------------
+// --- 1. CORE AUTHENTICATION ---
+// ------------------------------------------------------------------
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  firstName     String?  @map("first_name")
+  lastName      String?  @map("last_name")
+  
+  // Timestamps (Recommended)
+  createdAt     DateTime @default(now()) @map("created_at")
+  lastLoginAt   DateTime? @map("last_login_at")
+  
+  // Relations: Direct links to the two user lists
+  favoriteCities UserFavoriteCity[]
+  shoppingList   UserShoppingListItem[]
+
+  @@map("users")
+}
+
+// ------------------------------------------------------------------
+// --- 2. CITY LOOKUP TABLE (Stores City Details) ---
+// ------------------------------------------------------------------
+model City {
+  id            Int      @id @default(autoincrement())
+  name          String
+  country       String
+  latitude      Decimal // Stores the coordinate value
+  longitude     Decimal // Stores the coordinate value
+
+  // Ensures we don't duplicate the same city (e.g., two "Paris, France" entries)
+  @@unique([name, country]) 
+  
+  // Relation back to the list of users who favorited this city
+  favoritedBy    UserFavoriteCity[]
+
+  @@map("cities")
+}
+
+// ------------------------------------------------------------------
+// --- 3. JUNCTION TABLES (The User's Lists) ---
+// ------------------------------------------------------------------
+
+// A. Favorite Cities List
+model UserFavoriteCity {
+  userId        Int      @map("user_id")
+  cityId        Int      @map("city_id") // Links to the City table to get details
+  addedAt       DateTime @default(now()) @map("added_at")
+  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city          City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@id([userId, cityId]) // Composite key for one city per user list
+  @@map("user_favorite_cities")
+}
+
+// B. Shopping List
+model UserShoppingListItem {
+  itemId        Int  
+  userId        Int      @map("user_id")
+     
+  // Specific data for this list item
+  name          String   
+  quantity      Decimal
+  measure       String
+  isPurchased   Boolean  @default(false) @map("is_purchased")
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, itemId]) // Composite key for one item per user list
+  @@map("user_shopping_list_items")
+}

@@ -1,10 +1,3 @@
-function sanitizeInput(input) {
-  return input
-    .replace(/</g, '&lt;')  // Escape HTML tags
-    .replace(/>/g, '&gt;')
-    .trim();              // Remove whitespace
-}
-
 const form = document.getElementById("contactForm");
 form.addEventListener("submit", async function (e) {
    
@@ -31,9 +24,9 @@ form.addEventListener("submit", async function (e) {
     }
       
     const formData = {
-      email: sanitizeInput(document.getElementById("email").value),
-      subject: sanitizeInput(document.getElementById("subject").value),
-      message: sanitizeInput(document.getElementById("message").value),
+      email: document.getElementById("email").value,
+      subject: document.getElementById("subject").value,
+      message: document.getElementById("message").value,
       'g-recaptcha-response': token
     };
 

@@ -1,0 +1,11 @@
+.profile-span{
+    color: var(--bs-text-secondary) !important;
+    text-decoration: none !important;
+    font-weight: bold !important;
+}
+
+.profile-btn, .conditions{
+  background-color: transparent !important; 
+  color: var(--bs-text) !important;
+  border: 0 !important;
+}

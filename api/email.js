@@ -1,6 +1,7 @@
+import sanitizeHTML from '../../lib/sanitize.js';
 const nodemailer = require('nodemailer');
 const axios = require('axios');
-const dotenv = require('dotenv');
+require('dotenv').config({ path: '/.env' });
 
 
 async function verifyRecaptcha(token) {
@@ -34,21 +35,25 @@ async function verifyRecaptcha(token) {
 }
 
 function validateInputs(email, subject, message) {
+
+  const safe_subject = sanitizeHTML(subject);
+  const safe_message = sanitizeHTML(message);
+  
   const errors = [];
   
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errors.push('Please enter a valid email address');
   }
   
-  if (!subject || subject.trim().length < 1 || subject.length > 100) {
+  if (!safe_subject || safe_subject.trim().length < 1 || safe_subject.length > 100) {
     errors.push('Subject must be between 2-100 characters');
   }
   
-  if (!message || message.trim().length < 1 || message.length > 1000) {
+  if (!safe_message ||  safe_message.trim().length < 1 ||  safe_message.length > 1000) {
     errors.push('Message must be between 10-1000 characters');
   }
   
-  return errors;
+  return { errors, safe_subject, safe_message };
 }
 
 const transporter = nodemailer.createTransport({
@@ -73,9 +78,9 @@ module.exports = async (req, res) => {
     });
   }
   
-  dotenv.config();
   try {
     const { email, subject, message, 'g-recaptcha-response': recaptchaToken } = req.body;
+
 
     if (!email || !subject || !message) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -105,7 +110,7 @@ module.exports = async (req, res) => {
     });
     }
 
-    const validationErrors = validateInputs(email, subject, message);
+    const { errors: validationErrors, safe_subject, safe_message } = validateInputs(email, subject, message);
     if (validationErrors.length > 0) {
       return res.status(400).json({
         success: false,
@@ -117,9 +122,9 @@ module.exports = async (req, res) => {
     const mailOptions = {
       from: `"Contact Form" <${process.env.EMAIL_ID}>`,
       to: process.env.EMAIL_ID,
-      subject: `[Contact Form] ${subject}`,
-      text: `From: ${email}\n\n${message}`,
-      html: `<p><strong>From:</strong> ${email}</p><p>${message.replace(/\n/g, '<br>')}</p>`,
+      subject: `[Contact Form] ${safe_subject}`,
+      text: `From: ${email}\n\n${safe_message}`,
+      html: `<p><strong>From:</strong> ${email}</p><p>${safe_message.replace(/\n/g, '<br>')}</p>`,
       replyTo: email
     };
 

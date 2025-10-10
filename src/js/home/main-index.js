@@ -1,9 +1,9 @@
 // main-index.js - Refactored to use new API functions
 import { getLocation, fetchWeather, getCachedWeather} from '../weather/weather-api.js';
-import { 
-    displayLocation, 
-    displayCurrentWeather, 
-    showLoadingIndicator, 
+import {
+    displayLocation,
+    displayCurrentWeather,
+    showLoadingIndicator,
     showError
 } from '../weather/display.js';
 
@@ -12,7 +12,7 @@ export const current_weather = document.getElementById('current_weather');
 export const location = document.getElementById('location');
 
 async function init() {
-    showLoadingIndicator(current_weather);
+    showLoadingIndicator();
 
     try {
         // Get location information
@@ -33,17 +33,17 @@ async function init() {
             
             // Display current weather
             current_weather.innerHTML = displayCurrentWeather(
-                weatherInfo.current.temperature, 
-                weatherInfo.current.condition, 
-                weatherInfo.current.icon, 
+                weatherInfo.current.temperature,
+                weatherInfo.current.condition,
+                weatherInfo.current.icon,
                 weatherInfo.time
             );
         } else {
-            current_weather.textContent = ("Weather data is not available.", current_weather);
+            showError('Weather data is unavailable.', current_weather);
         }
     } catch (err) {
         console.error("An error occurred during initialization:", err);
-        current_weather.textContent = ("Failed to get location or weather data.", current_weather);
+        current_weather.innerHTML = err.message
     }
 }
 

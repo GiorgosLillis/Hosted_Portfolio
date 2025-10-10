@@ -117,10 +117,8 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 git clone https://github.com/GiorgosLillis/Hosted_Portfolio.git
 cd Hosted_Portfolio
 
-# Make sure you have Node.js installed: https://nodejs.org/
-npm install nodemailer axios dotenv
-
-# Set up your own environment variables in .env file and in Vercel 
+# Install all dependencies
+npm install
 
 # Install Vercel CLI
 npm install -g vercel
