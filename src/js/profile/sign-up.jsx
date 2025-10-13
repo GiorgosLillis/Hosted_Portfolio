@@ -49,6 +49,10 @@ const SignUp = ({ switchToLogin }) => {
 
             // Assuming the API returns a token, you can save it and redirect
             login(data.user, data.token);
+            setPassword('');
+            setEmail('');
+            setFirstName('');
+            setLastName('');
             alert('Sign-Up successful!'); // Placeholder for success action
 
         } catch (err) {

@@ -88,7 +88,9 @@ export default async function handler(req, res) {
             success: true,
             message: 'User updated successfully',
             token: token,
-            user: updatedUser
+            email: updatedUser.email,
+            first_name: updatedUser.firstName,
+            last_name: updatedUser.lastName
         });
 
     } catch (error) {

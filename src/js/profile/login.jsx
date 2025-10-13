@@ -38,6 +38,10 @@ const Login = ({ switchToSignUp }) => {
             }
 
             login(data.user, data.token);
+            setPassword('');
+            setEmail('');
+            setFirstName('');
+            setLastName('');
             alert('Login successful!'); // Placeholder for success action
 
         } catch (err) {
