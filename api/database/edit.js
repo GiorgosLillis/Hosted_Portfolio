@@ -1,5 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import bcrypt from 'bcryptjs';
+import jsonwebtoken from 'jsonwebtoken';
+import { serialize } from 'cookie';
 import sanitizeHTML from '../../lib/sanitize.js';
 import { checkToken, RegexValidation } from './functions.js';
 
@@ -20,12 +22,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) {
-            return res.status(401).json({ error: "Authorization token not provided." });
-        }
-        
-        const user = await checkToken(token);
+        const user = await checkToken(req);
         const userId = user.id;
 
         const { email, current_password, password, first_name, last_name } = req.body;
@@ -47,18 +44,12 @@ export default async function handler(req, res) {
             });
         }
 
+        if (email) updateData.email = email;
+        if (first_name) updateData.firstName = sanitizeHTML(first_name);
+        if (last_name) updateData.lastName = sanitizeHTML(last_name);
 
-       
-        updateData.email = email;
-        if (password && password.trim() !== '') {
+        if (password) {
             updateData.passwordHash = await bcrypt.hash(password, 10);
-        }
-
-        if(first_name && first_name.trim() !== ''){
-           updateData.firstName = sanitizeHTML(first_name);   
-        }
-        if(last_name && last_name.trim() !== ''){
-            updateData.lastName = sanitizeHTML(last_name);   
         }
  
         Object.keys(updateData).forEach(key => {
@@ -70,27 +61,40 @@ export default async function handler(req, res) {
         if (Object.keys(updateData).length === 0) {
              return res.status(400).json({ error: 'No data to update.' });
         }
-
-        const dataToUpdate = {};
-        if (password) dataToUpdate.password = password;
-        if (email) dataToUpdate.email = email;
-        if (first_name) dataToUpdate.firstName = first_name;
-        if (last_name) dataToUpdate.lastName = last_name;
         
         const updatedUser = await prisma.user.update({
             where: {
                 id: userId,
             },
-            data: dataToUpdate,
+            data: updateData,
         });
+
+        let token = req.cookies.token;
+        if (email && email !== user.email) {
+            token = jsonwebtoken.sign(
+                { userId: updatedUser.id, email: updatedUser.email },
+                process.env.JWT_SECRET,
+                { expiresIn: '7d' }
+            );
+        }
+
+        res.setHeader('Set-Cookie', serialize('token', token, { 
+            httpOnly: true,
+            secure: process.env.NODE_ENV !== 'development',
+            sameSite: 'strict',
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+            path: '/'
+        }));
 
         return res.status(200).json({ 
             success: true,
             message: 'User updated successfully',
-            token: token,
-            email: updatedUser.email,
-            first_name: updatedUser.firstName,
-            last_name: updatedUser.lastName
+            user: {
+                id: updatedUser.id,
+                email: updatedUser.email,
+                first_name: updatedUser.firstName,
+                last_name: updatedUser.lastName
+            }
         });
 
     } catch (error) {

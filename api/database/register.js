@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
+import { serialize } from 'cookie';
 import sanitizeHTML from '../../lib/sanitize.js';
 import { RegexValidation } from './functions.js';
 
@@ -37,7 +38,10 @@ export default async function handler(req, res) {
             where: { email: email }
         });
         if (existingUser) {
-            return res.status(400).json({ error: 'User already exists' });
+            return res.status(400).json({
+                success: false,
+                message: "User with this email already exists"
+            });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -57,8 +61,16 @@ export default async function handler(req, res) {
             { expiresIn: '7d' }
         );
 
+        res.setHeader('Set-Cookie', serialize('token', token, { 
+            httpOnly: true,
+            secure: process.env.NODE_ENV !== 'development',
+            sameSite: 'strict',
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+            path: '/'
+        }));
+
         const userData = {id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName};
-        return res.status(200).json({token: token, user: userData});
+        return res.status(200).json({user: userData});
 
     } catch (error) {
         console.error('Server error on register:', error);

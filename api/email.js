@@ -1,8 +1,7 @@
-import sanitizeHTML from '../../lib/sanitize.js';
 const nodemailer = require('nodemailer');
 const axios = require('axios');
-require('dotenv').config({ path: '/.env' });
-
+require('dotenv').config();
+const sanitizeHTML = require('../lib/sanitize.js');
 
 async function verifyRecaptcha(token) {
   if (!token) {

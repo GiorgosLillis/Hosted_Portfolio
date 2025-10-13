@@ -1,6 +1,5 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { jwtDecode } from 'jwt-decode'; // A popular library for decoding JWTs
 
 // Create the context object
 const AuthContext = createContext(null);
@@ -11,41 +10,46 @@ export const useAuth = () => useContext(AuthContext);
 // Provider component to wrap your application
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                const decodedToken = jwtDecode(token);
-                const currentTime = Date.now() / 1000;
-                if (decodedToken.exp > currentTime) {
-                    // Token is valid, set user from decoded data
-                    setUser({ id: decodedToken.userId, email: decodedToken.email });
-                } else {
-                    // Token is expired
-                    localStorage.removeItem('token');
+        fetch('/api/user')
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
                 }
-            } catch (error) {
-                console.error("Error decoding token:", error);
-                localStorage.removeItem('token');
-            }
-        }
+                throw new Error('User not authenticated');
+            })
+            .then(data => {
+                setUser(data.user);
+            })
+            .catch(error => {
+                console.error("Error fetching user:", error);
+                setUser(null);
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
     }, []);
 
-    const login = (userData, token) => {
-        localStorage.setItem('token', token);
+    const login = (userData) => {
         setUser(userData);
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
+        fetch('/api/logout')
+            .catch(error => {
+                console.error('Logout failed:', error);
+            })
+            .finally(() => {
+                setUser(null);
+            });
     };
 
     const isAuthenticated = !!user;
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+        <AuthContext.Provider value={{ user, isAuthenticated, login, logout, isLoading }}>
             {children}
         </AuthContext.Provider>
     );

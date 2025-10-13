@@ -4,14 +4,19 @@ import { AuthProvider, useAuth } from './auth.jsx'; // Import AuthProvider and u
 import LoginForm from './login.jsx';
 import SignUpForm from './sign-up.jsx';
 import EditForm from './edit.jsx';
+import { showToast } from '../common/toast.js';
 
 const AuthManager = () => {
-    const { isAuthenticated, user, logout } = useAuth();
+    const { isAuthenticated, user, logout, isLoading } = useAuth();
     const [view, setView] = useState('initial'); // 'initial', 'login', 'signup'
+
+    if (isLoading) {
+        return <h1 className="p-0 my-3 text-center">Loading...</h1>;
+    }
 
     if (isAuthenticated) {
         // If user is authenticated, show the EditForm/Profile view
-        return <EditForm userData={user} switchToLogout={logout} />;
+        return <EditForm userData={user} switchToLogout={logout} showToast={showToast} />;
     }
 
     const renderInitialView = () => (
@@ -43,9 +48,9 @@ const AuthManager = () => {
     switch (view) {
         case 'login':
             // The login form will call the login function from the context upon success
-            return <LoginForm switchToSignUp={() => setView('signup')} />;
+            return <LoginForm switchToSignUp={() => setView('signup')} showToast={showToast} />;
         case 'signup':
-            return <SignUpForm switchToLogin={() => setView('login')} />;
+            return <SignUpForm switchToLogin={() => setView('login')} showToast={showToast} />;
         case 'initial':
         default:
             return renderInitialView();

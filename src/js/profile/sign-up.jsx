@@ -5,18 +5,16 @@ const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const nameRegex = /^[a-zA-Z'-]{1,50}$/;
 
-const SignUp = ({ switchToLogin }) => {
+const SignUp = ({ switchToLogin, showToast }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [first_name, setFirstName] = useState('');
     const [last_name, setLastName] = useState('');
-    const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth() || {};
 
     const handleSignUp = async () => {
         setIsLoading(true);
-        setError(null);
 
         try {
 
@@ -47,16 +45,15 @@ const SignUp = ({ switchToLogin }) => {
                 throw new Error(data.message || 'Something went wrong');
             }
 
-            // Assuming the API returns a token, you can save it and redirect
-            login(data.user, data.token);
+            login(data.user);
             setPassword('');
             setEmail('');
             setFirstName('');
             setLastName('');
-            alert('Sign-Up successful!'); // Placeholder for success action
+            showToast('Sign-Up successful!', 'success');
 
         } catch (err) {
-            setError(err.message);
+            showToast(err.message, 'danger');
         } finally {
             setIsLoading(false);
         }
@@ -136,8 +133,6 @@ const SignUp = ({ switchToLogin }) => {
                     <span className="d-flex text-start conditions">At most 50 characters long</span>
                 </div>
             </div>
-
-            {error && <div className="alert alert-danger col-8">{error}</div>}
 
             <div className="row w-100 d-flex flex-column justify-content-around align-items-center mb-3">
                 <div className="col-4 d-flex justify-content-center align-items-center">

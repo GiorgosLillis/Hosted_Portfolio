@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
+import { serialize } from 'cookie';
 import { RegexValidation } from './functions.js';
 
 export default async function handler(req, res) {
@@ -61,8 +62,17 @@ export default async function handler(req, res) {
             process.env.JWT_SECRET,
             {expiresIn: '7d'}
         );
+
+        res.setHeader('Set-Cookie', serialize('token', token, { 
+            httpOnly: true,
+            secure: process.env.NODE_ENV !== 'development',
+            sameSite: 'strict',
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+            path: '/'
+        }));
+
         const userData = {id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName};
-        return res.status(200).json({token: token, user: userData});
+        return res.status(200).json({user: userData});
     }
     catch(error){
       

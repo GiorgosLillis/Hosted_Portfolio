@@ -9,3 +9,8 @@
   color: var(--bs-text) !important;
   border: 0 !important;
 }
+
+h5, h4{
+    color: var(--bs-text) !important;
+    font-weight: normal !important;
+}

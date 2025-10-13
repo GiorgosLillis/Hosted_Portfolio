@@ -5,9 +5,9 @@ const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const nameRegex = /^[a-zA-Z'-]{1,50}$/;
 
-const ProfileEdit = ({ switchToLogout }) => {
+const ProfileEdit = ({ switchToLogout, showToast }) => {
 
-    const { user, login } = useAuth();
+    const { user} = useAuth();
     const [originalData, setOriginalData] = useState({});
     const [id, setId] = useState('');
     const [email, setEmail] = useState('');
@@ -15,7 +15,8 @@ const ProfileEdit = ({ switchToLogout }) => {
     const [password, setPassword] = useState('');
     const [first_name, setFirstName] = useState('');
     const [last_name, setLastName] = useState('');
-    const [error, setError] = useState(null);
+    const [created_at, setCreated_At] = useState('');
+    const cre = new Date(created_at).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
@@ -24,21 +25,21 @@ const ProfileEdit = ({ switchToLogout }) => {
             const initialData = {
                 id: user.id || '',
                 email: user.email || '',
-                first_name: user.first_name || '', 
-                last_name: user.last_name || '',
+                first_name: user.firstName || '', 
+                last_name: user.lastName || '',
             };
 
             setId(initialData.id);
             setEmail(initialData.email);
             setFirstName(initialData.first_name);
             setLastName(initialData.last_name);
+            setCreated_At(user.created_at || '');
             setOriginalData(initialData); 
         }
     }, [user]); 
 
     const handleEdit = async () => {
         setIsLoading(true);
-        setError(null);
 
         try {
 
@@ -46,7 +47,7 @@ const ProfileEdit = ({ switchToLogout }) => {
             const hasDataChanges = JSON.stringify(originalData) !== JSON.stringify(currentData);
             const hasPasswordChange = password.length > 0;
             if (!hasDataChanges && !hasPasswordChange) {
-                alert('No changes detected.');
+                showToast('No changes detected.', 'info');
                 setIsLoading(false);
                 return; 
             }
@@ -72,7 +73,7 @@ const ProfileEdit = ({ switchToLogout }) => {
                 email, 
                 current_password,
                 first_name, 
-                last_name 
+                last_name
             };
             if (hasPasswordChange) {
                 payload.password = password;
@@ -96,13 +97,14 @@ const ProfileEdit = ({ switchToLogout }) => {
                 email: payload.email,
                 first_name: payload.first_name,
                 last_name: payload.last_name,
+                created_at: created_at
             });
             setPassword(''); // Clear the password field after a successful change  
-            login(data.user, data.token);
-            alert('Edit successful!'); // Placeholder for success action
+            setCurrent_Password(''); // Clear the current password field after a successful change
+            showToast('Edit successful!', 'success');
 
         } catch (err) {
-            setError(err.message);
+            showToast(err.message, 'danger');
         } finally {
             setIsLoading(false);
         }
@@ -201,9 +203,10 @@ const ProfileEdit = ({ switchToLogout }) => {
                     />
                     <span className="d-flex text-start conditions">At most 50 characters long</span>
                 </div>
+                <div className="col-10 col-md-8 mb-4">
+                    <h5>Profile created at: {cre}</h5>
+                </div>
             </div>
-
-            {error && <div className="alert alert-danger col-8">{error}</div>}
 
             <div className="row w-100 d-flex justify-content-around align-items-center mb-3">
                 <div className="col-5 d-flex justify-content-center align-items-center px-0">

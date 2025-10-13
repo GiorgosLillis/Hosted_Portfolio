@@ -1,16 +1,21 @@
 import { prisma } from '../../lib/prisma.js';
 import jwt from 'jsonwebtoken';
+import { parse } from 'cookie';
+import { serialize } from 'cookie';
 
 const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const nameRegex = /^[a-zA-Z'-]{1,50}$/;
 
-export async function checkToken(token) {
+export async function checkToken(req) {
     if (!process.env.JWT_SECRET) {
         throw new Error('JWT_SECRET is not configured on the server');
     }
 
     try {
+        const cookies = parse(req.headers.cookie || '');
+        const token = cookies.token;
+
         if (!token) {
             throw new Error('No token provided');
         }

@@ -4,16 +4,14 @@ import { useAuth } from './auth.jsx';
 const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-const Login = ({ switchToSignUp }) => {
+const Login = ({ switchToSignUp, showToast }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth() || {};
 
     const handleLogin = async () => {
         setIsLoading(true);
-        setError(null);
 
         try {
             if (!email || !emailRegex.test(email)) {
@@ -37,15 +35,13 @@ const Login = ({ switchToSignUp }) => {
                 throw new Error(data.message|| 'Something went wrong');
             }
 
-            login(data.user, data.token);
+            login(data.user);
             setPassword('');
             setEmail('');
-            setFirstName('');
-            setLastName('');
-            alert('Login successful!'); // Placeholder for success action
+            showToast('Login successful!', 'success');
 
         } catch (err) {
-            setError(err.message);
+            showToast(err.message, 'danger');
         } finally {
             setIsLoading(false);
         }
@@ -87,8 +83,6 @@ const Login = ({ switchToSignUp }) => {
                     />
                 </div>
             </div>
-
-            {error && <div className="alert alert-danger col-8">{error}</div>}
 
             <div className="row w-100 d-flex flex-column justify-content-around align-items-center mb-3">
                 <div className="col-4 d-flex justify-content-center align-items-center">

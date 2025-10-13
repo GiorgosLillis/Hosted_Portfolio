@@ -1,11 +1,9 @@
+import { showToast } from '../common/toast.js';
+
 const form = document.getElementById("contactForm");
 form.addEventListener("submit", async function (e) {
    
     e.preventDefault();
-
-    const toastEl = document.getElementById('formToast');
-    const toastBody = toastEl.querySelector('.toast-body');
-    const toast = new bootstrap.Toast(toastEl);
 
     if (!this.checkValidity()) {
       this.classList.add('was-validated');
@@ -19,7 +17,7 @@ form.addEventListener("submit", async function (e) {
 
     const token = await grecaptcha.execute('6Lc560ErAAAAAP7bly7AL_F_5AxlDf8zW7xxbML6', { action: 'submit' });
     if (!token) {
-      showToast("reCAPTCHA token missing", "danger", toast, toastBody);
+      showToast("reCAPTCHA token missing", "danger");
       return;
     }
       
@@ -56,14 +54,15 @@ form.addEventListener("submit", async function (e) {
       const result = await response.json();
 
       if (response.ok) {
-        showToast(result.message || "Message sent successfully!", "success", toast, toastBody);
+
+        showToast(result.message || "Message sent successfully!", "success");
         form.reset();
       } else {
-        showToast(result.message || "Failed to send message.", "danger", toast, toastBody);
+        showToast(result.message || "Failed to send message.", "danger");
       }
     } catch (err) {
       console.error(err);
-      showToast("Network error. Please try again later.", "danger", toast, toastBody);
+      showToast("Network error. Please try again later.", "danger");
     } finally {
       // Reset button state
       submitBtn.innerHTML = originalBtnText;
@@ -71,20 +70,3 @@ form.addEventListener("submit", async function (e) {
       form.classList.remove('was-validated');
     }
   });
-
-  function showToast(message, type, toast, toastBody) {
-    toastBody.textContent = message;
-    
-    const toastHeader = toast._element.querySelector('.toast-header');
-    toastHeader.className = 'toast-header';
-    toastBody.className = 'toast-body';
-    
-    if (type === "success") {
-      toastHeader.classList.add('bg-success', 'text-white');
-    } else {
-      toastHeader.classList.add('bg-danger', 'text-white');
-    }
-    
-    // Show toast
-    toast.show();
-  }
