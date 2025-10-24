@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from './auth.jsx';
+import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 
 const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -9,6 +10,10 @@ const Login = ({ switchToSignUp, showToast }) => {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth() || {};
+
+    useEffect(() => {
+        loadRecaptchaScript();
+    }, []);
 
     const handleLogin = async () => {
         setIsLoading(true);
@@ -22,14 +27,19 @@ const Login = ({ switchToSignUp, showToast }) => {
                 throw new Error('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character');
             }
 
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email: email, password: password }),
-            });
+            const token = await getRecaptchaToken('login');
 
+                        const response = await fetch('/api/login', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'g-recaptcha-response': token
+                            },
+                            body: JSON.stringify({
+                                email: email,
+                                password: password
+                            }),
+                        });
             const data = await response.json();
             if (!response.ok) {
                 throw new Error(data.message|| 'Something went wrong');

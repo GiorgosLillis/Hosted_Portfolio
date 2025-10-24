@@ -1,49 +1,108 @@
-const cityInput = document.getElementById('city-input');
-const countryInput = document.getElementById('country-input');
-const searchButton = document.getElementById('search-button');
-const searchSection = document.getElementById('search-section');
-const favoriteSection = document.getElementById('favorite-section');
-searchButton.addEventListener('click', toogleSearchInput);
+import React from 'react';
+import Favorites from './favorite.jsx';
 
-export function toogleSearchInput() {
-    const isHidden = (searchSection.className.includes('search-section-hidden'));
-    favoriteSection.innerHTML = ''; 
-    favoriteSection.className = favoriteSection.className.replace('search-section-visible', 'search-section-hidden');
-
-    if (isHidden) { 
-        
-        searchSection.className = searchSection.className.replace('search-section-hidden', 'search-section-visible');
-        cityInput.className = cityInput.className.replace('search-input-hidden', 'search-input-visible');
-        countryInput.className = countryInput.className.replace('search-input-hidden', 'search-input-visible');
-        cityInput.focus();
-    } else {
-        Search();
-        searchSection.className = searchSection.className.replace('search-section-visible', 'search-section-hidden');
-        cityInput.className = cityInput.className.replace('search-input-visible', 'search-input-hidden');
-        countryInput .className = countryInput .className.replace('search-input-visible', 'search-input-hidden');
-    }
-    cityInput.addEventListener('keydown', function(event){
+const Search = ({ city, onCityChange, country, onCountryChange, onSearch }) => {
+    const handleKeyDown = (event) => {
         if (event.key === 'Enter') {
-            event.preventDefault();
-            Search();
-            searchSection.className = searchSection.className.replace('search-section-visible', 'search-section-hidden');
-            cityInput.className = cityInput.className.replace('search-input-visible', 'search-input-hidden');
-            countryInput .className = countryInput .className.replace('search-input-visible', 'search-input-hidden');
+            onSearch(city, country);
         }
-    });
-    countryInput.addEventListener('keydown', function(event){
-        if (event.key === 'Enter') {
-            Search();
-            searchSection.className = searchSection.className.replace('search-section-visible', 'search-section-hidden');
-            cityInput.className = cityInput.className.replace('search-input-visible', 'search-input-hidden');
-            countryInput .className = countryInput.className.replace('search-input-visible', 'search-input-hidden');
-        }
-    });
-}
+    };
 
-export function Search(){
-    const country = countryInput.value.trim() ? countryInput.value.trim() : '';
-    const city = cityInput.value.trim() ? cityInput.value.trim() : '';
-    const searchEvent = new CustomEvent('citySearch', { detail: { city, country } });
-    document.dispatchEvent(searchEvent);
-}
+    return (
+        <section 
+            className="search-section-visible d-flex justify-content-end"
+        >
+            <input 
+                type="text" 
+                className="form-control fs-5" 
+                placeholder="Enter city" 
+                value={city}
+                onChange={(e) => onCityChange(e.target.value)}
+                id='city-input'
+                onKeyDown={handleKeyDown}
+            />
+            <input 
+                type="text" 
+                className="form-control fs-5" 
+                placeholder="Enter country" 
+                value={country}
+                id='country-input'
+                onChange={(e) => onCountryChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+            />
+        </section>
+    );
+};
+
+const Header = ({ 
+    onSearch, 
+    onToggleFavorites, 
+    onToggleSearch, 
+    isSearchOpen,
+    isFavoritesOpen,
+    favorites,
+    onSelectFavorite,
+    onSaveFavorites,
+    searchCity,
+    onSearchCityChange,
+    searchCountry,
+    onSearchCountryChange
+}) => {
+
+    const handleSearchFromPanel = (city, country) => {
+        onSearch(city, country);
+    };
+
+    return (
+        <header className="sticky-top">
+            <nav id="navbar" className="navbar navbar-expand d-flex align-items-start">
+                <section className="container-fluid d-flex justify-content-end align-items-center px-0 py-2">
+                    <ul className="navbar-nav d-flex align-items-center flex-row">
+                        <li className="nav-item mx-3">
+                            <button onClick={onSaveFavorites} className="icon-button nav-button" aria-label="Save favorite locations">
+                                <i className="bi bi-cloud-upload-fill"></i>
+                            </button>
+                        </li>
+                        <li className="nav-item mx-3">
+                            <button onClick={onToggleFavorites} className="icon-button nav-button" aria-label="Show favorite locations">
+                                <i className="bi bi-star-fill"></i>
+                            </button>
+                        </li>
+                        <li className="nav-item mx-3">
+                            <button onClick={onToggleSearch} className="icon-button nav-button" aria-label="Search for a location">
+                                <i className="bi bi-search"></i>
+                            </button>
+                        </li>
+                        <li className="nav-item mx-3">
+                            <a  className="icon-button nav-button" href="./profile.html" aria-label="Go to profile" target="_blank" rel="noopener noreferrer">
+                                <i className="bi bi-person-fill"></i>
+                            </a>
+                        </li>  
+                        <li className="nav-item ms-3 me-3 me-lg-4">
+                            <a  className="icon-button nav-button" href="./index.html" aria-label="Go to home">
+                                <i className="bi bi-house-door-fill"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </section>
+            </nav>
+            {isSearchOpen && (
+                <Search 
+                    city={searchCity}
+                    onCityChange={onSearchCityChange}
+                    country={searchCountry}
+                    onCountryChange={onSearchCountryChange}
+                    onSearch={handleSearchFromPanel}
+                />
+            )}
+            {isFavoritesOpen && (
+                <Favorites
+                    favorites={favorites}
+                    onSelectFavorite={onSelectFavorite}
+                />
+            )}
+        </header>
+    );
+};
+
+export default Header;

@@ -5,6 +5,15 @@ function showToast(message, type = 'success', duration = 5000) {
         return;
     }
 
+    const defaultMessages = {
+        success: 'Operation successful!',
+        info: 'Information message.',
+        warning: 'Warning!',
+        danger: 'An error occurred!'
+    };
+
+    const displayMessage = message || defaultMessages[type] || 'Message';
+
     const toastEl = document.createElement('div');
     toastEl.className = `toast text-white bg-${type} border-0 fs-5`;
     toastEl.setAttribute('role', 'alert');
@@ -16,8 +25,8 @@ function showToast(message, type = 'success', duration = 5000) {
 
     const status = document.createElement('strong');
     status.className = 'me-auto';
-    status.textContent = type === 'success' ? 'SUCCESS' : 'FAIL';
-
+    status.textContent = type.toUpperCase();
+    
     const closeButton = document.createElement('button');
     closeButton.type = 'button';
     closeButton.className = 'btn-close btn-close-white';
@@ -29,7 +38,7 @@ function showToast(message, type = 'success', duration = 5000) {
 
     const toastBody = document.createElement('div');
     toastBody.className = 'toast-body';
-    toastBody.textContent = message;
+    toastBody.textContent = displayMessage;
 
     toastEl.appendChild(toastHeader);
     toastEl.appendChild(toastBody);

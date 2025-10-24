@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from './auth.jsx';
+import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 
 const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+;':",./?-])[A-Za-z\d@$!%*?&#^_+;':",./?-]{8,}$/;
 const nameRegex = /^[a-zA-Z'-]{1,50}$/;
 
 const SignUp = ({ switchToLogin, showToast }) => {
@@ -13,36 +14,53 @@ const SignUp = ({ switchToLogin, showToast }) => {
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth() || {};
 
+    useEffect(() => {
+        loadRecaptchaScript();
+    }, []);
+
     const handleSignUp = async () => {
         setIsLoading(true);
 
         try {
 
             if (!email || !emailRegex.test(email)) {
-                throw new Error('Please enter a valid email address');
+                showToast('Please enter a valid email address', 'danger');
+                return;
             }
             if (!password || !passwordRegex.test(password)) {
-                throw new Error('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character');
+                showToast('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character', 'danger');
+                return;
             }
             if (!first_name || !nameRegex.test(first_name)) {
-                throw new Error('Please enter a valid first name (1-50 characters, letters, hyphens, apostrophes only)');
+                showToast('Please enter a valid first name (1-50 characters, letters, hyphens, apostrophes only)', 'danger');
+                return;
             }
             if (!last_name || !nameRegex.test(last_name)) {
-                throw new Error('Please enter a valid last name (1-50 characters, letters, hyphens, apostrophes only)');
+                showToast('Please enter a valid last name (1-50 characters, letters, hyphens, apostrophes only)', 'danger');
+                return;
             }
 
-            const response = await fetch('/api/sign-up', {
+            const token = await getRecaptchaToken('signup');
+
+            const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'g-recaptcha-response': token
                 },
-                body: JSON.stringify({ email, password, first_name, last_name}),
+                body: JSON.stringify({ 
+                    email, 
+                    password, 
+                    first_name, 
+                    last_name
+                }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'Something went wrong');
+                showToast(data.message, 'danger');
+                return;
             }
 
             login(data.user);
@@ -145,7 +163,7 @@ const SignUp = ({ switchToLogin, showToast }) => {
                         disabled={isLoading}
                     >
                         <span className="d-flex text-center justify-content-center">
-                            {isLoading ? 'Signing in...' : 'Sign-up'}
+                            {isLoading ? 'Signing up...' : 'Sign-up'}
                         </span>
                     </button>
                 </div>

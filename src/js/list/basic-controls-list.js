@@ -1,22 +1,25 @@
 import { addDragAndDropListeners } from "./list-features.js";
-import { saveShoppingListToLocalStorage, loadShoppingListFromLocalStorage } from "./memory-handle.js";
+import { saveShoppingList, loadShoppingList, deleteList} from "./memory-handle.js";
 
 export const List = document.getElementById('displayList');
 export const list_items = List.children;
-const itemInput = document.getElementById('item');
-const quantityInput = document.getElementById('quantity');
-const unitInput = document.getElementById('unit');
-const categoryInput = document.getElementById('category');
-const filterCategoryBtn = document.getElementById('filterCategory');
-const filterNameBtn = document.getElementById('filterName');
-const joinfilterBtn = document.getElementById('filterAll');
-const successMessage = document.getElementById('successMessage');
-const errorMessage = document.getElementById('errorMessage');
-const fileInfo = document.getElementById('fileInfo');
-const submitBtn = document.getElementById('submitBtn');
-const resetBtn = document.getElementById('resetBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-const uploadBtn = document.getElementById('uploadBtn');
+export const itemInput = document.getElementById('item');
+export const quantityInput = document.getElementById('quantity');
+export const unitInput = document.getElementById('unit');
+export const categoryInput = document.getElementById('category');
+export const filterCategoryBtn = document.getElementById('filterCategory');
+export const filterNameBtn = document.getElementById('filterName');
+export const joinfilterBtn = document.getElementById('filterAll');
+export const successMessage = document.getElementById('successMessage');
+export const errorMessage = document.getElementById('errorMessage');
+export const fileInfo = document.getElementById('fileInfo');
+export const submitBtn = document.getElementById('submitBtn');
+export const resetBtn = document.getElementById('resetBtn');
+export const downloadBtn = document.getElementById('downloadBtn');
+export const uploadBtn = document.getElementById('uploadBtn');
+export const saveBtn = document.getElementById('saveBtn');
+export const deleteBtn = document.getElementById('deleteBtn');
+export const allButtons = [submitBtn, resetBtn, downloadBtn, uploadBtn, saveBtn, deleteBtn, filterCategoryBtn, filterNameBtn, joinfilterBtn];
 
 
 function inputValidation(item, quantity, unit, errorMessage) {
@@ -60,15 +63,16 @@ function inputValidation(item, quantity, unit, errorMessage) {
   return true;
 }
 
-function clearMessages() {
+export function clearMessages() {
+  successMessage.textContent = '';
   errorMessage.textContent = '';
   fileInfo.textContent = '';
   fileInfo.className = '';
 }
 
 
-submitBtn.addEventListener('click', saveList);
-function saveList(e) {
+submitBtn.addEventListener('click', addToList);
+function addToList(e) {
   e.preventDefault();
 
   clearMessages();
@@ -117,16 +121,15 @@ export function updateItemNumbers() {
   for (let i = 0; i < list_items.length; i++) {
     const listItem = list_items[i];
 
+    const id = i + 1;
     const itemText = listItem.dataset.originalItem;
     const quantity = listItem.dataset.quantity;
     const unit = listItem.dataset.unit;
     const category = listItem.dataset.category || 'Other';
     const check = listItem.dataset.checked;
 
-    let displayContent = `${category}: ${itemText} ${quantity}${unit}`.trim();
-    listItem.innerHTML = `
-      ${i + 1}) ${displayContent};
-    `;
+    let displayContent = `${id}) ${category}: ${itemText} ${quantity}${unit}`.trim();
+    listItem.innerHTML = displayContent;
 
     listItem.draggable = "true";
     const removeBtn = createBtn();
@@ -160,7 +163,7 @@ function createBtn() {
 }
 
 resetBtn.addEventListener('click', resetList);
-function resetList() {
+export function resetList() {
   clearMessages();
   List.innerHTML = '';
   document.getElementById('errorMessage').textContent = '';
@@ -198,11 +201,12 @@ function downloadList() {
   else {
     let textContent = list_items_dom
       .map((li) => {
+        const category = li.dataset.category;
         const item = li.dataset.originalItem;
         const quantity = li.dataset.quantity;
         const unit = li.dataset.unit;
         const checked = (li.dataset.checked === 'true') ? 'Got it!' : '';
-        return `${item} ${quantity}${unit} ${checked}`.trim();
+        return `${category} ${item} ${quantity}${unit} ${checked}`.trim();
       })
       .filter(line => line !== '') // Filter out empty lines
       .join('\n');
@@ -223,7 +227,7 @@ function downloadList() {
   let button = document.getElementById('confirmDownloadBtn');
   button.removeEventListener('click', downloadList);
   button.id = 'downloadBtn';
-  button.textContent = 'Download List';
+  button.textContent = 'Download';
   button.addEventListener('click', verify);
 }
 
@@ -298,33 +302,46 @@ async function processUploadedFile(file) {
     }
 
     // Add items from file directly to the list, setting data attributes  
-
     lines.forEach(itemTextLine => {
-      itemTextLine.trim();
       const listItem = document.createElement('li');
       listItem.className = 'list-group-item fs-5 mb-3 rounded-3';
-      // Parse the line into item, quantity, unit for data attributes 
-      const match = itemTextLine.match(/^([A-Za-z\s]+)\s*(\d+(\.\d+)?)\s*([A-Za-z]+)?\s*(Got it!)?$/i);
+      
+      // Regex for "CATEGORY ITEM QUANTITY UNIT Got it!"
+      const match = itemTextLine.match(/^([A-Za-z]+)\s+([A-Za-z\s]+?)\s*(\d+(\.\d+)?)\s*([A-Za-z]+)?\s*(Got it!)?$/i);
+
       if (match) {
-        const item = match[1].trim();
-        const quantity = match[2] || '';
-        const unit = match[4] || '';
-        console.log(match[5]);
-        if (match[5]) {
-          listItem.dataset.checked = 'true';
-        } else {
-          listItem.dataset.checked = 'false';
-        }
-        listItem.dataset.item = item.toUpperCase(); // Store uppercased for comparison
-        listItem.dataset.originalItem = item; // Store original for display and saving
+        const category = match[1].trim();
+        const item = match[2].trim();
+        const quantity = match[3] || '';
+        const unit = match[5] || '';
+        const isChecked = !!match[6];
+
+        listItem.dataset.originalItem = item;
+        listItem.dataset.item = item.toUpperCase();
         listItem.dataset.quantity = quantity;
         listItem.dataset.unit = unit;
+        listItem.dataset.category = category;
+        listItem.dataset.checked = isChecked;
 
-        listItem.textContent = `${category} ${item} ${quantity}${unit} ${match[6]}`.trim();
-        console.log(listItem); // Initial display using original casing
       } else {
-        errorMessage.textContent = `Invalid format in line: "${itemTextLine}". Expected format: "ITEM QUANTITYUNIT"`;
-        return; //Skip line
+        // Fallback for old format "ITEM QUANTITY UNIT"
+        const oldMatch = itemTextLine.match(/^([A-Za-z\s]+)\s*(\d+(\.\d+)?)\s*([A-Za-z]+)?\s*(Got it!)?$/i);
+        if (oldMatch) {
+            const item = oldMatch[1].trim();
+            const quantity = oldMatch[2] || '';
+            const unit = oldMatch[4] || '';
+            const isChecked = !!oldMatch[5];
+
+            listItem.dataset.originalItem = item;
+            listItem.dataset.item = item.toUpperCase();
+            listItem.dataset.quantity = quantity;
+            listItem.dataset.unit = unit;
+            listItem.dataset.category = 'Other'; // Default category
+            listItem.dataset.checked = isChecked;
+        } else {
+            errorMessage.textContent = `Invalid format in line: "${itemTextLine}".`;
+            return; //Skip line
+        }
       }
       List.append(listItem); // Add to DOM
     });
@@ -431,17 +448,19 @@ function joinFilter() {
   successMessage.textContent = 'Items that match all filters!';
 }
 
-// Event listener to save the list when the page is about to be unloaded
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') {
-    saveShoppingListToLocalStorage();
-  }
-});
+saveBtn.addEventListener('click', () => saveShoppingList());
+deleteBtn.addEventListener('click', confirmDelete);
+export function confirmDelete(){
+  clearMessages();
 
-// Fallback
-window.addEventListener('beforeunload', saveShoppingListToLocalStorage);
+  let button = deleteBtn;
+  button.id = 'confirmDeleteBtn';
+  button.textContent = 'Confirm Delete';
+  button.removeEventListener('click', verify);
+  button.addEventListener('click', () => deleteList());
+
+}
+
 
 // Load the shopping list when the DOM content is fully loaded
-document.addEventListener('DOMContentLoaded', loadShoppingListFromLocalStorage);
-
-
+document.addEventListener('DOMContentLoaded', loadShoppingList);

@@ -1,46 +1,58 @@
 import { prisma } from '../../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
-import { serialize } from 'cookie';
 import sanitizeHTML from '../../lib/sanitize.js';
-import { checkToken, RegexValidation } from './functions.js';
+import { checkToken, RegexValidation, setAuthCookies, setCorsHeaders } from './functions.js';
+import { rateLimiter } from '../../lib/rateLimiter.js';
+import { recaptchaMiddleware } from '../recaptcha.js';
 
-export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+const editUserHandler = async (req, res) => {
+    setCorsHeaders(res);
 
     if (req.method === 'OPTIONS') {
         return res.status(204).end();
     }
 
     if (req.method !== 'PUT') {
-        return res.status(405).json({ 
+        return res.status(405).json({
             success: false,
-            message: 'Only PUT requests are allowed' 
+            message: 'Only PUT requests are allowed'
         });
     }
 
     try {
         const user = await checkToken(req);
-        const userId = user.id;
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Not authenticated' });
+        }
+
+        const userKey = `edit_user_attempt:${user.id}`;
+        const { allowed, ttl } = await rateLimiter(userKey, 15, 60); // 15 requests per minute
+
+        if (!allowed) {
+            res.setHeader('Retry-After', ttl);
+            return res.status(429).json({
+                success: false,
+                message: `Too many requests. Please try again in ${ttl} seconds.`
+            });
+        }
 
         const { email, current_password, password, first_name, last_name } = req.body;
         const updateData = {};
 
-      
+
         if(!RegexValidation(email, current_password, password, first_name, last_name, 'edit')) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'Invalid input. Please ensure all fields are correctly filled.' 
+                message: 'Invalid input. Please ensure all fields are correctly filled.'
             });
-        }  
-        
+        }
+
         const passwordMatch = await bcrypt.compare(current_password, user.passwordHash);
         if(!passwordMatch){
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid password' 
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid password'
             });
         }
 
@@ -51,42 +63,27 @@ export default async function handler(req, res) {
         if (password) {
             updateData.passwordHash = await bcrypt.hash(password, 10);
         }
- 
-        Object.keys(updateData).forEach(key => {
-            if (updateData[key] === undefined) {
-                delete updateData[key];
-            }
-        });
 
         if (Object.keys(updateData).length === 0) {
              return res.status(400).json({ error: 'No data to update.' });
         }
-        
+
         const updatedUser = await prisma.user.update({
             where: {
-                id: userId,
+                id: user.id,
             },
             data: updateData,
         });
 
-        let token = req.cookies.token;
-        if (email && email !== user.email) {
-            token = jsonwebtoken.sign(
-                { userId: updatedUser.id, email: updatedUser.email },
-                process.env.JWT_SECRET,
-                { expiresIn: '7d' }
-            );
-        }
+        const token = jsonwebtoken.sign(
+            {userId: user.id, email: updatedUser.email},
+             process.env.JWT_SECRET,
+            {expiresIn: '7d'}
+        );
 
-        res.setHeader('Set-Cookie', serialize('token', token, { 
-            httpOnly: true,
-            secure: process.env.NODE_ENV !== 'development',
-            sameSite: 'strict',
-            maxAge: 60 * 60 * 24 * 7, // 1 week
-            path: '/'
-        }));
+        setAuthCookies(res, token);
 
-        return res.status(200).json({ 
+        return res.status(200).json({
             success: true,
             message: 'User updated successfully',
             user: {
@@ -109,4 +106,8 @@ export default async function handler(req, res) {
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
+}
+
+export default async function handler(req, res) {
+    recaptchaMiddleware(req, res, () => editUserHandler(req, res));
 }

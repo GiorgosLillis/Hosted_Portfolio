@@ -20,10 +20,7 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.css"
     >
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    <link rel="dns-prefetch" href="//smtp.gmail.com">
-    <link rel="preconnect" href="//smtp.gmail.com">
-    <script src="https://www.google.com/recaptcha/api.js?render=6Lc560ErAAAAAP7bly7AL_F_5AxlDf8zW7xxbML6" async defer></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -69,12 +66,14 @@
     >
   </head>
 
+
   <body class="theme-default mb-5 pb-4">
-    <nav
+    <header>
+       <nav
       id="navbar"
       class="navbar navbar-expand-lg fixed-top d-flex align-items-end"
     >
-      <section class="container-fluid">
+      <section class="container-fluid d-flex align-items-center">
         <button
           class="navbar-toggler-text fs-2 d-lg-none text-button"
           data-bs-toggle="collapse"
@@ -119,47 +118,50 @@
             </li>
           </ul>
         </div>
-        <button
-          class="navbar-toggler-text fs-2 d-lg-none text-button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-          aria-controls="navbarNav"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          Content ▼
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item navbar-brand">
-              <a
-                class="nav-link fs-1"
-                href="./list.html"
-                aria-label="Go to list"
-                >List</a
-              >
-            </li>
-            <li class="nav-item navbar-brand">
-              <a
-                class="nav-link fs-1"
-                href="./weather.html"
-                aria-label="Go to weather"
-                >Weather</a
-              >
-            </li>
-            <li class="nav-item navbar-brand">
-              <a
-                class="nav-link fs-1"
-                href="./profile.html"
-                aria-label="Go to profile"
-                target="_blank" rel="noopener noreferrer"
-                ><i class="bi bi-person-fill"></i></a
-              >
-            </li>
-          </ul>
-        </div>
+
+          <button
+            class="navbar-toggler-text fs-2 d-lg-none text-button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNav"
+            aria-controls="navbarNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            Pages ▼
+          </button>
+          <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav ms-lg-4">
+              <li class="nav-item navbar-brand">
+                <a
+                  class="nav-link fs-1"
+                  href="./profile.html"
+                  aria-label="Go to profile"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Profile</a>
+              </li>
+              <li class="nav-item navbar-brand">
+                <a
+                  class="nav-link fs-1"
+                  href="./list.html"
+                  aria-label="Go to list"
+                  >List</a
+                >
+              </li>
+              <li class="nav-item navbar-brand">
+                <a
+                  class="nav-link fs-1"
+                  href="./weather.html"
+                  aria-label="Go to weather"
+                  >Weather</a
+                >
+              </li>
+            </ul>
+          </div>
       </section>
     </nav>
+    </header>
+   
 
     <main class="container-fluid p-0">
       <section
@@ -177,10 +179,11 @@
           >
           interested in web dev
         </h2>
-        <h2 class="fs-2 my-2" id="location"></h2>
+        <h2 class="fs-2 my-2" id="location" aria-live="polite">Getting location</h2>
         <h2
           class="fs-2 my-2 row d-flex align-items-center justify-content-center col-11 col-lg-9 col-xl-6 gx-0"
           id="current_weather"
+          aria-live="polite"
         >
           <span id="loading">Loading weather</span>
         </h2>
@@ -335,10 +338,10 @@
         id="time"
       >
         <div class="text-center d-flex mx-5 my-0">
-          <h2 class="fs-5 mb-0" id="current-date"></h2>
+          <h3 class="fs-5 mb-0" id="current-date"></h3>
         </div>
         <div class="text-center d-flex mx-5 my-0">
-          <h2 class="fs-5 mb-0" id="current-time"></h2>
+          <h3 class="fs-5 mb-0" id="current-time"></h3>
         </div>
       </div>
     </main>

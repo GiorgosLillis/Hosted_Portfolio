@@ -41,7 +41,13 @@ async function callLocationAPI(city, country) {
     // 1. Check if the user searches a city
  
     if(city){
-      const res = await fetch(`/api/Forward_Location?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}`);
+      const res = await fetch('/api/Forward_Location', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ city, country }),
+      });
       if (!res.ok) {
         if (res.status === 404) {
           throw new Error('City not found. Please check the spelling or try a different city.');
@@ -74,7 +80,13 @@ async function callLocationAPI(city, country) {
    
     
     // 3. Make the backend fetch call. This will fail if the server is unreachable.
-    const res = await fetch(`/api/Reverse_Location?lat=${lat}&lon=${lon}`);
+    const res = await fetch('/api/Reverse_Location', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ lat, lon }),
+    });
     
     // 4. Handle HTTP errors (e.g., 404, 500)
     if (!res.ok) {
@@ -144,7 +156,13 @@ function getCurrentPositionPromise() {
 // Fetch new weather data
 export async function fetchWeather(locationInfo) {
     try {
-        const res = await fetch(`/api/weather?lat=${encodeURIComponent(locationInfo.latitude)}&lon=${encodeURIComponent(locationInfo.longitude)}`);
+        const res = await fetch('/api/weather', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ lat: locationInfo.latitude, lon: locationInfo.longitude }),
+        });
         
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
@@ -172,20 +190,13 @@ export async function fetchWeather(locationInfo) {
 }
 
 // Get cached weather data
-export function getCachedWeather() {
+export function getCachedWeather(currentLocationInfo) {
     if (isWeatherDataFresh()){
         const weather_temp = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
-        const cachedLocation = JSON.parse(localStorage.getItem(LOCATION_CACHE_KEY));
-        const cashedCity = JSON.parse(localStorage.getItem(CITY_CACHE_KEY));
-        if(cashedCity && weather_temp.city === cashedCity.city && weather_temp.country === cashedCity.country){
-            console.log('Using cached weather for searched city');
-            return weather_temp;
-        } 
-        else if(cachedLocation && weather_temp.city === cachedLocation.city){
-            console.log('Using cached weather for current location');
+        if(currentLocationInfo && weather_temp.city === currentLocationInfo.city && weather_temp.country === currentLocationInfo.country){
+            console.log('Using cached weather for current location info');
             return weather_temp;
         }
-        return null;
     }
     return null;
 }

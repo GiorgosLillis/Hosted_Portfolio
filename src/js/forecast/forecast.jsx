@@ -2,17 +2,14 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Import the components from the new file.
-import {LoadingIndicator, ErrorMessage, setBackgroundImage, isFavorite, addToFavorites, removeFromFavorites } from './functions.jsx';
+import {LoadingIndicator, ErrorMessage, setBackgroundImage, isFavorite, WarningMessage} from './functions.jsx';
 import CurrentWeather from './current-weather.jsx';
 import { fetchWeather, getLocation, getCachedWeather, getCityLocation} from '../weather/weather-api.js';
 import WeatherForecast  from './daily-card.jsx';
 import ViewToggle from './view-toggle.jsx';
 import  HourlyForecast  from './hourly-card.jsx';
-import  './search.jsx';
-import  './favorite.jsx';
-
-
-
+import Header from './search.jsx';
+import { saveCityList, loadCityList } from './memory-handle.js';
 
 function Forecast() {
     const [weatherData, setWeatherData] = useState(null);
@@ -25,38 +22,18 @@ function Forecast() {
     const [Unit, setUnit] = useState('celsius');
     const [selectedDayHourly, setSelectedDayHourly] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
-    const [search, setSearch] = useState(null);
-    const [selectedFav, setSelectedFav] = useState(null);
     const [favorites, setFavorites] = useState([]);
+    const [openPanel, setOpenPanel] = useState(null); // null, 'search', or 'favorites'
+    const [searchCity, setSearchCity] = useState('');
+    const [searchCountry, setSearchCountry] = useState('');
 
 
     useEffect(() => {
-        const storedFavorites = JSON.parse(localStorage.getItem('favoriteLocations')) || [];
-        setFavorites(storedFavorites);
-    }, []);
-
-    useEffect(() => {
-        const handleCitySearch = (event) => {
-            setSearch(event.detail);
+        const initializeFavorites = async () => {
+            const list = await loadCityList();
+            setFavorites(list);
         };
-
-        document.addEventListener('citySearch', handleCitySearch);
-
-        return () => {
-            document.removeEventListener('citySearch', handleCitySearch);
-        };
-    }, []);
-
-    useEffect(() => {
-        const favCitySearch = (event) => {
-            setSelectedFav(event.detail);
-        };
-
-        document.addEventListener('favSearch', favCitySearch);
-
-        return () => {
-            document.removeEventListener('favSearch', favCitySearch);
-        };
+        initializeFavorites();
     }, []);
 
     useEffect(() => {
@@ -64,51 +41,30 @@ function Forecast() {
         initializeWeather();
     }, []);
 
-    useEffect(() => {
-        if (search) {
-            setLoading(true);
-            if (search.city === '' && search.country === '') {
-                setWarning("Search fields are empty. Showing your current location.");
-                initializeWeather();
-            } else if (search.city === '') {
-                setWarning("City field is empty. Cannot search only by country. Showing your current location.");
-                initializeWeather();
-            } else {
-                fetchWeatherDataForCity(search.city, search.country);
-            }
-            setSearch(null);
-        }
-    }, [search]);
-
-    useEffect(() => {
-        if (selectedFav) {
-            setLoading(true);
-            if (selectedFav.city === '' && selectedFav.country === '') {
-                setWarning("Favorite button is empty. Showing your current location.");
-                initializeWeather();
-            } else if (selectedFav.city === '') {
-                setWarning("Favorite city is empty. Cannot search only by country. Showing your current location.");
-                initializeWeather();
-            } else {
-                fetchWeatherDataForCity(selectedFav.city, selectedFav.country); // Will need the coords of the favorite city
-            }
-            setSelectedFav(null);
-        }
-    }, [selectedFav]); 
-    
-    const fetchWeatherDataForCity = async (city, country) => {
+    const fetchWeatherDataForCity = async ({ name, country, latitude, longitude }) => {
         try {
             setError(null);
             setWarning(null);
+            setLoading(true);
 
-            const location = await getCityLocation(city, country);
+            let location;
+            if (latitude && longitude) {
+                location = {
+                    city: name,
+                    country: country,
+                    latitude: latitude,
+                    longitude: longitude,
+                };
+            } else {
+                location = await getCityLocation(name, country);
+            }
+
             if (!location) {
                 throw new Error("Unable to retrieve location for the specified city");
             }
 
-            // Fetch weather data from API
             let weatherData;
-            const cachedWeather = getCachedWeather();
+            const cachedWeather = getCachedWeather(location);
             if(cachedWeather !== null){
                 weatherData = cachedWeather;
             }
@@ -139,13 +95,15 @@ function Forecast() {
     const initializeWeather = async () => {
             try {
                     setError(null);
+                    setWarning(null);
+                    setLoading(true);
+
                     let location;
                     location = await getLocation();
                     if (!location){
                         throw new Error("Unable to retrieve location");
                     }
 
-                    // Fetch weather data from API
                     let weatherData;
                     const cachedWeather = getCachedWeather();
                     if(cachedWeather !== null){
@@ -178,6 +136,18 @@ function Forecast() {
         }
     }, [weatherData?.current?.img]);
 
+    useEffect(() => {
+        const handleSave = async () => {
+            await saveCityList(favorites);
+        };
+
+        document.addEventListener('saveFavorites', handleSave);
+
+        return () => {
+            document.removeEventListener('saveFavorites', handleSave);
+        };
+    }, [favorites]);
+
     const handleDayClick = (day) => {
         const selectedDay = new Date(day.date).getDate();
         const hourlyForSelectedDay = weatherData.hourly.filter(hour => {
@@ -187,6 +157,40 @@ function Forecast() {
         setSelectedDayHourly(hourlyForSelectedDay);
         setSelectedDate(new Date(day.date));
         setViewMode('hourly');
+    };
+
+    const handleSelectFavorite = (fav) => {
+        setOpenPanel(null); 
+        fetchWeatherDataForCity(fav);
+    };
+
+    const handleSaveFavorites = () => {
+        document.dispatchEvent(new CustomEvent('saveFavorites'));
+    };
+
+    const togglePanel = (panel) => {
+        setOpenPanel(prev => prev === panel ? null : panel);
+    };
+
+    const handleSearch = async (city, country) => {
+        setOpenPanel(null); // Close panel immediately
+        await fetchWeatherDataForCity({ name: city, country: country });
+    };
+
+    const handleSearchIconClick = () => {
+        if (openPanel === 'search') {
+            if (searchCity === '' && searchCountry === '') {
+                setWarning("Search fields are empty. Showing your current location.");
+                initializeWeather();
+            } else if (searchCity === '') {
+                setWarning("City field is empty. Cannot search only by country. Showing your current location.");
+                initializeWeather();
+            } else {
+                handleSearch(searchCity, searchCountry);
+            }
+        } else {
+            setOpenPanel('search');
+        }
     };
 
     if (loading) {
@@ -207,32 +211,53 @@ function Forecast() {
 
     return (
         <>
-        <CurrentWeather
-            warning={warning}
-            error={error}
-            locationInfo={locationInfo}
-            weatherData={weatherData}
-            lastUpdate={lastUpdate}
-            Unit={Unit}
-            setUnit={setUnit}
-            isFavorite={isFavorite(locationInfo?.city, locationInfo?.country, favorites,  setFavorites)}
-            addToFavorites={() => addToFavorites({city: locationInfo?.city, country: locationInfo?.country}, favorites, setFavorites)}
-            removeFromFavorites={() => removeFromFavorites({city: locationInfo?.city, country: locationInfo?.country}, favorites,  setFavorites)}
-        />
-        <div className="flex-grow-1 d-flex flex-column justify-content-end mt-3 mt-lg-4 pt-5"> 
-            <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
-            {viewMode === 'daily' ? (
-                <WeatherForecast dailyForecast={weatherData.daily} onDayClick={handleDayClick} Unit={Unit} />
-            ) : (
-                <HourlyForecast
-                    hourlyForecast={selectedDayHourly || weatherData.hourly}
-                    isToday={selectedDate ? new Date().toDateString() === selectedDate.toDateString() : true}
-                    Unit={Unit}
-                    dailyForecast={weatherData.daily}
-                />
-            )}
-        </div>
-         </>
+            <Header 
+                onSearch={handleSearch} 
+                onToggleFavorites={() => togglePanel('favorites')}
+                onToggleSearch={handleSearchIconClick}
+                isSearchOpen={openPanel === 'search'}
+                isFavoritesOpen={openPanel === 'favorites'}
+                favorites={favorites}
+                onSelectFavorite={handleSelectFavorite}
+                onSaveFavorites={handleSaveFavorites}
+                searchCity={searchCity}
+                onSearchCityChange={setSearchCity}
+                searchCountry={searchCountry}
+                onSearchCountryChange={setSearchCountry}
+            />
+
+            <CurrentWeather
+                warning={warning}
+                error={error}
+                locationInfo={locationInfo}
+                weatherData={weatherData}
+                lastUpdate={lastUpdate}
+                Unit={Unit}
+                setUnit={setUnit}
+                isFavorite={isFavorite(locationInfo?.city, locationInfo?.country, favorites)}
+                addToFavorites={() => {
+                    const updatedFavorites = [...favorites, { name: locationInfo?.city, country: locationInfo?.country, latitude: locationInfo?.latitude, longitude: locationInfo?.longitude }];
+                    setFavorites(updatedFavorites);
+                }}
+                removeFromFavorites={() => {
+                    const updatedFavorites = favorites.filter(fav => fav.name.toLowerCase() !== locationInfo?.city.toLowerCase() || fav.country.toLowerCase() !== locationInfo?.country.toLowerCase());
+                    setFavorites(updatedFavorites);
+                }}
+            />
+            <div className="flex-grow-1 d-flex flex-column justify-content-end mt-3 mt-lg-4 pt-5"> 
+                <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+                {viewMode === 'daily' ? (
+                    <WeatherForecast dailyForecast={weatherData.daily} onDayClick={handleDayClick} Unit={Unit} />
+                ) : (
+                    <HourlyForecast
+                        hourlyForecast={selectedDayHourly || weatherData.hourly}
+                        isToday={selectedDate ? new Date().toDateString() === selectedDate.toDateString() : true}
+                        Unit={Unit}
+                        dailyForecast={weatherData.daily}
+                    />
+                )}
+            </div>
+        </>
     );
 }
 

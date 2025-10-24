@@ -43,7 +43,7 @@ export const setBackgroundImage = (imageUrl) => {
 
 
 export const LoadingIndicator = () => (
-    <div className="text-center p-5">
+    <div className="d-flex flex-column justify-content-center align-items-center vh-100 p-5" aria-label="Loading weather data">
         <div className="spinner-border text-warning" role="status">
             <span className="visually-hidden text-warning">Loading...</span>
         </div>
@@ -173,7 +173,8 @@ export function getOzoneWarning(O3) {
     }                            
     else if (O3 > 150){
         return dangerIcon;
-    }                                                                                                                 
+    }
+
     return null;                                                                                                                                  
 } 
 
@@ -188,20 +189,10 @@ export function getSulphurDioxideWarning(SO2) {
 } 
 
 export function isFavorite  (city, country, favorites) {
-    if (!city || !country) return false;
-    return favorites.some(fav => fav.city.toLowerCase() === city.toLowerCase() && fav.country.toLowerCase() === country.toLowerCase());
-};
-
- 
-export function addToFavorites (location, favorites,  setFavorites){
-    const updatedFavorites = [...favorites, location];
-    setFavorites(updatedFavorites);
-    localStorage.setItem('favoriteLocations', JSON.stringify(updatedFavorites));
-};
-
- 
-export function removeFromFavorites (location, favorites, setFavorites){
-    const updatedFavorites = favorites.filter(fav => fav.city.toLowerCase() !== location.city.toLowerCase() || fav.country.toLowerCase() !== location.country.toLowerCase());
-    setFavorites(updatedFavorites);
-    localStorage.setItem('favoriteLocations', JSON.stringify(updatedFavorites));
+    if (!city || !country || !favorites) return false;
+    return favorites.some(fav =>
+        fav && fav.name && fav.country &&
+        fav.name.toLowerCase() === city.toLowerCase() &&
+        fav.country.toLowerCase() === country.toLowerCase()
+    );
 };

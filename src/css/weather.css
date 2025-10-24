@@ -75,6 +75,7 @@ h1, h2, h3, .nav-link, i{
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.5);
     transform-origin: right center; /* So it scales from the icon */
+    max-width: 250px;
 }
 
 #city-input::placeholder, #country-input::placeholder{
@@ -96,24 +97,23 @@ h1, h2, h3, .nav-link, i{
     padding: .375rem .75rem;
 }
 
-.favButton{
-    font-size: 1.5rem;
-    cursor: pointer;
-    margin: 0 10px;
-    border: 0;
-}
-
-.favButton:hover{
+.icon-button:hover{
     transform: scale(1.1);
 }
 
 .icon-button {
+  font-size: 2rem;
   background: none;
-  border: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
+  border: none;
   color: aliceblue;
   cursor: pointer;
+  border: 0;
+}
+
+.favButton:hover{
+    cursor: pointer;
 }
 
 .sr-only {

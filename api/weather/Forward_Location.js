@@ -1,14 +1,19 @@
-const countries = require('./flat-ui__data-Mon Sep 01 2025.json');
+import { setCorsHeaders } from '../database/functions.js';
+import countries from './flat-ui__data-Mon Sep 01 2025.json' with { type: 'json' };
+import { rateLimiter } from '../../lib/rateLimiter.js';
 
-// Move countryCodes to module scope
 const countryCodes = {};
+const cache = {};
+
 
 function TableInit(){
+    
     countries.forEach(country => {
-      // Ensure correct property names based on your JSON structure
       countryCodes[country.Name] = country.Code;
     });
 }
+
+TableInit();
 
 function LookUp (country){
   for (const [name, code] of Object.entries(countryCodes)) {
@@ -20,20 +25,45 @@ function LookUp (country){
 }
 
 
-module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+export default async (req, res) => {
+  setCorsHeaders(res);
 
-  const {city, country} = req.query;
+  if (req.method === 'OPTIONS') {
+      return res.status(204).end();
+  }
+
+  const userKey = `forward_location_attempt:${req.ip}`;
+  const { allowed, ttl } = await rateLimiter(userKey, 10, 60); // 10 requests per minute per IP
+
+  if (!allowed) {
+      res.setHeader('Retry-After', ttl);
+      return res.status(429).json({
+          success: false,
+          message: `Too many requests. Please try again in ${ttl} seconds.`
+      });
+  }
+
+  const {city, country} = req.body;
   const apiKey = process.env.LOCATION_API_KEY;
 
-  if (!city) {
-    return res.status(400).json({ error: "City name is required." });
+  // Validate city
+  if (typeof city !== 'string' || city.trim() === '') {
+      return res.status(400).json({ error: "City name is required and must be a non-empty string." });
   }
-  if(!country){
-    console.log('Country is not required!');
+  if (city.length > 100) { // Example max length
+      return res.status(400).json({ error: "City name is too long." });
   }
+
+  // Validate country if provided
+  if (country) {
+      if (typeof country !== 'string' || country.trim() === '') {
+          return res.status(400).json({ error: "Country must be a non-empty string if provided." });
+      }
+      if (country.length > 100) { // Example max length
+          return res.status(400).json({ error: "Country name is too long." });
+      }
+  }
+
   if (!apiKey) {
     return res.status(500).json({ error: "OpenCage API key is missing on the server." });
   }
@@ -41,11 +71,12 @@ module.exports = async (req, res) => {
   console.log(city, country);
   try {
 
-    let GeoUrl;
-
-    TableInit();
     let code = LookUp(country);
-    GeoUrl = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(city)}&countrycode=${encodeURIComponent(code)}&key=${apiKey}&pretty=1&language=en`;
+    const GeoUrl = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(city)}&countrycode=${encodeURIComponent(code)}&key=${apiKey}&pretty=1&language=en`;
+
+    if (cache[GeoUrl]) {
+        return res.status(200).json(cache[GeoUrl]);
+    }
     
     const response = await fetch(GeoUrl);
     const data = await response.json();
@@ -74,6 +105,8 @@ module.exports = async (req, res) => {
         country: countryCode,
         city: city
     };
+
+    cache[GeoUrl] = formattedData;
 
     res.status(200).json(formattedData);
 

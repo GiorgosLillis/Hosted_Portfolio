@@ -8,6 +8,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ------------------------------------------------------------------
@@ -25,7 +26,7 @@ model User {
   lastLoginAt   DateTime? @map("last_login_at")
   
   // Relations: Direct links to the two user lists
-  favoriteCities UserFavoriteCity[]
+  cities         City[]
   shoppingList   UserShoppingListItem[]
 
   @@map("users")
@@ -41,12 +42,13 @@ model City {
   latitude      Decimal // Stores the coordinate value
   longitude     Decimal // Stores the coordinate value
 
-  // Ensures we don't duplicate the same city (e.g., two "Paris, France" entries)
-  @@unique([name, country]) 
-  
-  // Relation back to the list of users who favorited this city
-  favoritedBy    UserFavoriteCity[]
+  // Relation to User
+  userId        Int
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Ensures we don't duplicate the same city for the same user
+  @@unique([name, country, userId])
+  
   @@map("cities")
 }
 
@@ -54,25 +56,13 @@ model City {
 // --- 3. JUNCTION TABLES (The User's Lists) ---
 // ------------------------------------------------------------------
 
-// A. Favorite Cities List
-model UserFavoriteCity {
-  userId        Int      @map("user_id")
-  cityId        Int      @map("city_id") // Links to the City table to get details
-  addedAt       DateTime @default(now()) @map("added_at")
-  
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  city          City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
-
-  @@id([userId, cityId]) // Composite key for one city per user list
-  @@map("user_favorite_cities")
-}
-
 // B. Shopping List
 model UserShoppingListItem {
-  itemId        Int  
+  itemId        Int      @id @default(autoincrement())
   userId        Int      @map("user_id")
      
   // Specific data for this list item
+  category      String
   name          String   
   quantity      Decimal
   measure       String
@@ -81,6 +71,6 @@ model UserShoppingListItem {
   
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@id([userId, itemId]) // Composite key for one item per user list
   @@map("user_shopping_list_items")
+  @@unique([userId, name])
 }

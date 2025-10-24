@@ -1,8 +1,28 @@
-import { checkToken } from './functions.js';
+import { checkToken, setCorsHeaders } from './functions.js';
+import { rateLimiter } from '../../lib/rateLimiter.js';
 
 export default async function handler(req, res) {
+    setCorsHeaders(res);
+
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
+    }
+
     try {
         const user = await checkToken(req);
+
+
+        const userKey = `get_user_attempt:${user.id}`;
+        const { allowed, ttl } = await rateLimiter(userKey, 30, 60); // 30 requests per minute
+
+        if (!allowed) {
+            res.setHeader('Retry-After', ttl);
+            return res.status(429).json({
+                success: false,
+                message: `Too many requests. Please try again in ${ttl} seconds.`
+            });
+        }
+      
 
         const userData = {
             id: user.id,

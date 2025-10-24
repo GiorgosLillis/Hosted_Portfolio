@@ -30,10 +30,10 @@ const DailyForecastCard = memo (({ day, onClick, Unit }) => {
                         <p className="card-text mb-0">{formatters.temperature(day.tempMin, Unit)}</p>
                         <p className="card-text mb-0">{formatters.temperature(day.tempMax, Unit)}</p>
                     </div>   
-
                 </div>
             </div>
         </div>
+      
     );
 });
 
@@ -76,7 +76,7 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
     return (
         <>
             <h2 className='mx-auto mb-0'>{formattedWeekRange}</h2>
-            <section ref={scrollRef} className="row d-flex flex-row justify-self-center jusify-content-between align-items-center daily-row my-3 mx-0">
+            <section ref={scrollRef} className="row d-flex flex-row justify-content-center align-items-center daily-row my-3 mx-0">
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-end'>
                     <button 
                         className="btn btn-link p-0 text-white col-4 nav-button"
@@ -90,7 +90,7 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
                 
                 </div>
                 <div
-                    className="col-12 col-md-10 col-lg-8"
+                    className="col-12 col-md-10 col-lg-8 col-xl-6 "
                     style={{ overflow: 'hidden' }}
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}

@@ -172,7 +172,7 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
             {sunrise && sunset && (
                 <h3 className='mx-auto mb-2' id='day-duration'>Sunrise: {sunrise} - Sunset: {sunset}</h3>
             )}
-            <section ref={scrollRef} className="row d-flex flex-row justify-self-center jusify-content-between align-items-center daily-row my-3 mx-0">
+            <section ref={scrollRef} className="row d-flex flex-row justify-content-center align-items-center daily-row my-3 mx-0">
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-end'>
                     <button 
                         className="btn btn-link p-0 text-white col-4 nav-button"
@@ -186,7 +186,7 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
                 
                 </div>
                 <div
-                    className="col-12 col-md-10 col-lg-8"
+                    className="col-12 col-md-10 col-lg-8 col-xl-6"
                     style={{ overflow: 'hidden' }}
                     onTouchStart={!selectedHour ? handleTouchStart : null}
                     onTouchEnd={!selectedHour ? handleTouchEnd : null}

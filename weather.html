@@ -38,56 +38,13 @@
     <meta property="og:url" content="https://www.giorgoslillis.com/weather.html">
 </head>
   <body>
-      <header class="sticky-top">
-      <nav
-          id="navbar"
-          class="navbar navbar-expand d-flex align-items-start"
-      >
-          <section class="container-fluid d-flex justify-content-end align-items-center px-0">
-              <ul class="navbar-nav d-flex align-items-center justify-content-end">
-                <li class="nav-link navbar-brand">
-                   <button id="favorite-button" class="icon-button mx-md-3 nav-button" aria-label="Show favorite locations"><i class="bi bi-star-fill fs-2"></i></button> 
-                </li>
-                <li class="nav-item navbar-brand">
-                  <button id="search-button" class="icon-button nav-button" aria-label="Search for a location"><i class="bi bi-search fs-2"></i></button> 
-                </li>
-                <li class="nav-item navbar-brand">
-                  <a
-                        class="nav-link fs-1 mx-md-3 nav-button"
-                        href="./index.html"
-                        aria-label="Go to home"
-                    ><i class="bi bi-house-door-fill"></i></a
-                    >
-                </li>
-                <li class="nav-item navbar-brand">
-                  <a
-                    class="nav-link fs-1"
-                    href="./profile.html"
-                    aria-label="Go to profile"
-                    target="_blank" rel="noopener noreferrer"
-                    ><i class="bi bi-person-fill"></i></a
-                  >
-                </li>
-              </ul>
-          </section>
-          
-      </nav> 
-      <section id="search-section" class="container-fluid search-section-hidden">
-        <label for="city-input" class="sr-only">City name</label>
-        <input type="text" id="city-input" class="form-control fs-5 search-input-hidden" placeholder="Enter city">
-        <label for="country-input" class="sr-only">Country name</label>
-        <input type="text" id="country-input" class="form-control fs-5 search-input-hidden" placeholder="Enter country">
-      </section>
-      <section id="favorite-section" class="container-fluid search-section-hidden d-flex flex-wrap">
 
-      </section>
-  </header>
 
-   <main class="container p-0 flex-grow-1">
-    
+   <main class="container-fluid p-0 flex-grow-1">
      <div id="weather-app" class="d-flex flex-column h-100"></div>
    </main>
-   
+   <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
   <script type="module" src="src/js/forecast/forecast.jsx"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>

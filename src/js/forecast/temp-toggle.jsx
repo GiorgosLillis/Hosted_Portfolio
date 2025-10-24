@@ -5,7 +5,7 @@ const UnitToggle = ({ Unit, setUnit}) => {
       <div className="btn-group view-toggle d-flex flex-md-column justify-content-center col-8 col-md-6 m-3" role="group" aria-label="Temperature Toggle">
         <button
           type="button"
-          className={`btn btn-outline-light col-6 col-md-12 m-0 rounded-0 ${Unit === 'celsius' ? 'active' : ''}`}
+          className={`btn btn-outline-light col-6 col-md-10 m-0 rounded-0 ${Unit === 'celsius' ? 'active' : ''}`}
           aria-label="Celsius"
           onClick={() => setUnit('celsius')}
         >
@@ -13,7 +13,7 @@ const UnitToggle = ({ Unit, setUnit}) => {
         </button>
         <button
           type="button"
-          className={`btn btn-outline-light col-6 col-md-12 m-0 rounded-0 ${Unit === 'fahrenheit' ? 'active' : ''}`}
+          className={`btn btn-outline-light col-6 col-md-10 m-0 rounded-0 ${Unit === 'fahrenheit' ? 'active' : ''}`}
           aria-label="Fahrenheit"
           onClick={() => setUnit('fahrenheit')}
         >

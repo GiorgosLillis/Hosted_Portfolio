@@ -1,57 +1,27 @@
-const nodemailer = require('nodemailer');
-const axios = require('axios');
-require('dotenv').config();
-const sanitizeHTML = require('../lib/sanitize.js');
-
-async function verifyRecaptcha(token) {
-  if (!token) {
-    throw new Error('reCAPTCHA token is required');
-  }
-  
-  try {
-    const response = await axios.post(
-      'https://www.google.com/recaptcha/api/siteverify',
-      new URLSearchParams({
-        secret: process.env.RECAPTCHA_SECRET_KEY,
-        response: token
-      }),
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        timeout: 3000
-      }
-    );
-
-    return {
-      success: response.data.success,
-      score: response.data.score,
-      action: response.data.action,
-      errors: response.data['error-codes'] || []
-    };
-  } catch (error) {
-    console.error('reCAPTCHA verification error:', error);
-    throw new Error('Failed to verify reCAPTCHA');
-  }
-}
+import nodemailer from 'nodemailer';
+import sanitizeHTML from '../lib/sanitize.js';
+import { rateLimiter } from '../lib/rateLimiter.js';
+import { recaptchaMiddleware } from './recaptcha.js';
 
 function validateInputs(email, subject, message) {
 
-  const safe_subject = sanitizeHTML(subject);
-  const safe_message = sanitizeHTML(message);
-  
   const errors = [];
   
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errors.push('Please enter a valid email address');
   }
   
-  if (!safe_subject || safe_subject.trim().length < 1 || safe_subject.length > 100) {
+  if (!subject || subject.trim().length < 2 || subject.length > 100) {
     errors.push('Subject must be between 2-100 characters');
   }
   
-  if (!safe_message ||  safe_message.trim().length < 1 ||  safe_message.length > 1000) {
+  if (!message ||  message.trim().length < 10 ||  message.length > 1000) {
     errors.push('Message must be between 10-1000 characters');
   }
   
+  const safe_subject = sanitizeHTML(subject);
+  const safe_message = sanitizeHTML(message);
+
   return { errors, safe_subject, safe_message };
 }
 
@@ -69,7 +39,7 @@ const transporter = nodemailer.createTransport({
   socketTimeout: 10000
 });
 
-module.exports = async (req, res) => {
+const emailHandler = async (req, res) => {
    if (req.method !== 'POST') {
     return res.status(405).json({ 
       success: false,
@@ -78,35 +48,21 @@ module.exports = async (req, res) => {
   }
   
   try {
-    const { email, subject, message, 'g-recaptcha-response': recaptchaToken } = req.body;
+
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const { allowed, ttl } = await rateLimiter(ip, 5, 60);
+    if (!allowed) {
+      return res.status(429).json({ 
+        success: false, 
+        message: `Too many requests. Please try again in ${ttl} seconds.` 
+      });
+    }
+
+    const { email, subject, message } = req.body;
 
 
     if (!email || !subject || !message) {
       return res.status(400).json({ message: 'Missing required fields' });
-    }
-    if (!recaptchaToken) {
-      return res.status(400).json({
-        success: false,
-        message: 'reCAPTCHA token is required'
-      });
-    }
-
-    const { success, score, error} = await verifyRecaptcha(recaptchaToken);
-    if (!success) {
-      return res.status(403).json({
-        success: false,
-        message: 'reCAPTCHA verification failed!',
-        score,
-        errors: error
-      });
-    }
-
-    if (score < 0.5) {
-      return res.status(403).json({
-      success: false,
-      message: 'reCAPTCHA score too low, suspected bot.',
-      score
-    });
     }
 
     const { errors: validationErrors, safe_subject, safe_message } = validateInputs(email, subject, message);
@@ -132,8 +88,7 @@ module.exports = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Email sent successfully',
-      score // Optional: Return score for debugging
+      message: 'Email sent successfully'
     });
 
   } catch (error) {
@@ -144,4 +99,8 @@ module.exports = async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
+};
+
+export default (req, res) => {
+  recaptchaMiddleware(req, res, () => emailHandler(req, res));
 };

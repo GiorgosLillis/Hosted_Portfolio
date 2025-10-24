@@ -1,3 +1,8 @@
+import { setCorsHeaders } from '../database/functions.js';
+import { rateLimiter } from '../../lib/rateLimiter.js';
+
+const cache = {};
+
 const PathtoImg = 'assets/weather-images/'
 const PathtoIcons = 'assets/weather-icons/';
         const weatherCodeMapping = {
@@ -46,21 +51,38 @@ function getNoonInfo(currentDate, hourlyTimes, hourlyWeatherCodes){
 
 }
 
-module.exports = async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+export default async (req, res) => {
+    setCorsHeaders(res);
 
-    const lat = parseFloat(req.query.lat);
-    const lon = parseFloat(req.query.lon);
-    
-    if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
-        return res.status(400).json({ error: 'Valid Latitude and longitude are required.' });
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
     }
 
+    const { lat, lon } = req.body;
     
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+        return res.status(400).json({ error: "Invalid latitude. Must be a number between -90 and 90." });
+    }
+    if (isNaN(lon) || lon < -180 || lon > 180) {
+      return res.status(400).json({ error: "Invalid longitude. Must be a number between -180 and 180." });
+  }
+
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const { allowed, ttl } = await rateLimiter(ip, 20, 60);
+    if (!allowed) {
+        return res.status(429).json({ 
+            success: false, 
+            message: `Too many requests. Please try again in ${ttl} seconds.` 
+        });
+    }
+
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,uv_index,apparent_temperature,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&forecast_days=7&timezone=auto`;
     const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,sulphur_dioxide&timezone=auto`;
+
+    if (cache[url] && cache[airQualityUrl]) {
+        return res.status(200).json(cache[url]);
+    }
+
     try {
         const [res1, res2] = await Promise.all([
             fetch(url),
@@ -111,8 +133,6 @@ module.exports = async (req, res) => {
             const hasAirQualityData = index < 120;
             const code = weatherData.hourly.weather_code[index];
             const condition = weatherCodeMapping[code];
-                
-            // Use the is_day value from the API directly
             const isDay = weatherData.hourly.is_day[index];
 
             return {
@@ -188,9 +208,14 @@ module.exports = async (req, res) => {
             
             daily: dailyInfo,
         };
+
+        cache[url] = weatherInfo;
+        cache[airQualityUrl] = weatherInfo;
+
         res.status(200).json(weatherInfo);
     } catch (error) {
         console.error('Error fetching weather data: ' + error);
         res.status(500).json({ error: 'Failed to fetch weather data.' });
     }
 };
+

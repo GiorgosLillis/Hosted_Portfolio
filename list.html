@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="src/css/list.css">
     <link rel="stylesheet" href="src/css/styles.css">
     <script src="src/js/list/basic-controls-list.js" type="module"></script>
+
     <script type="module" src="src/js/common/effects.js"></script>
     <title>SHOPPING LIST</title>
     <link
@@ -114,7 +115,7 @@
               </li>
             </ul>
           </div>
-          <button
+           <button
             class="navbar-toggler-text fs-2 d-lg-none text-button"
             data-bs-toggle="collapse"
             data-bs-target="#navbarNav"
@@ -122,13 +123,25 @@
             aria-expanded="false"
             aria-label="Toggle navigation"
           >
-            Content ▼
+            Pages ▼
           </button>
-          <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
+          <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav ms-lg-4">
               <li class="nav-item navbar-brand">
-                <a class="nav-link fs-1" href="./index.html" aria-label="Go to home"
-                  >Home</a
+                <a
+                  class="nav-link fs-1"
+                  href="./profile.html"
+                  aria-label="Go to profile"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Profile</a>
+              </li>
+              <li class="nav-item navbar-brand">
+                <a
+                  class="nav-link fs-1"
+                  href="./list.html"
+                  aria-label="Go to list"
+                  >List</a
                 >
               </li>
               <li class="nav-item navbar-brand">
@@ -139,19 +152,10 @@
                   >Weather</a
                 >
               </li>
-              <li class="nav-item navbar-brand">
-                <a
-                  class="nav-link fs-1"
-                  href="./profile.html"
-                  aria-label="Go to profile"
-                  target="_blank" rel="noopener noreferrer"
-                  ><i class="bi bi-person-fill"></i></a
-                >
-              </li>
             </ul>
           </div>
-        </section>
-      </nav>
+      </section>
+    </nav>
     </header>
 
     <main
@@ -159,6 +163,7 @@
       data-aos="fade-in"
       data-aos-duration="2000"
     >
+      <h1 id="logStatus" class="text-center mt-lg-4 mt-xl-5"></h1>
       <form
         class="my-5 p-0 item-input container col-12 col-md-8 col-lg-6 d-flex flex-column justify-content-center align-items-center"
       >
@@ -319,16 +324,41 @@
           </button>
         </div>
       </section>
+       <section
+        class="row col-12 col-md-8 col-lg-6 row-cols-2 row-cols-md-4 g-0 d-flex justify-content-center align-items-center"
+      >
+         <div class="col d-flex justify-content-center align-items-center">
+          <button
+            type="submit"
+            class="btn btn-success my-3 border-3 list-btn text-center"
+            id="saveBtn"
+            aria-label="Save the item to your profile"
+          >
+            Save
+          </button>
+        </div>
+         <div class="col d-flex justify-content-center align-items-center">
+          <button
+            type="submit"
+            class="btn btn-danger my-3 border-3 list-btn text-center"
+            id="deleteBtn"
+            aria-label="Delete all items on your profile"
+          >
+            Delete
+          </button>
+        </div>
+      </section>
       <div class="row d-flex text-center">
         <h3 class="text-danger" id="fileInfo" role="alert" aria-live="polite"></h3>
         <h3 class="text-success" id="successMessage" role="alert" aria-live="polite"></h3>
         <h3 class="text-danger" id="errorMessage" role="alert" aria-live="assertive"></h3>
+        <h3 id="loadingMessage" role="alert" aria-live="assertive"></h3>
       </div>
 
       <section
         class="row col-12 col-md-8 col-lg-6 d-flex flex-column justify-content-center align-items-center"
       >
-        <ul class="list-group my-2 col-12 col-md-8 px-0" id="displayList"></ul>
+        <ul class="list-group my-2 col-12 col-md-8 px-0" id="displayList" aria-live="polite"></ul>
       </section>
     </main>
     <div
