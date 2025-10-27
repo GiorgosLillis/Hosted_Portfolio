@@ -1,7 +1,6 @@
 {
   "dependencies": {
     "@upstash/redis": "^1.35.6",
-    "axios": "^1.12.2",
     "cross-env": "^10.1.0",
     "dompurify": "^3.2.7",
     "ioredis": "^5.8.1",
@@ -20,7 +19,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "cross-env DATABASE_URL=\"$DIRECT_URL\" npx prisma migrate deploy && npx prisma generate && vite build",
+    "build": "cd api && npm install && cross-env DATABASE_URL=\"$DIRECT_URL\" npx prisma migrate deploy && npx prisma generate && vite build",
     "preview": "vite preview"
   }
 }

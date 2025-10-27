@@ -17,7 +17,7 @@
       "src": "package.json",
       "use": "@vercel/static-build",
        "config": {
-        "installCommand": "npm install",
+        "installCommand": "npm install && cd api && npm install",
         "buildCommand": "npm run build"
       }
     }
