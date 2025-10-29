@@ -21,10 +21,8 @@
   "scripts": {
     "dev": "vite",
     "dependency:install": "npm install && cd api && npm install && cd ../",
-    "diagnose:dburl": "dotenv -e .env -- sh -c 'echo $DATABASE_URL'",
-    "prisma:migrate": "dotenv -e .env -- node scripts/migrate.js",
-    "prisma:resolve": "dotenv -e .env -- npx prisma migrate resolve --applied 20251027111444_db",
-    "build": "npm run dependency:install &&  npm run prisma:migrate && npx prisma generate && vite build",
+    "prisma:migrate": "node scripts/migrate.js",
+    "build": "npm run dependency:install && npm run prisma:migrate && npx prisma generate && vite build",
     "preview": "vite preview"
   }
 }
