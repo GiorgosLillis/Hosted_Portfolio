@@ -89,18 +89,6 @@ export default async (req, res) => {
             fetch(airQualityUrl)
         ]);
 
-        console.log('\nWeather API response:', {
-            status: res1.status,
-            statusText: res1.statusText,
-            ok: res1.ok
-        });
-
-        console.log('Air Quality API response:', {
-            status: res2.status, 
-            statusText: res2.statusText,
-            ok: res2.ok
-        });
-
         if (!res1.ok) {
             throw new Error(`Failed to fetch weather data: ${res1.status}`);
         }

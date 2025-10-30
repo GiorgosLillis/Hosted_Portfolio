@@ -44,27 +44,22 @@ export async function loadCityList() {
     try {
         const user = await checkAuth();
         if (!user) {
-            const list = localStorage.getItem(cityListKey);
             showToast('Not authenticated. Local saved favorites shown.', 'info');
-            return JSON.parse(list) || [];
         }
-
+        else{
+            showToast('Loading favorites from server...', 'info');
+            const response = await fetch(`/api/cities`);
+            if (!response.ok) {
+                showToast('Could not fetch favorites from server.', 'danger');
+            }
+            else{
+                const data = await response.json();
+                localStorage.setItem(cityListKey, JSON.stringify(data.list || []));
+                showToast('Favorites loaded from server.', 'success');
+            }
+        } 
         const localList = localStorage.getItem(cityListKey);
-        if (localList) {
-            showToast('Favorites loaded from server.', 'success');
-            return JSON.parse(localList);
-        }
-
-        showToast('Loading favorites from server...', 'info');
-        const response = await fetch(`/api/cities`);
-        if (!response.ok) {
-            showToast('Could not fetch favorites from server.', 'danger');
-            return [];
-        }
-        const data = await response.json();
-        localStorage.setItem(cityListKey, JSON.stringify(data.list));
-        showToast('Favorites loaded from server.', 'success');
-        return data.list;
+        return JSON.parse(localList) || [];
     } catch (error) {
         showToast('Error loading favorites.', 'danger');
         return [];

@@ -6,7 +6,6 @@
     "ioredis": "^5.8.1",
     "jsdom": "^27.0.0",
     "jwt-decode": "^4.0.0",
-    "pg": "^8.16.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
@@ -21,8 +20,7 @@
   "scripts": {
     "dev": "vite",
     "dependency:install": "npm install && cd api && npm install && cd ../",
-    "prisma:migrate": "node scripts/migrate.js",
-    "build": "npm run dependency:install && npm run prisma:migrate && npx prisma generate && vite build",
+    "build": "npm run dependency:install && npx prisma migrate dev && npx prisma generate && vite build",
     "preview": "vite preview"
   }
 }
