@@ -23,22 +23,22 @@ const AuthManager = () => {
         <>
             <h1 className="p-0 my-3 text-center">Profile</h1>
             <div className="row w-100 d-flex justify-content-around align-items-center mb-3">
-                <div className="col-4 d-flex justify-content-center align-items-center">
+                <div className="col-10 col-md-8 col-lg-5 col-xl-4 d-flex justify-content-center align-items-center mb-3 mb-lg-0">
                     <button
                         type="button"
                         className="btn btn-sm px-0 filter-btn text-center"
                         onClick={() => setView('login')}
                     >
-                        <span className="d-flex text-center justify-content-center">Login</span>
+                        <span className="d-flex text-center justify-content-center button-span">Login</span>
                     </button>
                 </div>
-                <div className="col-4 d-flex justify-content-center align-items-center">
+                <div className="col-10 col-md-8 col-lg-5 col-xl-4 d-flex justify-content-center align-items-center mb-3 mb-lg-0">
                     <button
                         type="button"
                         className="btn btn-sm px-0 filter-btn text-center"
                         onClick={() => setView('signup')}
                     >
-                        <span className="d-flex text-center justify-content-center">Sign-Up</span>
+                        <span className="d-flex text-center justify-content-center button-span">Sign-Up</span>
                     </button>
                 </div>
             </div>

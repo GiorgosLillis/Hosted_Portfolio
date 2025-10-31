@@ -122,6 +122,7 @@ export function updateItemNumbers() {
     const listItem = list_items[i];
 
     const id = i + 1;
+    listItem.dataset.id = id; // Store the id in the dataset
     const itemText = listItem.dataset.originalItem;
     const quantity = listItem.dataset.quantity;
     const unit = listItem.dataset.unit;

@@ -109,10 +109,12 @@ async function POST(req, res, user) {
       if (typeof city.country !== 'string' || city.country.trim() === '') {
           return res.status(400).json({ success: false, message: 'City country is required and must be a non-empty string.' });
       }
-      if (typeof city.latitude !== 'number' || city.latitude < -90 || city.latitude > 90) {
+      const latitude = parseFloat(city.latitude);
+      const longitude = parseFloat(city.longitude);
+      if (typeof latitude!== 'number' || latitude < -90 || latitude > 90) {
           return res.status(400).json({ success: false, message: 'City latitude is required and must be a number between -90 and 90.' });
       }
-      if (typeof city.longitude !== 'number' || city.longitude < -180 || city.longitude > 180) {
+      if (typeof longitude !== 'number' || longitude < -180 || longitude > 180) {
           return res.status(400).json({ success: false, message: 'City longitude is required and must be a number between -180 and 180.' });
       }
   }

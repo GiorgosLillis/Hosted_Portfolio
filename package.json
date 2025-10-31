@@ -19,8 +19,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "dependency:install": "npm install && cd api && npm install && cd ../",
-    "build": "npm run dependency:install && npx prisma migrate dev && npx prisma generate && vite build",
+    "build": "npx prisma migrate dev && npx prisma generate && vite build",
     "preview": "vite preview"
   }
 }

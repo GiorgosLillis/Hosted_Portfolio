@@ -22,15 +22,19 @@ export async function saveShoppingList() {
 
     // Populate the global shoppingList array from current DOM elements' data attributes
     const shoppingList = list_items_dom.map(li => {
-        return {
+        const itemData = {
             item: li.dataset.originalItem, // Always save the original casing
-            id: li.dataset.id,
+            id: parseInt(li.dataset.id), // Parse id as integer
             quantity: li.dataset.quantity,
             unit: li.dataset.unit,
             category: li.dataset.category ? li.dataset.category : 'Other',
             check: li.dataset.checked
         };
-    });
+        if (li.dataset.itemId) {
+            itemData.itemId = parseInt(li.dataset.itemId);
+        }
+        return itemData;
+    }); 
 
     try {
         const user = await checkAuth();
@@ -133,6 +137,9 @@ export function loadShoppingList() {
                 listItem.dataset.unit = item.measure;
                 listItem.dataset.category = item.category || 'Other';
                 listItem.dataset.checked = item.isPurchased ? 'true' : 'false';
+                if (item.itemId) { // Store itemId if available
+                    listItem.dataset.itemId = item.itemId;
+                }
                 List.append(listItem);
             });
             updateItemNumbers();

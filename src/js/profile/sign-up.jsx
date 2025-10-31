@@ -153,7 +153,7 @@ const SignUp = ({ switchToLogin, showToast }) => {
             </div>
 
             <div className="row w-100 d-flex flex-column justify-content-around align-items-center mb-3">
-                <div className="col-4 d-flex justify-content-center align-items-center">
+                <div className="col-6 d-flex justify-content-center align-items-center">
                     <button
                         type="button"
                         className="btn btn-sm px-0 filter-btn text-center mb-3"
@@ -162,14 +162,14 @@ const SignUp = ({ switchToLogin, showToast }) => {
                         onClick={handleSignUp}
                         disabled={isLoading}
                     >
-                        <span className="d-flex text-center justify-content-center">
+                        <span className="d-flex text-center justify-content-center button-span">
                             {isLoading ? 'Signing up...' : 'Sign-up'}
                         </span>
                     </button>
                 </div>
-                <div className="col-8 d-flex justify-content-center align-items-center">
+                <div className="col-12 col-md-10 d-flex justify-content-center align-items-center">
                     <p className="mb-0 profile-span">
-                        Already have an account?{' '}
+                        Have an account?{' '}
                         <button
                             type="button"
                             className="p-0 m-0 align-baseline profile-btn"

@@ -265,13 +265,13 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                 <div className="col-4 d-flex justify-content-center align-items-center px-0">
                     <button
                         type="button"
-                        className="btn btn-sm px-0 filter-btn text-center mb-3"
+                        className="btn px-0 controls text-center mb-3 btn-primary"
                         id="edit"
                         aria-label="Edit your profile"
                         onClick={handleEdit}
                         disabled={isLoading}
                     >
-                        <span className="d-flex text-center justify-content-center">
+                        <span className="d-flex text-center justify-content-center button-span">
                             {isLoading ? 'Editing...' : 'Edit'}
                         </span>
                     </button>
@@ -279,13 +279,13 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                 <div className="col-4 d-flex justify-content-center align-items-center px-0">
                     <button
                         type="button"
-                        className="btn btn-sm px-0 filter-btn text-center mb-3"
+                        className="btn px-0 controls text-center mb-3 btn-danger"
                         id="log-out"
                         aria-label="Log out of your account"
                         onClick={switchToLogout}
                         disabled={isLoading}
                     >
-                        <span className="d-flex text-center justify-content-center">
+                        <span className="d-flex text-center justify-content-center button-span">
                             Logout
                         </span>
                     </button>
@@ -293,13 +293,13 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                 <div className="col-4 d-flex justify-content-center align-items-center px-0">
                     <button
                         type="button"
-                        className={`btn btn-sm px-0 filter-btn text-center mb-3 btn-outline-danger'}`}
+                        className="btn px-0 controls text-center mb-3 btn-danger"
                         id="delete"
                         aria-label="Delete your account"
                         onClick={() => deleteConfirm ? handleDelete() : setdeleteConfirm(true)}
                         disabled={isLoading}
                     >
-                        <span className="d-flex text-center justify-content-center">
+                        <span className="d-flex text-center justify-content-center button-span">
                            {deleteConfirm ? 'Confirm?' : 'Delete '}
                         </span>
                     </button>
