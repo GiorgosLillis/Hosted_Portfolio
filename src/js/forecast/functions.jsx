@@ -7,7 +7,7 @@ export const useScrollEffect = (disabled) => {
         const handleScroll = () => {
             if (ref.current && !disabled) {
                 const scrollY = window.scrollY;
-                const transformValue = `translateX(${scrollY * 0.1}px)`; // Adjust the multiplier for desired effect
+                const transformValue = `translateX(${scrollY * 0.1}px)`; 
                 ref.current.style.transform = transformValue;
             } else if (ref.current && disabled) {
                 ref.current.style.transform = 'translateX(0px)';
@@ -61,7 +61,6 @@ export const WarningMessage = ({ warning }) => (
 );
 
 
-// Function to get thermometer
 export function getThermometer(temp){
     if(temp <= 0){
         return <i className="bi bi-thermometer-snow mx-3"></i>
@@ -95,7 +94,7 @@ export function getWindDirection (degrees) {
         return 'SW';
     } else if (degrees >= 247.5 && degrees < 292.5) {
         return 'W';
-    } else { // 292.5 - 337.5
+    } else { 
         return 'NW';
     }
 };

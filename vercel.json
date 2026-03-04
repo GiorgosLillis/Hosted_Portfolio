@@ -34,5 +34,11 @@
     { "src": "/api/deleteUser", "dest": "/api/database/deleteUser.js" },
     { "src": "/api/list", "dest": "/api/database/list.js" },
     { "src": "/api/cities", "dest": "/api/database/cities.js" }
+  ],
+  "crons": [
+    {
+      "path": "/api/keep-alive",
+      "schedule": "0 0 * * *"
+    }
   ]
 }

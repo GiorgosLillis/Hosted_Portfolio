@@ -1,4 +1,3 @@
-// Unit toggle component
 const UnitToggle = ({ Unit, setUnit}) => {
   return (
     <div className="view-toggle-container d-flex justify-content-center justify-content-md-start col-12 col-md-5">

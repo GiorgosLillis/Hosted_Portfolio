@@ -1,7 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
-import { RegexValidation, setAuthCookies, setCorsHeaders  } from './functions.js';
+import { RegexValidation, setAuthCookies, setCorsHeaders } from './functions.js';
 import sanitizeHTML from '../../lib/sanitize.js';
 import { rateLimiter } from '../../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../recaptcha.js';
@@ -10,7 +10,6 @@ const registerHandler = async (req, res) => {
     setCorsHeaders(res);
 
     if (req.method === 'OPTIONS') {
-        // Handle preflight request
         return res.status(204).end();
     }
 
@@ -25,7 +24,7 @@ const registerHandler = async (req, res) => {
 
         const { email, password, first_name, last_name } = req.body;
 
-       
+
         const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
         const ipKey = `register_attempt_ip:${ip}`;
         const emailKey = `register_attempt_email:${email}`;
@@ -43,9 +42,9 @@ const registerHandler = async (req, res) => {
                 message: `Too many registration attempts. Please try again in ${ttl} seconds.`
             });
         }
-      
 
-        if(!RegexValidation(email, null, password, first_name, last_name, 'register')) {
+
+        if (!RegexValidation(email, null, password, first_name, last_name, 'register')) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid input. Please ensure all fields are correctly filled.'
@@ -68,11 +67,11 @@ const registerHandler = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await prisma.user.create({
             data: {
-            email: email,
-            passwordHash: hashedPassword,
-            firstName: safeFirstName,
-            lastName: safeLastName,
-            lastLoginAt: new Date()
+                email: email,
+                passwordHash: hashedPassword,
+                firstName: safeFirstName,
+                lastName: safeLastName,
+                lastLoginAt: new Date()
             }
         });
 
@@ -84,8 +83,8 @@ const registerHandler = async (req, res) => {
 
         setAuthCookies(res, token);
 
-        const userData = {id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName};
-        return res.status(200).json({user: userData});
+        const userData = { id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName };
+        return res.status(200).json({ user: userData });
 
     } catch (error) {
         console.error('Server error on register:', error);

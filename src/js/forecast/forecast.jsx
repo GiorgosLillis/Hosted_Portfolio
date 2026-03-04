@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-
-// Import the components from the new file.
 import {LoadingIndicator, ErrorMessage, setBackgroundImage, isFavorite, WarningMessage} from './functions.jsx';
 import CurrentWeather from './current-weather.jsx';
 import { fetchWeather, getLocation, getCachedWeather, getCityLocation} from '../weather/weather-api.js';
@@ -261,7 +259,6 @@ function Forecast() {
     );
 }
 
-// Mount the React component
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('weather-app');
   if (container) {

@@ -11,7 +11,7 @@ const HourDetails = ({ hour, onClose, Unit }) => {
     const ItemPropWeather = 'list-item col-6 col-md-4 col-lg-12 d-flex justify-content-start';
     const ItemPropAQI = 'list-item col-4 col-md-3 col-lg-12 d-flex justify-content-start';
     const ItemMargin = 'ms-2 ms-md-0 me-md-3 d-flex align-items-center';
-    // They might need to be adjusted if the 'hour' object has different property names.
+
     return (   
     <> 
         <div className='h-100 hour-details '>
@@ -48,7 +48,7 @@ const HourDetails = ({ hour, onClose, Unit }) => {
     };
 
 // Individual hourly forecast card component
-const HourlyForecastCard = memo(({ hour, onClick, Unit }) => { // Added onClick
+const HourlyForecastCard = memo(({ hour, onClick, Unit }) => { 
     if (!hour || !hour.time || !hour.temp || !hour.icon) {
         return <div className="p-4">No hourly weather available.</div>;
     } 
@@ -89,8 +89,7 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
 
     const visibleCards = 4;
 
-
-    // Start index to show the next 4 hours from current time
+    // Next 4 hours from current time
     const [startIndex, setStartIndex] = useState(() => {
         const currentHour = new Date().getHours();
         const initialIndex = hourlyForecast.findIndex(
@@ -102,7 +101,6 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
         return initialIndex;
     }); 
 
-    // Handlers for next and previous buttons, it skips to the next/previous set of 4 hours
     const handleNextHours = () => {
         let i = startIndex + 1;
         while (i % 4 !== 0 && i < hourlyForecast.length) {
@@ -130,9 +128,9 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
         const swipeDistance = touchStartX - touchEndX;
         const swipeThreshold = 50; // Minimum distance for a recognized swipe
 
-        if (swipeDistance > swipeThreshold) { // Swiping left (next hours)
+        if (swipeDistance > swipeThreshold) { 
             handleNextHours();
-        } else if (swipeDistance < -swipeThreshold) { // Swiping right (previous hours)
+        } else if (swipeDistance < -swipeThreshold) { 
              handlePreviousHours();
         }
     };
@@ -145,8 +143,7 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
     
     const currentDayTimestamp = visibleHours[0].timestamp;
     const currentDayDate = new Date(currentDayTimestamp);
-    
-    // Find the corresponding daily forecast
+
     const dailyDataForCurrentDay = dailyForecast.find(day => {
         const dayDate = new Date(day.date);
         return dayDate.getFullYear() === currentDayDate.getFullYear() &&
@@ -164,8 +161,6 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
         sunset = formatters.time(dailyDataForCurrentDay.sunset);
     }
 
-
-    // The hourly forecast section
     return (
         <>  
             <h2 className='mx-auto mb-2'>{formattedDate}</h2>

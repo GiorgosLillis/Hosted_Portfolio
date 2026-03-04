@@ -41,7 +41,7 @@ const editUserHandler = async (req, res) => {
         const updateData = {};
 
 
-        if(!RegexValidation(email, current_password, password, first_name, last_name, 'edit')) {
+        if (!RegexValidation(email, current_password, password, first_name, last_name, 'edit')) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid input. Please ensure all fields are correctly filled.'
@@ -49,7 +49,7 @@ const editUserHandler = async (req, res) => {
         }
 
         const passwordMatch = await bcrypt.compare(current_password, user.passwordHash);
-        if(!passwordMatch){
+        if (!passwordMatch) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid password'
@@ -65,7 +65,7 @@ const editUserHandler = async (req, res) => {
         }
 
         if (Object.keys(updateData).length === 0) {
-             return res.status(400).json({ error: 'No data to update.' });
+            return res.status(400).json({ error: 'No data to update.' });
         }
 
         const updatedUser = await prisma.user.update({
@@ -76,9 +76,9 @@ const editUserHandler = async (req, res) => {
         });
 
         const token = jsonwebtoken.sign(
-            {userId: user.id, email: updatedUser.email},
-             process.env.JWT_SECRET,
-            {expiresIn: '7d'}
+            { userId: user.id, email: updatedUser.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
         );
 
         setAuthCookies(res, token);
@@ -95,7 +95,6 @@ const editUserHandler = async (req, res) => {
         });
 
     } catch (error) {
-        // Differentiate between auth errors and other server errors
         console.error('Server error on edit:', error);
         if (error.message === 'Invalid or expired token.') {
             return res.status(401).json({ success: false, message: error.message });

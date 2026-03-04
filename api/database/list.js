@@ -20,16 +20,16 @@ async function listHandler(req, res) {
     if (req.method === 'GET') {
       await GET(req, res, user);
     } else if (req.method === 'POST') {
-        const userKey = `list_post_attempt:${user.id}`;
-        const { allowed, ttl } = await rateLimiter(userKey, 20, 60); // 20 requests per minute
+      const userKey = `list_post_attempt:${user.id}`;
+      const { allowed, ttl } = await rateLimiter(userKey, 20, 60); // 20 requests per minute
 
-        if (!allowed) {
-            res.setHeader('Retry-After', ttl);
-            return res.status(429).json({
-                success: false,
-                message: `Too many requests. Please try again in ${ttl} seconds.`
-            });
-        }
+      if (!allowed) {
+        res.setHeader('Retry-After', ttl);
+        return res.status(429).json({
+          success: false,
+          message: `Too many requests. Please try again in ${ttl} seconds.`
+        });
+      }
       await POST(req, res, user);
     } else if (req.method === 'DELETE') {
       await DELETE(req, res, user);
@@ -39,26 +39,25 @@ async function listHandler(req, res) {
     }
   } catch (error) {
     if (error.message === 'Invalid or expired token.' || error.message === 'Not authenticated') {
-        return res.status(401).json({ success: false, message: 'Not authenticated' });
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
     }
     console.error('Server error in list API:', error);
     return res.status(500).json({
-        success: false,
-        message: 'An unexpected error occurred',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      success: false,
+      message: 'An unexpected error occurred',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 }
 
 export default async function handler(req, res) {
-    if (req.method === 'POST' || req.method === 'DELETE') {
-        recaptchaMiddleware(req, res, () => listHandler(req, res));
-    } else {
-        listHandler(req, res);
-    }
+  if (req.method === 'POST' || req.method === 'DELETE') {
+    recaptchaMiddleware(req, res, () => listHandler(req, res));
+  } else {
+    listHandler(req, res);
+  }
 }
 
-// --- 1. The GET Handler (Read) ---
 async function GET(req, res, user) {
   try {
     const shoppingList = await prisma.userShoppingListItem.findMany({
@@ -94,7 +93,6 @@ async function GET(req, res, user) {
   }
 }
 
-// --- 2. The POST Handler (Update/Create) ---
 async function POST(req, res, user) {
   const list = req.body.list;
   if (!list || !Array.isArray(list)) {
@@ -107,42 +105,43 @@ async function POST(req, res, user) {
   const itemNamesToKeep = list.map(item => item.item);
 
   try {
-    await prisma.$transaction([
-      prisma.userShoppingListItem.deleteMany({
+    await prisma.userShoppingListItem.deleteMany({
+      where: {
+        userId: user.id,
+        name: {
+          notIn: itemNamesToKeep,
+        },
+      },
+    });
+
+    const upsertPromises = list.map(item => {
+      return prisma.userShoppingListItem.upsert({
         where: {
-          userId: user.id,
-          name: {
-            notIn: itemNamesToKeep,
+          userId_name: {
+            userId: user.id,
+            name: item.item
           },
         },
-      }),
-      ...list.map(item => {
-        return prisma.userShoppingListItem.upsert({
-          where: {
-            userId_name: {
-              userId: user.id,
-              name: item.item
-            },
-          },
-          update: {
-            category: item.category,
-            name: item.item,
-            quantity: item.quantity,
-            measure: item.unit,
-            isPurchased: (item.check === 'true')
-          },
-          create: {
-            userId: user.id,
-            category: item.category,
-            name: item.item,
-            quantity: item.quantity,
-            measure: item.unit,
-            isPurchased: (item.check === 'true'),
-            createdAt: new Date()
-          },
-        });
-      })
-    ]);
+        update: {
+          category: item.category,
+          name: item.item,
+          quantity: item.quantity,
+          measure: item.unit,
+          isPurchased: (item.check === 'true')
+        },
+        create: {
+          userId: user.id,
+          category: item.category,
+          name: item.item,
+          quantity: item.quantity,
+          measure: item.unit,
+          isPurchased: (item.check === 'true'),
+          createdAt: new Date()
+        },
+      });
+    });
+
+    await Promise.all(upsertPromises);
 
     return res.status(200).json({
       success: true,
@@ -159,7 +158,6 @@ async function POST(req, res, user) {
   }
 }
 
-// --- 3. The DELETE Handler ---
 async function DELETE(_req, res, user) {
   try {
     await prisma.userShoppingListItem.deleteMany({

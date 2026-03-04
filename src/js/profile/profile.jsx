@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { AuthProvider, useAuth } from './auth.jsx'; // Import AuthProvider and useAuth
+import { AuthProvider, useAuth } from './auth.jsx'; 
 import LoginForm from './login.jsx';
 import SignUpForm from './sign-up.jsx';
 import EditForm from './edit.jsx';
@@ -15,7 +15,6 @@ const AuthManager = () => {
     }
 
     if (isAuthenticated) {
-        // If user is authenticated, show the EditForm/Profile view
         return <EditForm userData={user} switchToLogout={logout} showToast={showToast} />;
     }
 
@@ -47,7 +46,6 @@ const AuthManager = () => {
 
     switch (view) {
         case 'login':
-            // The login form will call the login function from the context upon success
             return <LoginForm switchToSignUp={() => setView('signup')} showToast={showToast} />;
         case 'signup':
             return <SignUpForm switchToLogin={() => setView('login')} showToast={showToast} />;
@@ -57,7 +55,6 @@ const AuthManager = () => {
     }
 };
 
-// Mount the React component when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   let container = document.getElementById('profile-form');
   if (!container) {

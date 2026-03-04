@@ -65,14 +65,12 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
     };
 
     // Display weeek range as "DD/MM/YYYY - DD/MM/YYYY"
-    const firstDayOfWeek = new Date(dailyForecast[0].date); // First day as refernce
-    const lastDayOfWeek = new Date(dailyForecast[dailyForecast.length - 1].date); // Last day as refernce
+    const firstDayOfWeek = new Date(dailyForecast[0].date); 
+    const lastDayOfWeek = new Date(dailyForecast[dailyForecast.length - 1].date); 
     const WeekStart = `${firstDayOfWeek.getDate().toString()}/${(firstDayOfWeek.getMonth() + 1).toString()}/${firstDayOfWeek.getFullYear().toString()}`;
     const WeekEnd = `${lastDayOfWeek.getDate().toString()}/${(lastDayOfWeek.getMonth() + 1).toString()}/${lastDayOfWeek.getFullYear().toString()}`;
     const formattedWeekRange = `${WeekStart} - ${WeekEnd}`;
    
-
-    // The daily forecast section
     return (
         <>
             <h2 className='mx-auto mb-0'>{formattedWeekRange}</h2>
@@ -109,7 +107,6 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
                         ))}
                     </div>
                 </div>
-                {/* Example controls to change starting day */}
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-start'>
                     <button 
                         className="btn btn-link p-0 text-white col-4 nav-button"
@@ -126,6 +123,4 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
     );
 }
 
-
-// Export the main component as default
 export default WeatherForecast;

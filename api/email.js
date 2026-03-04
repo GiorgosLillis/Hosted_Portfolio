@@ -6,19 +6,19 @@ import { recaptchaMiddleware } from './recaptcha.js';
 function validateInputs(email, subject, message) {
 
   const errors = [];
-  
+
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errors.push('Please enter a valid email address');
   }
-  
-  if (!subject || subject.trim().length < 2 || subject.length > 100) {
-    errors.push('Subject must be between 2-100 characters');
+
+  if (!subject || subject.length > 100) {
+    errors.push('Subject must be 100 characters or less');
   }
-  
-  if (!message ||  message.trim().length < 10 ||  message.length > 1000) {
-    errors.push('Message must be between 10-1000 characters');
+
+  if (!message || message.length > 1000) {
+    errors.push('Message must be 1000 characters or less');
   }
-  
+
   const safe_subject = sanitizeHTML(subject);
   const safe_message = sanitizeHTML(message);
 
@@ -34,27 +34,27 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_ID,
     pass: process.env.EMAIL_PASSWORD,
   },
-  connectionTimeout: 5000, 
+  connectionTimeout: 5000,
   greetingTimeout: 5000,
   socketTimeout: 10000
 });
 
 const emailHandler = async (req, res) => {
-   if (req.method !== 'POST') {
-    return res.status(405).json({ 
+  if (req.method !== 'POST') {
+    return res.status(405).json({
       success: false,
-      message: 'Only POST requests are allowed' 
+      message: 'Only POST requests are allowed'
     });
   }
-  
+
   try {
 
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const { allowed, ttl } = await rateLimiter(ip, 5, 60);
     if (!allowed) {
-      return res.status(429).json({ 
-        success: false, 
-        message: `Too many requests. Please try again in ${ttl} seconds.` 
+      return res.status(429).json({
+        success: false,
+        message: `Too many requests. Please try again in ${ttl} seconds.`
       });
     }
 
@@ -92,7 +92,7 @@ const emailHandler = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Server error:', error);
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: 'An unexpected error occurred',

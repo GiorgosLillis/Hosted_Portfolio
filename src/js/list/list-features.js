@@ -1,9 +1,8 @@
 import { updateItemNumbers, List, list_items } from "./basic-controls-list.js";
 
-// --- UTILITY FUNCTION: THROTTLING ---
 function throttle(func, limit) {
     let inThrottle;
-    return function() {
+    return function () {
         const context = this;
         const args = arguments;
         if (!inThrottle) {
@@ -22,7 +21,7 @@ let currentTouchDropTarget = null;
 let longPressTimer = null;
 let touchStartX = 0;
 let touchStartY = 0;
-const dragThreshold = 10; 
+const dragThreshold = 10;
 
 /**
  * Attaches drag and drop event listeners (mouse and touch) to a given list item.
@@ -44,17 +43,14 @@ function handleReorderLogic(clientX, clientY, targetElement) {
         const boundingBox = dropTarget.getBoundingClientRect();
         const offset = boundingBox.y + (boundingBox.height / 2);
 
-        // Remove previous drag-over visual indicator
         cleanUpDragOverStyles();
-        
+
         if (clientY < offset) {
-            // Drop above the target
-            dropTarget.style.boxShadow = `0 -4px 0 var(--bs-effect)`; // Blue line above
+            dropTarget.style.boxShadow = `0 -4px 0 var(--bs-effect)`;
         } else {
-            // Drop below the target
-            dropTarget.style.boxShadow = `0 4px 0 var(--bs-effect)`; // Blue line below
+            dropTarget.style.boxShadow = `0 4px 0 var(--bs-effect)`;
         }
-        currentTouchDropTarget = dropTarget; // Keep track of the highlighted target
+        currentTouchDropTarget = dropTarget;
     } else {
         cleanUpDragOverStyles();
         currentTouchDropTarget = null;
@@ -63,17 +59,15 @@ function handleReorderLogic(clientX, clientY, targetElement) {
 
 // Throttled version of the drag/reorder logic (limits heavy calculations)
 const throttledReorderLogic = throttle((e) => {
-     if (!currentDraggedElement || e.touches.length === 0) return;
+    if (!currentDraggedElement || e.touches.length === 0) return;
 
     const touch = e.touches[0];
     const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
     handleReorderLogic(touch.clientX, touch.clientY, targetElement);
-}, 50); // Execute at most every 50ms (20 times per second)
-
+}, 50);
 
 
 export function addDragAndDropListeners(listItem) {
-    // --- Mouse Drag Events ---
     listItem.addEventListener('dragstart', (e) => {
         currentDraggedElement = listItem;
         if (e.dataTransfer && typeof e.dataTransfer.effectAllowed !== 'undefined') {
@@ -86,7 +80,7 @@ export function addDragAndDropListeners(listItem) {
     });
 
     listItem.addEventListener('dragover', (e) => {
-        e.preventDefault(); // Crucial: Allows a drop to happen
+        e.preventDefault();
         if (currentDraggedElement) {
             const targetElement = document.elementFromPoint(e.clientX, e.clientY);
             handleReorderLogic(e.clientX, e.clientY, targetElement);
@@ -100,7 +94,6 @@ export function addDragAndDropListeners(listItem) {
         e.preventDefault();
         cleanUpDragOverStyles();
 
-        // The drop logic is now simplified since we track the desired drop target in handleReorderLogic
         if (currentDraggedElement && currentTouchDropTarget) {
             const boundingBox = currentTouchDropTarget.getBoundingClientRect();
             const clientY = e.clientY;
@@ -111,7 +104,7 @@ export function addDragAndDropListeners(listItem) {
             } else {
                 List.insertBefore(currentDraggedElement, currentTouchDropTarget.nextSibling);
             }
-            updateItemNumbers(); 
+            updateItemNumbers();
         }
         currentDraggedElement = null;
         currentTouchDropTarget = null;
@@ -121,14 +114,14 @@ export function addDragAndDropListeners(listItem) {
         if (currentDraggedElement) {
             currentDraggedElement.classList.remove('dragging');
         }
-        cleanUpDragOverStyles(); 
-        currentDraggedElement = null; 
+        cleanUpDragOverStyles();
+        currentDraggedElement = null;
         currentTouchDropTarget = null;
     });
 
     listItem.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
-            e.preventDefault(); 
+            e.preventDefault();
             const touch = e.touches[0];
             touchStartX = touch.clientX;
             touchStartY = touch.clientY;
@@ -141,7 +134,7 @@ export function addDragAndDropListeners(listItem) {
             longPressTimer = setTimeout(() => {
                 currentDraggedElement = listItem;
                 listItem.classList.add('dragging');
-            }, 400); // 400ms threshold
+            }, 400);
         }
     });
 
@@ -159,12 +152,12 @@ export function addDragAndDropListeners(listItem) {
         }
 
         if (currentDraggedElement) {
-            e.preventDefault(); 
+            e.preventDefault();
             currentDraggedElement.classList.add('dragging');
-            throttledReorderLogic(e); 
+            throttledReorderLogic(e);
         }
 
-       
+
     });
 
     listItem.addEventListener('touchend', (e) => {
@@ -173,7 +166,7 @@ export function addDragAndDropListeners(listItem) {
             longPressTimer = null;
         }
 
-       if (currentDraggedElement && currentTouchDropTarget) {
+        if (currentDraggedElement && currentTouchDropTarget) {
             const boundingBox = currentTouchDropTarget.getBoundingClientRect();
             const lastTouch = e.changedTouches[0];
             const offset = boundingBox.y + (boundingBox.height / 2);
@@ -183,9 +176,9 @@ export function addDragAndDropListeners(listItem) {
             } else {
                 List.insertBefore(currentDraggedElement, currentTouchDropTarget.nextSibling);
             }
-            updateItemNumbers(); 
+            updateItemNumbers();
         }
-        
+
         if (currentDraggedElement) {
             currentDraggedElement.classList.remove('dragging');
         }

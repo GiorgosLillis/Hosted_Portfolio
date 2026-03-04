@@ -2,6 +2,9 @@ import { prisma } from '../../lib/prisma.js';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 import { serialize } from 'cookie';
+import { Redis } from '@upstash/redis';
+
+const redis = Redis.fromEnv();
 
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -9,14 +12,14 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+;':",./?-
 const nameRegex = /^[a-zA-Z'-]{1,50}$/;
 
 export function setCorsHeaders(res) {
-  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
 }
 
 export async function checkToken(req) {
@@ -33,6 +36,13 @@ export async function checkToken(req) {
         }
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+        const cacheKey = `user_session:${decoded.userId}`;
+        const cachedUser = await redis.get(cacheKey);
+
+        if (cachedUser) {
+            return cachedUser;
+        }
+
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId }
         });
@@ -40,6 +50,9 @@ export async function checkToken(req) {
         if (!user) {
             throw new Error('User specified in token not found');
         }
+
+        await redis.set(cacheKey, user, { ex: 300 }); // Cache for 5 minutes
+
         return user;
 
     } catch (error) {
@@ -50,49 +63,49 @@ export async function checkToken(req) {
 
 export function RegexValidation(email, current_password, password, first_name, last_name, method) {
 
-        switch(method) {
-            case 'login':
-                if (!email || !password) {
-                    return false;
-                }
-                if (!emailRegex.test(email) || !passwordRegex.test(password)){
-                    return false
-                }
-                return true;
-            case 'register':
-                if (!email || !password || !first_name || !last_name) {
-                    return false;
-                }
-                if (!emailRegex.test(email) || !passwordRegex.test(password) || !nameRegex.test(first_name) || !nameRegex.test(last_name)){
-                    return false
-                }
-                return true;
-
-            case 'edit':
-                if (email && !emailRegex.test(email)) {
-                    return false;
-                }
-                if (password && !passwordRegex.test(password)) {
-                    return false;
-                }
-                if (first_name && !nameRegex.test(first_name)) {
-                    return false;
-                }
-                if (last_name && !nameRegex.test(last_name)) {
-                    return false;
-                }
-                if (current_password && !passwordRegex.test(current_password)){
-                    return false;
-                }
-                return true;
-            case 'delete':
-                 if (!password || !passwordRegex.test(password)){
-                    return false
-                }
-                return true;
-            default:
+    switch (method) {
+        case 'login':
+            if (!email || !password) {
                 return false;
-        }
+            }
+            if (!emailRegex.test(email) || !passwordRegex.test(password)) {
+                return false
+            }
+            return true;
+        case 'register':
+            if (!email || !password || !first_name || !last_name) {
+                return false;
+            }
+            if (!emailRegex.test(email) || !passwordRegex.test(password) || !nameRegex.test(first_name) || !nameRegex.test(last_name)) {
+                return false
+            }
+            return true;
+
+        case 'edit':
+            if (email && !emailRegex.test(email)) {
+                return false;
+            }
+            if (password && !passwordRegex.test(password)) {
+                return false;
+            }
+            if (first_name && !nameRegex.test(first_name)) {
+                return false;
+            }
+            if (last_name && !nameRegex.test(last_name)) {
+                return false;
+            }
+            if (current_password && !passwordRegex.test(current_password)) {
+                return false;
+            }
+            return true;
+        case 'delete':
+            if (!password || !passwordRegex.test(password)) {
+                return false
+            }
+            return true;
+        default:
+            return false;
+    }
 }
 
 const COOKIE_OPTIONS = {
@@ -102,7 +115,7 @@ const COOKIE_OPTIONS = {
 };
 
 export function setAuthCookies(res, token) {
-    const tokenCookie = serialize('token', token, { 
+    const tokenCookie = serialize('token', token, {
         ...COOKIE_OPTIONS,
         httpOnly: true,
         maxAge: 60 * 60 * 24 * 7, // 1 week
@@ -117,7 +130,7 @@ export function setAuthCookies(res, token) {
 }
 
 export function clearAuthCookies(res) {
-    const tokenCookie = serialize('token', '', { 
+    const tokenCookie = serialize('token', '', {
         ...COOKIE_OPTIONS,
         httpOnly: true,
         expires: new Date(0),

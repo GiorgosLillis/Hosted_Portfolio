@@ -1,5 +1,5 @@
 import { addDragAndDropListeners } from "./list-features.js";
-import { saveShoppingList, loadShoppingList, deleteList} from "./memory-handle.js";
+import { saveShoppingList, loadShoppingList, deleteList } from "./memory-handle.js";
 
 export const List = document.getElementById('displayList');
 export const list_items = List.children;
@@ -23,9 +23,8 @@ export const allButtons = [submitBtn, resetBtn, downloadBtn, uploadBtn, saveBtn,
 
 
 function inputValidation(item, quantity, unit, errorMessage) {
-  errorMessage.textContent = ''; // Clear previous error messages
+  errorMessage.textContent = '';
 
-  // Validation for 'item'
   if (item.length < 2) {
     errorMessage.textContent = "Write an item.";
     return false;
@@ -34,19 +33,17 @@ function inputValidation(item, quantity, unit, errorMessage) {
     errorMessage.textContent = "Item has no letters.";
     return false;
   }
-  if (/(.)\1{3,}/.test(item)) { // Checks for 4 or more of the same character in a row
+  if (/(.)\1{3,}/.test(item)) {
     errorMessage.textContent = "Item has too many repeating characters.";
     return false;
   }
 
-  // Validation for 'quantity'
   const parsedQuantity = parseFloat(quantity);
   if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
     errorMessage.textContent = "Quantity must be a positive number.";
     return false;
   }
 
-  // Units can be short (e.g., "kg", "pcs"), so minimum length might be 1 or 0 if optional
   if (unit.length < 1) {
     errorMessage.textContent = "Select a unit.";
     return false;
@@ -111,7 +108,7 @@ function addToList(e) {
   itemInput.value = '';
   quantityInput.value = '';
   unitInput.value = '';
-  if (window.innerWidth >= 768) { // Only focus on desktop/tablet
+  if (window.innerWidth >= 768) {
     itemInput.focus();
   }
 }
@@ -209,7 +206,7 @@ function downloadList() {
         const checked = (li.dataset.checked === 'true') ? 'Got it!' : '';
         return `${category} ${item} ${quantity}${unit} ${checked}`.trim();
       })
-      .filter(line => line !== '') // Filter out empty lines
+      .filter(line => line !== '')
       .join('\n');
 
     let blob = new Blob([textContent], { type: 'text/plain' });
@@ -272,10 +269,10 @@ function showFileExplorer(options) {
       reject(new Error('Error opening file explorer'));
     };
 
-    input.click(); // Trigger the file selection dialog
+    input.click();
   });
 }
-// --------------------------------------------------------------------------------------------------
+
 async function processUploadedFile(file) {
 
   resetList();
@@ -286,13 +283,12 @@ async function processUploadedFile(file) {
     return;
   }
 
-  // Update info display
+
   fileInfo.textContent = '';
   fileInfo.className = 'alert alert-info fs-5';
   fileInfo.innerHTML = `<strong>Selected file:</strong> ${file.name}`;
   fileInfo.innerHTML += `<br><strong>File size:</strong> ${formatFileSize(file.size)}`;
 
-  // Read file content
   try {
     const fileContent = await readFileAsText(file);
     const lines = fileContent.split('\n').filter(line => line.trim());
@@ -306,7 +302,7 @@ async function processUploadedFile(file) {
     lines.forEach(itemTextLine => {
       const listItem = document.createElement('li');
       listItem.className = 'list-group-item fs-5 mb-3 rounded-3';
-      
+
       // Regex for "CATEGORY ITEM QUANTITY UNIT Got it!"
       const match = itemTextLine.match(/^([A-Za-z]+)\s+([A-Za-z\s]+?)\s*(\d+(\.\d+)?)\s*([A-Za-z]+)?\s*(Got it!)?$/i);
 
@@ -328,27 +324,27 @@ async function processUploadedFile(file) {
         // Fallback for old format "ITEM QUANTITY UNIT"
         const oldMatch = itemTextLine.match(/^([A-Za-z\s]+)\s*(\d+(\.\d+)?)\s*([A-Za-z]+)?\s*(Got it!)?$/i);
         if (oldMatch) {
-            const item = oldMatch[1].trim();
-            const quantity = oldMatch[2] || '';
-            const unit = oldMatch[4] || '';
-            const isChecked = !!oldMatch[5];
+          const item = oldMatch[1].trim();
+          const quantity = oldMatch[2] || '';
+          const unit = oldMatch[4] || '';
+          const isChecked = !!oldMatch[5];
 
-            listItem.dataset.originalItem = item;
-            listItem.dataset.item = item.toUpperCase();
-            listItem.dataset.quantity = quantity;
-            listItem.dataset.unit = unit;
-            listItem.dataset.category = 'Other'; // Default category
-            listItem.dataset.checked = isChecked;
+          listItem.dataset.originalItem = item;
+          listItem.dataset.item = item.toUpperCase();
+          listItem.dataset.quantity = quantity;
+          listItem.dataset.unit = unit;
+          listItem.dataset.category = 'Other';
+          listItem.dataset.checked = isChecked;
         } else {
-            errorMessage.textContent = `Invalid format in line: "${itemTextLine}".`;
-            return; //Skip line
+          errorMessage.textContent = `Invalid format in line: "${itemTextLine}".`;
+          return;
         }
       }
-      List.append(listItem); // Add to DOM
+      List.append(listItem);
     });
 
-    updateItemNumbers(); // Update numbering and add buttons for newly loaded DOM items
-    fileInfo.innerHTML = `<strong>Selected file:</strong> ${file.name} (Loaded)`; // Update status
+    updateItemNumbers();
+    fileInfo.innerHTML = `<strong>Selected file:</strong> ${file.name} (Loaded)`;
   } catch (error) {
     errorMessage.textContent = `Error reading file: ${error.message}`;
   }
@@ -451,7 +447,7 @@ function joinFilter() {
 
 saveBtn.addEventListener('click', () => saveShoppingList());
 deleteBtn.addEventListener('click', confirmDelete);
-export function confirmDelete(){
+export function confirmDelete() {
   clearMessages();
 
   let button = deleteBtn;
@@ -462,6 +458,4 @@ export function confirmDelete(){
 
 }
 
-
-// Load the shopping list when the DOM content is fully loaded
 document.addEventListener('DOMContentLoaded', loadShoppingList);

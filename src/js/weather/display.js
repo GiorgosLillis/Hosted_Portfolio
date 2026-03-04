@@ -1,21 +1,16 @@
-// DOM element getters - safe for both React and vanilla JS
 const getElement = (id) => document.getElementById(id);
 
-// Background utilities
 export function setBackground(img, target) {
     if (target && target.id !== 'current_weather') {
         document.body.style.backgroundImage = `url('${img}')`;
     }
 }
 
-// Location display functions
 export function displayLocation(country, city) {
     const locationMsg = `Greetings to the visitor from ${city}, ${country}!`;
     return locationMsg;
 }
 
-
-// Current weather display functions
 export function displayCurrentWeather(temperature, condition, icon, time) {
     const weatherMsg = `
         <div class="col-12 col-md-6 d-flex align-items-center justify-content-center py-1 mb-2 mb-md-0">
@@ -31,7 +26,6 @@ export function displayCurrentWeather(temperature, condition, icon, time) {
 }
 
 
-// Forecast display functions
 export function displayForecast(hourlyData) {
     const forecastContainer = getElement('forecast-container');
     if (!forecastContainer || !hourlyData) {
@@ -39,12 +33,10 @@ export function displayForecast(hourlyData) {
         showError('Forecast cannot be displayed!');
         return;
     }
-    
+
     const now = new Date();
     const currentHour = now.getHours();
-
-    // Filter the hourly data to start from the current hour
-    const futureHours = hourlyData.filter(hour => 
+    const futureHours = hourlyData.filter(hour =>
         new Date(hour.timestamp).getHours() >= currentHour
     );
 
@@ -62,14 +54,13 @@ export function displayForecast(hourlyData) {
     return forecastHTML;
 }
 
-// Daily forecast display
 export function displayDailyForecast(dailyData) {
     const dailyContainer = getElement('daily-forecast-container');
     if (!dailyContainer || !dailyData) {
         console.log('Daily forecast cannot be displayed!');
         return;
     }
-    
+
     let dailyHTML = '';
     dailyData.forEach(day => {
         dailyHTML += `
@@ -91,18 +82,17 @@ export function displayDailyForecast(dailyData) {
     return dailyHTML;
 }
 
-// Air quality display
 export function displayAirQuality(airQualityData) {
     const airQualityContainer = getElement('air-quality-container');
     if (!airQualityContainer) return;
-    
+
     if (!airQualityData) {
         airQualityContainer.innerHTML = '<p class="text-muted">Air quality data not available</p>';
         return;
     }
-    
+
     const { pm10, pm2_5, carbonMonoxide, nitrogenDioxide, ozone, sulphurDioxide } = airQualityData;
-    
+
     airQualityContainer.innerHTML = `
         <div class="air-quality-grid">
             ${pm10 !== null ? `<div class="air-quality-item"><span class="label">PM10:</span> <span class="value">${pm10} μg/m³</span></div>` : ''}
@@ -115,11 +105,11 @@ export function displayAirQuality(airQualityData) {
     `;
 }
 
-// UI helper functions
+// UI helper functions 
 export function showLoadingIndicator() {
     const loading = `<div class="loading-spinner"><span>Loading...</span></div>`;
     return loading;
-    
+
 }
 
 export function showError(message) {
@@ -128,7 +118,7 @@ export function showError(message) {
     return error;
 }
 
-// React-compatible data formatters (pure functions that don't touch DOM)
+// React-compatible data formatters
 export const formatters = {
     temperature: (temp) => `${temp}°C`,
     time: (timestamp) => new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -146,7 +136,7 @@ export const formatters = {
 export function getWeatherIcon(condition, isDay) {
     const iconBase = '/assets/weather-icons/';
     const timeOfDay = isDay ? 'day' : 'night';
-    
+
     const iconMap = {
         'Clear': `${iconBase}clear-${timeOfDay}.svg`,
         'Partly cloudy': `${iconBase}partly-cloudy-${timeOfDay}.svg`,
@@ -157,6 +147,6 @@ export function getWeatherIcon(condition, isDay) {
         'Snow': `${iconBase}snow.svg`,
         'Thunderstorm': `${iconBase}thunderstorm.svg`,
     };
-    
+
     return iconMap[condition] || `${iconBase}default.svg`;
 }

@@ -1,5 +1,5 @@
 import { updateItemNumbers, List, list_items, errorMessage, successMessage, clearMessages, confirmDelete, resetList, allButtons } from "./basic-controls-list.js";
-import { checkAuth} from "../common/getcookie.js";
+import { checkAuth } from "../common/getcookie.js";
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 
 loadRecaptchaScript();
@@ -20,10 +20,9 @@ export async function saveShoppingList() {
     const list_items_dom = Array.from(list_items);
     clearMessages();
 
-    // Populate the global shoppingList array from current DOM elements' data attributes
     const shoppingList = list_items_dom.map(li => {
         const itemData = {
-            item: li.dataset.originalItem, // Always save the original casing
+            item: li.dataset.originalItem, // Original casing
             id: parseInt(li.dataset.id), // Parse id as integer
             quantity: li.dataset.quantity,
             unit: li.dataset.unit,
@@ -34,7 +33,7 @@ export async function saveShoppingList() {
             itemData.itemId = parseInt(li.dataset.itemId);
         }
         return itemData;
-    }); 
+    });
 
     try {
         const user = await checkAuth();
@@ -50,18 +49,18 @@ export async function saveShoppingList() {
                 body: data
             });
 
-            if(response.ok){
+            if (response.ok) {
                 successMessage.textContent = 'Saved shopping list to server!';
             }
-            else{
+            else {
                 const result = await response.json();
                 errorMessage.textContent = result.message || 'Error saving shopping list to server!';
             }
         }
-        else if(shoppingList.length === 0){
+        else if (shoppingList.length === 0) {
             errorMessage.textContent = 'Cannot save an empty list';
         }
-        else{
+        else {
             errorMessage.textContent = 'You are not logged in';
         }
     } catch (error) {
@@ -73,7 +72,7 @@ export async function saveShoppingList() {
     }
 }
 
-export async function deleteList(){
+export async function deleteList() {
 
     setButtonsDisabled(true);
     clearMessages();
@@ -97,16 +96,16 @@ export async function deleteList(){
                 body: JSON.stringify({ id: user.id })
             });
 
-            if(response.ok){
+            if (response.ok) {
                 localStorage.removeItem(shoppingListKey);
                 resetList();
             }
-            else{
+            else {
                 const result = await response.json();
                 errorMessage.textContent = result.message || 'Error deleting shopping list!';
             }
         }
-        else{
+        else {
             errorMessage.textContent = 'You are not logged in';
         }
     } catch (error) {
@@ -127,7 +126,7 @@ export function loadShoppingList() {
         const storedList = localStorage.getItem(shoppingListKey);
         if (storedList) {
             const shoppingList = JSON.parse(storedList);
-            List.innerHTML = ''; // Clear existing list
+            List.innerHTML = '';
             shoppingList.forEach(item => {
                 const listItem = document.createElement('li');
                 listItem.className = 'list-group-item fs-5 mb-3 rounded-3';
@@ -137,7 +136,7 @@ export function loadShoppingList() {
                 listItem.dataset.unit = item.measure;
                 listItem.dataset.category = item.category || 'Other';
                 listItem.dataset.checked = item.isPurchased ? 'true' : 'false';
-                if (item.itemId) { // Store itemId if available
+                if (item.itemId) {
                     listItem.dataset.itemId = item.itemId;
                 }
                 List.append(listItem);
@@ -163,10 +162,10 @@ export function loadShoppingList() {
                         localStorage.setItem(shoppingListKey, JSON.stringify(list));
                         successMessage.textContent = 'Loaded shopping list from server!';
                     } else {
-                        localStorage.removeItem(shoppingListKey); // Remove local list if server has none
+                        localStorage.removeItem(shoppingListKey);
                         errorMessage.textContent = "You don't have a saved list on the server.";
                     }
-                    renderFromLocalStorage(); // Render from local storage in any case
+                    renderFromLocalStorage();
                 })
                 .catch(error => {
                     console.error('Error loading shopping list from server:', error);
