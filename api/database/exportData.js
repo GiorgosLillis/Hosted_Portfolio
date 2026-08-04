@@ -1,7 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
 import { checkToken, setAuthCookies, setCorsHeaders, getClientIp } from '../lib/functions.js';
-import { recaptchaMiddleware } from '../lib/recaptcha.js';
 
 const ExportHandler = async (req, res) => {
 
@@ -83,6 +82,4 @@ const ExportHandler = async (req, res) => {
     }
 }
 
-export default async function handler(req, res) {
-    return recaptchaMiddleware(req, res, () => ExportHandler(req, res));
-}
+export default ExportHandler;
