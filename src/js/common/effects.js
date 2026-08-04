@@ -1,3 +1,4 @@
+// Scroll-in animations for the home page
 AOS.init({
   startEvent: 'DOMContentLoaded',
   once: true,
@@ -8,6 +9,7 @@ AOS.init({
 });
 
 
+// Swaps the theme class and remembers the choice, exposed on window so inline onclick handlers can call it
 export function setTheme(theme) {
   document.body.classList.remove('theme-default', 'theme-light', 'theme-dark');
   document.body.classList.add(`theme-${theme}`);
@@ -15,6 +17,7 @@ export function setTheme(theme) {
 }
 window.setTheme = setTheme;
 
+// Falls back to the OS-level light/dark preference if the user never picked a theme themselves
 function getSystemPreferredTheme() {
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     return 'dark';
@@ -33,6 +36,7 @@ if (savedTheme) {
 }
 
 
+// Only react to OS theme changes if the user hasn't explicitly set one themselves
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
   if (!localStorage.getItem('site-theme')) {
     if (e.matches) {
@@ -43,6 +47,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
   }
 });
 
+// Live date/time display on the home page
 const current_date = document.getElementById('current-date');
 const current_time = document.getElementById('current-time');
 

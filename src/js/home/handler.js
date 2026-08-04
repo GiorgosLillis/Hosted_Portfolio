@@ -3,9 +3,10 @@ import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 
 loadRecaptchaScript();
 
+// Portfolio contact form, submits to /api/email
 const form = document.getElementById("contactForm");
 form.addEventListener("submit", async function (e) {
-   
+
     e.preventDefault();
 
     if (!this.checkValidity()) {
@@ -25,6 +26,7 @@ form.addEventListener("submit", async function (e) {
             message: document.getElementById("message").value
         };
 
+        // Same rules the server enforces, catches obvious mistakes before making the request
         const errors = [];
         if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
             errors.push('Please enter a valid email address');

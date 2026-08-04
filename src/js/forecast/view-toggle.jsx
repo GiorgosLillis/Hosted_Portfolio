@@ -7,6 +7,7 @@ const ViewToggle = ({ viewMode, setViewMode }) => {
           type="button"
           className={`btn btn-outline-light ${viewMode === 'daily' ? 'active' : ''}`}
           aria-label="Daily forecast"
+          aria-pressed={viewMode === 'daily'}
           onClick={() => setViewMode('daily')}
         >
           Daily
@@ -15,6 +16,7 @@ const ViewToggle = ({ viewMode, setViewMode }) => {
           type="button"
           className={`btn btn-outline-light ${viewMode === 'hourly' ? 'active' : ''}`}
           aria-label="Hourly forecast"
+          aria-pressed={viewMode === 'hourly'}
           onClick={() => setViewMode('hourly')}
         >
           Hourly

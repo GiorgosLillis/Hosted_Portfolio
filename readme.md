@@ -9,6 +9,7 @@ Tech stack I used:
 - HTML5
 - CSS3
 - Javascript ES2023
+- React (weather forecast and profile/account pages)
 - Bootstrap 5
 
 ### Backend:
@@ -20,6 +21,9 @@ Before:
 Now:
 
 - Vercel serverless functions
+- Prisma ORM with PostgreSQL (Neon)
+- Upstash Redis (rate limiting, caching, sessions)
+
 ---
 
 ### Features I have given:
@@ -32,7 +36,11 @@ Now:
 - Integration with reverse geolocation(https://opencagedata.com/) and Weather APIs(https://open-meteo.com/) for live weather data
 - Weather data are saved in local storage for an hour
 - Location Data are saved in local storage for 24 hours
-- Accessibility tools including ARIA roles
+- A full account system with registration, login, password reset, editing and deletion
+- "Log out everywhere" support, invalidates all other active sessions
+- Rate limiting on sensitive endpoints, backed by Redis
+- Automated test suite covering every API endpoint and key client-side logic (Vitest)
+- Accessibility tools including ARIA roles, keyboard navigation and focus management
 - SEO optimizations such as meta tags and descriptive titles
 
 ---
@@ -40,18 +48,28 @@ Now:
 ### Contact Form
 
 Submissions are sent directly to my email using Nodemailer. To avoid authentication issues and ensure security, my own email is being used to forward the user submitted emails.
-You must set up a `.env` file in the `/server` folder to setup the same functionality. The file ought to store:
-
-- Your designated email account
-- An reCaptcha v3 key from [Google reCaptcha](https://cloud.google.com/security/products/recaptcha?hl=el)
-- In case you wish to use an email account, it is required to enable 2FA and use an app passwords(not your account's password)
 
 ---
 
 ### Security
 
+In order to ensure system security and integrity hte following measures have been implemented:
+
 - Inputs are filtered and sanitized
 - Email and API keys credentials are stored in `.env` and ignored by Git
+- Passwords are hashed with bcrypt, never stored in plain text
+- Sessions are JWTs in httpOnly cookies, with a tokenVersion check so "log out everywhere" actually invalidates old sessions instead of just clearing a cookie
+- Rate limiting by IP and by account on every sensitive or mutating endpoint
+
+You must set up a `.env` file in project root. The file ought to store:
+
+- Your designated email account
+- An reCaptcha v3 key from [Google reCaptcha](https://cloud.google.com/security/products/recaptcha?hl=el)
+- In case you wish to use an email account, it is required to enable 2FA and use an app passwords(not your account's password)
+- A PostgreSQL connection string (I use [Neon](https://neon.tech/))
+- Upstash Redis credentials
+
+Make sure to also add these same variables to your Vercel project's Environment Variables settings (Project Settings → Environment Variables), otherwise the deployed site won't have access to them even if your local `.env` works.
 
 ---
 
@@ -62,48 +80,72 @@ You must set up a `.env` file in the `/server` folder to setup the same function
 - It automatically numbers the items with the order they have been added
 
   Features to add (list.html):
-- Drag-and-Drop Reordering: Allow users to reorder items in their list by dragging and dropping them.  ✅
+
+- Drag-and-Drop Reordering: Allow users to reorder items in their list by dragging and dropping them. ✅
 - Quantity/Unit Input: Add fields for quantity (e.g., "2x Apples") and units (e.g., "kg", "g", "pcs") next to each item. ✅
 - Categorization: Implement a way to categorize items (e.g., "Produce", "Dairy", "Meat") for easier shopping. ✅
 - Persistence (Local Storage/Server): Ensure shopping lists are saved between sessions. Currently, it seems to rely on download/upload. ✅
 - Local Storage: For a client-side solution, save lists to the user's browser's local storage. ✅
-- Backend Database: For cross-device sync and more robust features, consider a simple backend to store user lists (e.g., using Firebase, Supabase, or a custom Node.js/Express API with a database).
+- Backend Database: For cross-device sync and more robust features, consider a simple backend to store user lists.
+- Now available: Logged-in users get their list stored to their account and synced across devices. ✅
 - Sharing Functionality: Allow users to share their lists with others (e.g., via a unique URL or email if using a backend).
 - Printable Version: Offer a clean, print-friendly version of the shopping list. ✅
+- Items can be reordered by keyboard (move up/down buttons) as well as drag-and-drop ✅
 
 ---
- 
+
 ### Weather Forecast
 
 - For the purpose of deeper involvement with REST APIs and their data handling, an experimental weather forecast app will be developed.
-- 7-days forecast with 3-hour steps 
-- Accpents latitude and longitude, calls Open-Meteo API, maps the response according to weatherCodeMapping object 
+- 7-days forecast with detailed hourly forecast
+- Accepts latitude and longitude, calls Open-Meteo API, maps the response according to weatherCodeMapping object
   and returns current and forecast data on the combined weatherInfo object
 - Weather icons from https://github.com/visualcrossing/WeatherIcons
+- City/country search and reverse geolocation are powered by OpenStreetMap's Nominatim API
 
   Features to add (weather.html):
--   Daily forecast with: ✅
-    Min-Max Temperature ✅
-    Weather conditions at noon ✅
-    Sunrise and sunset times ✅
 
--   Detailed 3-hour forecast with:
-    Day or night ✅
-    Conditions ✅
-    Temperature ✅
-    Apparent temperature ✅
-    Humidity ✅
-    Wind direction and speed ✅
-    UV index ✅ 
-    Air quality ✅
+- Daily forecast with: ✅
+  Min-Max Temperature ✅
+  Weather conditions at noon ✅
+  Sunrise and sunset times ✅
 
--   Searching for cities:
-    Search a city by name and optionally by country for more accurate results ✅
-      Weather data for the searched city 
-      Table look-up to find the needed country code 
-      Searching with both fields empty defaults to the users location 
-      Saving favorite cities
+- Detailed hourly forecast with:
+  Day or night ✅
+  Conditions ✅
+  Temperature ✅
+  Apparent temperature ✅
+  Humidity ✅
+  Wind direction and speed ✅
+  UV index ✅
+  Air quality ✅
+
+- Searching for cities:
+  Search a city by name and optionally by country for more accurate results ✅
+  Weather data for the searched city ✅
+  Country code and name resolved automatically via Nominatim ✅
+  Searching with both fields empty defaults to the users location ✅
+  Saving favorite cities ✅
+
 ---
+
+### Profile / Account System
+
+- Register and log in with email/password, sessions kept in httpOnly cookies
+- Edit your account details and password
+- Forgot password flow, sends a single-use reset link by email
+- "Log out everywhere" button, invalidates every other active session
+- Delete your account
+- Export your account data (favorite cities and shopping list) as JSON or CSV
+- Favorites and shopping list are synced to your account when logged in, kept local-only otherwise, and never mixed between the two
+
+---
+
+### Testing
+
+- Automated test suite built with Vitest
+- Covers every API endpoint (auth, rate limiting, edge cases) and the key client-side storage/sync logic
+- Runs automatically before every build
 
 ### Issues
 
@@ -126,7 +168,12 @@ npm install -g vercel
 # Log in to Vercel
 vercel login
 
+# Set up your .env file (see Contact Form section above for what it needs)
+
+# Run the test suite (optional, already on project build flow)
+npm test
+
 # Run the project locally
-npm run dev
+vercel dev
 
 ```

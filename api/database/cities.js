@@ -1,8 +1,9 @@
-import { prisma } from '../../lib/prisma.js';
-import { checkToken, setCorsHeaders } from './functions.js';
-import { rateLimiter } from '../../lib/rateLimiter.js';
-import { recaptchaMiddleware } from '../recaptcha.js';
+import { prisma } from '../lib/prisma.js';
+import { checkToken, setCorsHeaders, getClientIp } from '../lib/functions.js';
+import { rateLimiter } from '../lib/rateLimiter.js';
+import { recaptchaMiddleware } from '../lib/recaptcha.js';
 
+// GET to get cities list, POST to create said list
 async function citiesHandler(req, res) {
   setCorsHeaders(res);
 
@@ -16,9 +17,31 @@ async function citiesHandler(req, res) {
       return res.status(401).json({ success: false, message: 'Not authenticated' });
     }
 
+    const ip = getClientIp(req);
+
     if (req.method === 'GET') {
+      const ipCheck = await rateLimiter(`cities_get_attempt_ip:${ip}`, 120, 60); // 120 requests per minute per IP   
+      const userKey = `cities_get_attempt:${user.id}`;
+      const { allowed, ttl } = await rateLimiter(userKey, 60, 60); // 60 requests per minute per user
+
+      if (!ipCheck.allowed) {
+        res.setHeader('Retry-After', ipCheck.ttl);
+        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ipCheck.ttl} seconds.` });
+      }
+      if (!allowed) {
+        res.setHeader('Retry-After', ttl);
+        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
+      }
+
       await GET(req, res, user);
     } else if (req.method === 'POST') {
+
+      const ipCheck = await rateLimiter(`cities_post_attempt_ip:${ip}`, 40, 60); // 40 requests per minute per IP
+      if (!ipCheck.allowed) {
+        res.setHeader('Retry-After', ipCheck.ttl);
+        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ipCheck.ttl} seconds.` });
+      }
+      // Rate limiting keyed on user id
       const userKey = `cities_post_attempt:${user.id}`;
       const { allowed, ttl } = await rateLimiter(userKey, 20, 60); // 20 requests per minute
 
@@ -49,14 +72,15 @@ async function citiesHandler(req, res) {
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
-    recaptchaMiddleware(req, res, () => citiesHandler(req, res));
+    return recaptchaMiddleware(req, res, () => citiesHandler(req, res));
   } else {
-    citiesHandler(req, res);
+    return citiesHandler(req, res);
   }
 }
 
 async function GET(req, res, user) {
 
+  // search by user id and return all cities
   try {
     const citiesList = await prisma.City.findMany({
       where: {
@@ -87,11 +111,21 @@ async function GET(req, res, user) {
 }
 
 async function POST(req, res, user) {
+
   const list = req.body.list;
+  const removed = req.body.removed || [];
+  // Check if the list exists and if the fields are in valid format
   if (!list || !Array.isArray(list)) {
     return res.status(400).json({
       success: false,
       message: 'Invalid request body. Expected an array of items.'
+    });
+  }
+
+  if (!Array.isArray(removed)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid request body. Expected an array of removed items.'
     });
   }
 
@@ -115,22 +149,27 @@ async function POST(req, res, user) {
     }
   }
 
-  const cityIdentifiersToKeep = list.map(city => ({
-    name: city.name,
-    country: city.country
-  }));
+  for (const city of removed) {
+    if (typeof city !== 'object' || city === null || typeof city.name !== 'string' || typeof city.country !== 'string') {
+      return res.status(400).json({ success: false, message: 'Each removed entry must include a name and country.' });
+    }
+  }
 
   try {
-    await prisma.City.deleteMany({
-      where: {
-        userId: user.id,
-        NOT: cityIdentifiersToKeep.map(city => ({
-          name: city.name,
-          country: city.country
-        }))
-      },
-    });
+    // Delete cities the client explicitly removed
+    if (removed.length > 0) {
+      await prisma.City.deleteMany({
+        where: {
+          userId: user.id,
+          OR: removed.map(city => ({
+            name: city.name,
+            country: city.country
+          }))
+        },
+      });
+    }
 
+    // Store the cities
     const upsertPromises = list.map(city => {
       return prisma.City.upsert({
         where: {

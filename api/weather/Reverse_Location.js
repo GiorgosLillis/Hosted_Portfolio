@@ -1,9 +1,8 @@
 import 'dotenv/config';
-import { rateLimiter } from '../../lib/rateLimiter.js';
-import { setCorsHeaders } from '../database/functions.js';
+import { rateLimiter } from '../lib/rateLimiter.js';
+import { setCorsHeaders, getClientIp } from '../lib/functions.js';
 
-const cache = {};
-
+// Coordinates -> city/country name, proxies OpenStreetMap Nominatim so no API key is needed
 export default async (req, res) => {
   setCorsHeaders(res);
 
@@ -11,11 +10,13 @@ export default async (req, res) => {
     return res.status(204).end();
   }
 
-  // Cache for 24 hours (86400s) at the Edge. 
+  // Cache for 24 hours (86400s) at the Edge.
   // stale-while-revalidate allows serving old content while updating in background.
   res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
 
-  const userKey = `reverse_location_attempt:${req.ip}`;
+  // IP tracking for rate limiting
+  const ip = getClientIp(req);
+  const userKey = `reverse_location_attempt:${ip}`;
   const { allowed, ttl } = await rateLimiter(userKey, 10, 60); // 10 requests per minute per IP
 
   if (!allowed) {
@@ -43,10 +44,7 @@ export default async (req, res) => {
   try {
     const reverseGeoUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${parsedLat}&lon=${parsedLon}&addressdetails=1&accept-language=en`;
 
-    if (cache[reverseGeoUrl]) {
-      return res.status(200).json(cache[reverseGeoUrl]);
-    }
-
+    // Nominatim's usage policy requires a descriptive User-Agent
     const response = await fetch(reverseGeoUrl, {
       headers: {
         'User-Agent': 'Hosted Portfolio App - (https://www.giorgoslillis.com/)'
@@ -62,6 +60,7 @@ export default async (req, res) => {
     const result = data.address;
     const country = result.country;
     const countryCode = result.country_code.toUpperCase();
+    // Nominatim doesn't always return a "city" field
     const city = result.city || result.town || result.village || result.county;
 
     const formattedData = {
@@ -69,8 +68,6 @@ export default async (req, res) => {
       country: countryCode,
       city: city
     };
-
-    cache[reverseGeoUrl] = formattedData;
 
     res.status(200).json(formattedData);
 

@@ -1,48 +1,50 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from './auth.jsx';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
+import { isValidEmail, isValidPassword } from '../common/validation.js';
 
-const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-
-const Login = ({ switchToSignUp, showToast }) => {
+const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth() || {};
+    const headingRef = useRef(null);
 
     useEffect(() => {
         loadRecaptchaScript();
+        // Move focus to this view's heading 
+        headingRef.current?.focus();
     }, []);
 
     const handleLogin = async () => {
         setIsLoading(true);
 
         try {
-            if (!email || !emailRegex.test(email)) {
+            // Same format rules the server enforces
+            if (!isValidEmail(email)) {
                 throw new Error('Please enter a valid email address');
             }
-        
-            if (!password || !passwordRegex.test(password)) {
+
+            if (!isValidPassword(password)) {
                 throw new Error('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character');
             }
 
             const token = await getRecaptchaToken('login');
 
-                        const response = await fetch('/api/login', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'g-recaptcha-response': token
-                            },
-                            body: JSON.stringify({
-                                email: email,
-                                password: password
-                            }),
-                        });
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'g-recaptcha-response': token
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                }),
+            });
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.message|| 'Something went wrong');
+                throw new Error(data.message || 'Something went wrong');
             }
 
             login(data.user);
@@ -59,12 +61,12 @@ const Login = ({ switchToSignUp, showToast }) => {
 
     return (
         <>
-            <h1 className="p-0 my-3 text-center">Profile</h1>
+            <h1 ref={headingRef} tabIndex={-1} className="p-0 my-3 text-center">Login</h1>
 
             <div className="row p-0 mb-4 w-100 d-flex justify-content-around align-items-center" id="list-form">
                 <div className="col-10 col-md-8 mb-4">
                     <label className="form-label mb-0" htmlFor="email">
-                        <h2>Email</h2>
+                        <span className="h2">Email</span>
                     </label>
                     <input
                         type="email"
@@ -79,10 +81,10 @@ const Login = ({ switchToSignUp, showToast }) => {
                 </div>
                 <div className="col-10 col-md-8 mb-4">
                     <label htmlFor="password" className="form-label mb-0">
-                        <h2>Password</h2>
+                        <span className="h2">Password</span>
                     </label>
                     <input
-                        type="password" 
+                        type="password"
                         className="form-control"
                         id="password"
                         placeholder="*********"
@@ -108,6 +110,20 @@ const Login = ({ switchToSignUp, showToast }) => {
                             {isLoading ? 'Signing in...' : 'Sign-in'}
                         </span>
                     </button>
+                </div>
+                <div className="col-12 col-md-10 d-flex justify-content-center align-items-center">
+                    <p className="mb-0 profile-span">
+                        Forgot your password?{' '}
+                        <button
+                            type="button"
+                            className="p-0 m-0 align-baseline profile-btn"
+                            aria-label="Click here to reset password"
+                            onClick={switchToForgot}
+                            disabled={isLoading}
+                        >
+                            Reset password
+                        </button>
+                    </p>
                 </div>
                 <div className="col-12 col-md-10 d-flex justify-content-center align-items-center">
                     <p className="mb-0 profile-span">

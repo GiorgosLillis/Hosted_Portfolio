@@ -1,3 +1,4 @@
+// Builds and shows a Bootstrap toast, self-removes from the DOM once it's dismissed
 function showToast(message, type = 'success', duration = 5000) {
     const toastContainer = document.querySelector('.toast-container');
     if (!toastContainer) {

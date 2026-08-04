@@ -36,6 +36,7 @@ function cleanUpDragOverStyles() {
     });
 }
 
+// Works out which side of the hovered item the dragged item would land on, and shows a preview line
 function handleReorderLogic(clientX, clientY, targetElement) {
     const dropTarget = targetElement ? targetElement.closest('li') : null;
 
@@ -67,6 +68,7 @@ const throttledReorderLogic = throttle((e) => {
 }, 50);
 
 
+// Wires up both mouse drag-and-drop and touch-based long-press reordering for one list item
 export function addDragAndDropListeners(listItem) {
     listItem.addEventListener('dragstart', (e) => {
         currentDraggedElement = listItem;
@@ -119,6 +121,7 @@ export function addDragAndDropListeners(listItem) {
         currentTouchDropTarget = null;
     });
 
+    // Touch has no native drag event, so a long-press starts the drag instead
     listItem.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
             e.preventDefault();
@@ -141,6 +144,7 @@ export function addDragAndDropListeners(listItem) {
 
     listItem.addEventListener('touchmove', (e) => {
         const touch = e.touches[0];
+        // Moved too far before the long-press fired, treat it as a scroll instead of a drag
         if (longPressTimer) {
             const deltaX = Math.abs(touch.clientX - touchStartX);
             const deltaY = Math.abs(touch.clientY - touchStartY);

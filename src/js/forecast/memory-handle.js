@@ -4,15 +4,17 @@ import { showToast } from '../common/toast.js';
 
 loadRecaptchaScript();
 
-const cityListKey = 'favoriteLocations';
+// Local-only store vs the account's server-synced store 
+const LOCAL_FAVORITES_KEY = 'localFavoriteLocations';
+const ACCOUNT_FAVORITES_KEY = 'accountFavoriteLocations';
 
-export async function saveCityList(cityList) {
-    localStorage.setItem(cityListKey, JSON.stringify(cityList));
-
+export async function saveCityList(cityList, removedCities = []) {
     try {
         const user = await checkAuth();
         if (!user) {
-            showToast('Favorites saved to local storage.', 'success');
+            // Not authenticated (or offline, checkAuth can't tell the difference) - local-only,
+            localStorage.setItem(LOCAL_FAVORITES_KEY, JSON.stringify(cityList));
+            showToast('Saved on this device only. Log in or register to save your favorites to your account and access them everywhere.', 'success');
             return { success: true };
         }
 
@@ -24,7 +26,7 @@ export async function saveCityList(cityList) {
                 'Content-Type': 'application/json',
                 'g-recaptcha-response': token
             },
-            body: JSON.stringify({ list: cityList })
+            body: JSON.stringify({ list: cityList, removed: removedCities })
         });
 
         if (!response.ok) {
@@ -32,6 +34,7 @@ export async function saveCityList(cityList) {
             return { success: false };
         }
 
+        localStorage.setItem(ACCOUNT_FAVORITES_KEY, JSON.stringify(cityList));
         showToast('Favorites saved and synced with server.', 'success');
         return { success: true };
     } catch (error) {
@@ -44,22 +47,26 @@ export async function loadCityList() {
     try {
         const user = await checkAuth();
         if (!user) {
-            showToast('Not authenticated. Local saved favorites shown.', 'info');
+            // Not authenticated (or offline) - only ever read the local-only store
+            showToast('Showing favorites saved on this device. Log in or register to sync your favorites everywhere.', 'info');
+            const localList = localStorage.getItem(LOCAL_FAVORITES_KEY);
+            return JSON.parse(localList) || [];
         }
-        else{
-            showToast('Loading favorites from server...', 'info');
-            const response = await fetch(`/api/cities`);
-            if (!response.ok) {
-                showToast('Could not fetch favorites from server.', 'danger');
-            }
-            else{
-                const data = await response.json();
-                localStorage.setItem(cityListKey, JSON.stringify(data.list || []));
-                showToast('Favorites loaded from server.', 'success');
-            }
-        } 
-        const localList = localStorage.getItem(cityListKey);
-        return JSON.parse(localList) || [];
+
+        showToast('Loading favorites from server...', 'info');
+        const response = await fetch(`/api/cities`);
+        if (!response.ok) {
+            showToast('Could not fetch favorites from server.', 'danger');
+            // Still authenticated, fall back to the last-known account cache
+            const cachedAccountList = localStorage.getItem(ACCOUNT_FAVORITES_KEY);
+            return JSON.parse(cachedAccountList) || [];
+        }
+
+        const data = await response.json();
+        const list = data.list || [];
+        localStorage.setItem(ACCOUNT_FAVORITES_KEY, JSON.stringify(list));
+        showToast('Favorites loaded from server.', 'success');
+        return list;
     } catch (error) {
         showToast('Error loading favorites.', 'danger');
         return [];

@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // On first load, ask the server if the cookie is still valid, this is how a refresh keeps you logged in
     useEffect(() => {
         fetch('/api/user')
             .then(response => {
@@ -36,6 +37,7 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
     };
 
+    // Clears the cookie server-side, and clears local state regardless of whether that call succeeds
     const logout = () => {
         fetch('/api/logout')
             .catch(error => {
@@ -43,6 +45,8 @@ export const AuthProvider = ({ children }) => {
             })
             .finally(() => {
                 setUser(null);
+                localStorage.removeItem('accountShoppingList');
+                localStorage.removeItem('accountFavoriteLocations');
             });
     };
 

@@ -1,61 +1,79 @@
-import { useState, memo, React} from 'react';
-import './card.css'
-import { formatters, getUvIndexWarning, getHumidityWaring, getWindSpeedWarning, getWindDirection, getPM10Warning, getPM2_5Warning,
-    getCarbonMonoxideWarning, getNitrogenDioxideWarning, getOzoneWarning, getSulphurDioxideWarning, useScrollEffect } from './functions';
-import {useIntersectionObserver} from './useIntersectionObserver';
+import { useState, useEffect, useRef, memo, React } from 'react';
+import '../../css/card.css'
+import {
+    formatters, getUvIndexWarning, getHumidityWaring, getWindSpeedWarning, getWindDirection, getPM10Warning, getPM2_5Warning,
+    getCarbonMonoxideWarning, getNitrogenDioxideWarning, getOzoneWarning, getSulphurDioxideWarning, useScrollEffect
+} from './functions';
+import { useIntersectionObserver } from './useIntersectionObserver';
 
+// Full detail panel shown when an hourly card is clicked, weather + air quality with warning icons where relevant
 const HourDetails = ({ hour, onClose, Unit }) => {
+    const closeButtonRef = useRef(null);
+
+    // This component stays mounted the whole time (it just renders null when there's no
+    // selected hour), so focus-on-open has to key off `hour` itself, not run once on mount
+    useEffect(() => {
+        if (hour) {
+            closeButtonRef.current?.focus();
+        }
+    }, [hour]);
+
     if (!hour) return null;
-   
+
+    const handleKeyDown = (event) => {
+        if (event.key === 'Escape') {
+            onClose();
+        }
+    };
 
     const ItemPropWeather = 'list-item col-6 col-md-4 col-lg-12 d-flex justify-content-start';
     const ItemPropAQI = 'list-item col-4 col-md-3 col-lg-12 d-flex justify-content-start';
     const ItemMargin = 'ms-2 ms-md-0 me-md-3 d-flex align-items-center';
 
-    return (   
-    <> 
-        <div className='h-100 hour-details '>
-            <button onClick={onClose} className="btn-close btn-close-white" aria-label="Close"></button>
-            <h3 className="mt-3 mb-4 mb-xl-5">{formatters.time(hour.timestamp)}</h3>
-            <h4 className="my-3 ">Weather</h4>
-            <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start mb-2 mb-lg-3 mb-xl-4">
-                <li className={ItemPropWeather}><p className={ItemMargin}>Temperature: {formatters.temperature(hour.temp, Unit)}</p></li>
-                <li className={ItemPropWeather}><p className={ItemMargin}>Feels Like: {formatters.temperature(hour.apparentTemperature, Unit)}</p></li>
-                <li className={ItemPropWeather}><p className={ItemMargin}>Condition: {hour.condition}</p></li>
-                <li className={ItemPropWeather}><p className={ItemMargin}>Humidity: {hour.humidity}%</p>{getHumidityWaring(hour.humidity)}</li>
-                <li className={ItemPropWeather}><p className={ItemMargin}>Wind Direction: {getWindDirection(hour.windDirection)}</p></li>
-                <li className={ItemPropWeather}><p className={ItemMargin}>Wind Speed: {hour.windSpeed} km/h</p>{getWindSpeedWarning(hour.windSpeed)}</li>
-                <li className={ItemPropWeather}><p className={ItemMargin}>UV Index: {hour.uvIndex}</p>{getUvIndexWarning(hour.uvIndex)}</li>
-            </ul>    
-            <h4 className="my-3">Air Quality</h4>
-            <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start">
-                {!hour?.airQuality ? (
-                    <li className={ItemPropWeather}><p className={ItemMargin}>No air quality data available.</p></li>
-                ) : (
-                    <>
-                        <li className={ItemPropAQI}><p className={ItemMargin}>PM10: {hour.airQuality.pm10}</p>{getPM10Warning(hour.airQuality.pm10)}</li>
-                        <li className={ItemPropAQI}><p className={ItemMargin}>PM2.5: {hour.airQuality.pm2_5}</p>{getPM2_5Warning(hour.airQuality.pm2_5)}</li>
-                        <li className={ItemPropAQI}><p className={ItemMargin}>CO: {hour.airQuality.carbonMonoxide}</p>{getCarbonMonoxideWarning(hour.airQuality.carbonMonoxide)}</li>
-                        <li className={ItemPropAQI}><p className={ItemMargin}>NO2: {hour.airQuality.nitrogenDioxide}</p>{getNitrogenDioxideWarning(hour.airQuality.nitrogenDioxide)}</li>
-                        <li className={ItemPropAQI}><p className={ItemMargin}>O3: {hour.airQuality.ozone}</p>{getOzoneWarning(hour.airQuality.ozone)}</li>
-                        <li className={ItemPropAQI}><p className={ItemMargin}>SO2: {hour.airQuality.sulphurDioxide}</p>{getSulphurDioxideWarning(hour.airQuality.sulphurDioxide)}</li>
-                    </>
-                )}
-            </ul>
-        </div>
-    </>
+    return (
+        <>
+            <div className='h-100 hour-details ' onKeyDown={handleKeyDown}>
+                <button ref={closeButtonRef} onClick={onClose} className="btn-close btn-close-white" aria-label="Close"></button>
+                <h3 className="mt-3 mb-4 mb-xl-5">{formatters.time(hour.timestamp)}</h3>
+                <h4 className="my-3 ">Weather</h4>
+                <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start mb-2 mb-lg-3 mb-xl-4">
+                    <li className={ItemPropWeather}><p className={ItemMargin}>Temperature: {formatters.temperature(hour.temp, Unit)}</p></li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>Feels Like: {formatters.temperature(hour.apparentTemperature, Unit)}</p></li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>Condition: {hour.condition}</p></li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>Humidity: {hour.humidity}%</p>{getHumidityWaring(hour.humidity)}</li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>Wind Direction: {getWindDirection(hour.windDirection)}</p></li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>Wind Speed: {hour.windSpeed} km/h</p>{getWindSpeedWarning(hour.windSpeed)}</li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>UV Index: {hour.uvIndex}</p>{getUvIndexWarning(hour.uvIndex)}</li>
+                </ul>
+                <h4 className="my-3">Air Quality</h4>
+                <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start">
+                    {!hour?.airQuality ? (
+                        <li className={ItemPropWeather}><p className={ItemMargin}>No air quality data available.</p></li>
+                    ) : (
+                        <>
+                            <li className={ItemPropAQI}><p className={ItemMargin}>PM10: {hour.airQuality.pm10}</p>{getPM10Warning(hour.airQuality.pm10)}</li>
+                            <li className={ItemPropAQI}><p className={ItemMargin}>PM2.5: {hour.airQuality.pm2_5}</p>{getPM2_5Warning(hour.airQuality.pm2_5)}</li>
+                            <li className={ItemPropAQI}><p className={ItemMargin}>CO: {hour.airQuality.carbonMonoxide}</p>{getCarbonMonoxideWarning(hour.airQuality.carbonMonoxide)}</li>
+                            <li className={ItemPropAQI}><p className={ItemMargin}>NO2: {hour.airQuality.nitrogenDioxide}</p>{getNitrogenDioxideWarning(hour.airQuality.nitrogenDioxide)}</li>
+                            <li className={ItemPropAQI}><p className={ItemMargin}>O3: {hour.airQuality.ozone}</p>{getOzoneWarning(hour.airQuality.ozone)}</li>
+                            <li className={ItemPropAQI}><p className={ItemMargin}>SO2: {hour.airQuality.sulphurDioxide}</p>{getSulphurDioxideWarning(hour.airQuality.sulphurDioxide)}</li>
+                        </>
+                    )}
+                </ul>
+            </div>
+        </>
     );
-    };
+};
 
 // Individual hourly forecast card component
-const HourlyForecastCard = memo(({ hour, onClick, Unit }) => { 
+const HourlyForecastCard = memo(({ hour, onClick, Unit, isVisible }) => {
     if (!hour || !hour.time || !hour.temp || !hour.icon) {
         return <div className="p-4">No hourly weather available.</div>;
-    } 
-    const [ref, isIntersecting] = useIntersectionObserver({ threshold: 0.1 });    
+    }
+    const [ref, isIntersecting] = useIntersectionObserver({ threshold: 0.1 });
 
     return (
-       <div ref={ref} className={`d-flex justify-content-center align-items-center card-fade-in ${isIntersecting ? 'is-visible' : ''}`} onClick={onClick} aria-label='Press for more hourly weather details'>
+        <button type="button" ref={ref} tabIndex={isVisible ? 0 : -1} aria-hidden={!isVisible} className={`card-button-reset d-flex justify-content-center align-items-center card-fade-in ${isIntersecting ? 'is-visible' : ''}`} onClick={onClick} aria-label='Press for more hourly weather details'>
             <div className="card text-white card-daily mb-3 daily-card col-12 rounded-3">
                 <div className="card-body text-center py-2 px-0 d-flex flex-column justify-content-center align-items-center">
                     <h4 className="card-title mb-1">{formatters.time(hour.timestamp)}</h4>
@@ -63,44 +81,52 @@ const HourlyForecastCard = memo(({ hour, onClick, Unit }) => {
                         src={hour.icon}
                         alt={hour.condition}
                         className="weather-icon my-2"
-                     />
+                    />
                     <p className="card-text mb-0">{formatters.temperature(hour.temp, Unit)}</p>
                 </div>
             </div>
-        </div>
+        </button>
     );
 });
 
-export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
+export function HourlyForecast({ hourlyForecast, Unit, dailyForecast }) {
     if (!hourlyForecast || hourlyForecast.length === 0) {
         return <div className="p-4">No hourly forecast available.</div>;
     }
 
     const [selectedHour, setSelectedHour] = useState(null);
     const scrollRef = useScrollEffect(!!selectedHour);
+    const lastClickedCardRef = useRef(null);
 
-    const handleHourClick = (hour) => {
+    const handleHourClick = (hour, event) => {
+        lastClickedCardRef.current = event.currentTarget;
         setSelectedHour(hour);
     };
 
     const handleCloseDetails = () => {
         setSelectedHour(null);
+        lastClickedCardRef.current?.focus();
     };
 
     const visibleCards = 4;
 
-    // Next 4 hours from current time
+    // Pick the card of the hour next to current time for any day selected
     const [startIndex, setStartIndex] = useState(() => {
-        const currentHour = new Date().getHours();
-        const initialIndex = hourlyForecast.findIndex(
-          (hour) => new Date(hour.timestamp).getHours() > currentHour
-        );
-        if (initialIndex === -1) {
-          return hourlyForecast.length;
-        }
-        return initialIndex;
-    }); 
+        const now = new Date();
+        const firstDate = new Date(hourlyForecast[0].timestamp);
+        const lastDate = new Date(hourlyForecast[hourlyForecast.length - 1].timestamp);
+        const isSingleDay = firstDate.getFullYear() === lastDate.getFullYear() &&
+            firstDate.getMonth() === lastDate.getMonth() &&
+            firstDate.getDate() === lastDate.getDate();
 
+        const initialIndex = isSingleDay
+            ? hourlyForecast.findIndex((hour) => new Date(hour.timestamp).getHours() >= now.getHours())
+            : hourlyForecast.findIndex((hour) => new Date(hour.timestamp).getTime() >= now.getTime());
+
+        return initialIndex === -1 ? hourlyForecast.length : initialIndex;
+    });
+
+    // Snaps forward to the next multiple of 4 so the carousel always aligns on a 4-hour boundary
     const handleNextHours = () => {
         let i = startIndex + 1;
         while (i % 4 !== 0 && i < hourlyForecast.length) {
@@ -128,31 +154,31 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
         const swipeDistance = touchStartX - touchEndX;
         const swipeThreshold = 50; // Minimum distance for a recognized swipe
 
-        if (swipeDistance > swipeThreshold) { 
+        if (swipeDistance > swipeThreshold) {
             handleNextHours();
-        } else if (swipeDistance < -swipeThreshold) { 
-             handlePreviousHours();
+        } else if (swipeDistance < -swipeThreshold) {
+            handlePreviousHours();
         }
     };
 
-   
+
     const visibleHours = hourlyForecast.slice(startIndex, startIndex + visibleCards);
     if (visibleHours.length === 0) {
         return <div className="p-4">No more hourly forecast for today.</div>;
     }
-    
+
     const currentDayTimestamp = visibleHours[0].timestamp;
     const currentDayDate = new Date(currentDayTimestamp);
 
     const dailyDataForCurrentDay = dailyForecast.find(day => {
         const dayDate = new Date(day.date);
         return dayDate.getFullYear() === currentDayDate.getFullYear() &&
-               dayDate.getMonth() === currentDayDate.getMonth() &&
-               dayDate.getDate() === currentDayDate.getDate();
+            dayDate.getMonth() === currentDayDate.getMonth() &&
+            dayDate.getDate() === currentDayDate.getDate();
     });
 
     const formattedDate = `${currentDayDate.getDate()}/${currentDayDate.getMonth() + 1}/${currentDayDate.getFullYear()}`;
-    
+
     let sunrise = null;
     let sunset = null;
 
@@ -162,23 +188,23 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
     }
 
     return (
-        <>  
+        <>
             <h2 className='mx-auto mb-2'>{formattedDate}</h2>
             {sunrise && sunset && (
                 <h3 className='mx-auto mb-2' id='day-duration'>Sunrise: {sunrise} - Sunset: {sunset}</h3>
             )}
             <section ref={scrollRef} className="row d-flex flex-row justify-content-center align-items-center daily-row my-3 mx-0">
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-end'>
-                    <button 
+                    <button
                         className="btn btn-link p-0 text-white col-4 nav-button"
                         disabled={startIndex === 0}
                         onClick={handlePreviousHours}
-                        aria-label = "Previous hours">
-                        <i className="bi bi-caret-left-fill" 
-                        style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+                        aria-label="Previous hours">
+                        <i className="bi bi-caret-left-fill" aria-hidden="true"
+                            style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                         </i>
                     </button>
-                
+
                 </div>
                 <div
                     className="col-12 col-md-10 col-lg-8 col-xl-6"
@@ -195,28 +221,33 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast}) {
                     >
                         {hourlyForecast.map((hour, index) => (
                             <div key={index} style={{ flex: '0 0 25%', padding: '0 15px' }}>
-                                <HourlyForecastCard hour={hour} onClick={() => handleHourClick(hour)} Unit={Unit} />
+                                <HourlyForecastCard
+                                    hour={hour}
+                                    onClick={(event) => handleHourClick(hour, event)}
+                                    Unit={Unit}
+                                    isVisible={index >= startIndex && index < startIndex + visibleCards}
+                                />
                             </div>
                         ))}
                     </div>
                 </div>
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-start'>
-                        <button 
-                            className="btn btn-link p-0 text-white col-4 nav-button"
-                            disabled={startIndex + visibleCards >= hourlyForecast.length}
-                            onClick={handleNextHours}
-                            aria-label = "Next hours">
-                            <i className="bi bi-caret-right-fill" 
-                            style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>   
-                            </i>
-                        </button>
+                    <button
+                        className="btn btn-link p-0 text-white col-4 nav-button"
+                        disabled={startIndex + visibleCards >= hourlyForecast.length}
+                        onClick={handleNextHours}
+                        aria-label="Next hours">
+                        <i className="bi bi-caret-right-fill" aria-hidden="true"
+                            style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+                        </i>
+                    </button>
                 </div>
             </section>
             <div className="hour-details-container">
                 <HourDetails hour={selectedHour} onClose={handleCloseDetails} Unit={Unit} />
             </div>
         </>
-        
+
     );
 }
 

@@ -1,11 +1,12 @@
-import { prisma } from '../../lib/prisma.js';
+import { prisma } from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
-import { RegexValidation, setAuthCookies, setCorsHeaders } from './functions.js';
-import sanitizeHTML from '../../lib/sanitize.js';
-import { rateLimiter } from '../../lib/rateLimiter.js';
-import { recaptchaMiddleware } from '../recaptcha.js';
+import { isValidEmail, isValidPassword, isValidName, setAuthCookies, setCorsHeaders, getClientIp } from '../lib/functions.js';
+import sanitizeHTML from '../lib/sanitize.js';
+import { rateLimiter } from '../lib/rateLimiter.js';
+import { recaptchaMiddleware } from '../lib/recaptcha.js';
 
+// POST only, creates a new account
 const registerHandler = async (req, res) => {
     setCorsHeaders(res);
 
@@ -23,9 +24,7 @@ const registerHandler = async (req, res) => {
     try {
 
         const { email, password, first_name, last_name } = req.body;
-
-
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        const ip = getClientIp(req);
         const ipKey = `register_attempt_ip:${ip}`;
         const emailKey = `register_attempt_email:${email}`;
 
@@ -44,16 +43,19 @@ const registerHandler = async (req, res) => {
         }
 
 
-        if (!RegexValidation(email, null, password, first_name, last_name, 'register')) {
+        // Check if fields are in valid format
+        if (!isValidEmail(email) || !isValidPassword(password) || !isValidName(first_name) || !isValidName(last_name)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid input. Please ensure all fields are correctly filled.'
             });
         }
 
+        // Strip any HTML/script content from user-supplied names
         const safeFirstName = sanitizeHTML(first_name);
         const safeLastName = sanitizeHTML(last_name);
 
+        // No duplicate accounts for the same email
         const existingUser = await prisma.user.findUnique({
             where: { email: email }
         });
@@ -64,6 +66,7 @@ const registerHandler = async (req, res) => {
             });
         }
 
+        // Hash the password 
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await prisma.user.create({
             data: {
@@ -71,12 +74,14 @@ const registerHandler = async (req, res) => {
                 passwordHash: hashedPassword,
                 firstName: safeFirstName,
                 lastName: safeLastName,
+                tokenVersion: 0,
                 lastLoginAt: new Date()
             }
         });
 
+        // Sign the user in right away, no email verification step
         const token = jsonwebtoken.sign(
-            { userId: newUser.id, email: newUser.email },
+            { userId: newUser.id, email: newUser.email, tokenVersion: newUser.tokenVersion },
             process.env.JWT_SECRET,
             { expiresIn: '7d' }
         );
@@ -97,5 +102,5 @@ const registerHandler = async (req, res) => {
 }
 
 export default async function handler(req, res) {
-    recaptchaMiddleware(req, res, () => registerHandler(req, res));
+    return recaptchaMiddleware(req, res, () => registerHandler(req, res));
 }

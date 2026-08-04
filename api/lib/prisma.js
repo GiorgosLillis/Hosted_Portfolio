@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import 'dotenv/config';
 
 const connectionString = process.env.DATABASE_URL;
-console.log('Database connection string:', connectionString ? 'Loaded' + connectionString : 'Not found');
+console.log('Database connection string status:', connectionString ? 'Loaded' : 'Not found');
 if (!connectionString) {
     throw new Error("DATABASE_URL is missing!!!");
 }

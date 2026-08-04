@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 
+// Parallax-style effect, shifts an element horizontally as the page scrolls
 export const useScrollEffect = (disabled) => {
     const ref = useRef(null);
 
@@ -7,7 +8,7 @@ export const useScrollEffect = (disabled) => {
         const handleScroll = () => {
             if (ref.current && !disabled) {
                 const scrollY = window.scrollY;
-                const transformValue = `translateX(${scrollY * 0.1}px)`; 
+                const transformValue = `translateX(${scrollY * 0.1}px)`;
                 ref.current.style.transform = transformValue;
             } else if (ref.current && disabled) {
                 ref.current.style.transform = 'translateX(0px)';
@@ -30,7 +31,7 @@ export const formatters = {
         if (unit === 'celsius') {
             return `${temp.toFixed(1)}°C`;
         }
-        const fahrenheit = (temp * 9/5) + 32;
+        const fahrenheit = (temp * 9 / 5) + 32;
         return `${fahrenheit.toFixed(1)}°F`;
     },
     time: (timestamp) => new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
@@ -38,7 +39,7 @@ export const formatters = {
 
 export const setBackgroundImage = (imageUrl) => {
     document.body.style.backgroundImage = `url('${imageUrl}')`;
-    
+
 }
 
 
@@ -53,7 +54,7 @@ export const LoadingIndicator = () => (
 
 
 export const ErrorMessage = ({ error }) => (
-    <h2 className="alert-heading fs-2 mb-3 text-danger text-center" aria-label={error}  role="alert" aria-atomic="true" aria-live="assetive">{error}</h2>
+    <h2 className="alert-heading fs-2 mb-3 text-danger text-center" aria-label={error} role="alert" aria-atomic="true" aria-live="assertive">{error}</h2>
 );
 
 export const WarningMessage = ({ warning }) => (
@@ -61,25 +62,26 @@ export const WarningMessage = ({ warning }) => (
 );
 
 
-export function getThermometer(temp){
-    if(temp <= 0){
-        return <i className="bi bi-thermometer-snow mx-3"></i>
+export function getThermometer(temp) {
+    // Chooses the right temperature icin
+    if (temp <= 0) {
+        return <i className="bi bi-thermometer-snow mx-3" aria-hidden="true"></i>
     }
-    else if(temp <=15){
-        return <i className="bi bi-thermometer-low mx-3"></i>
+    else if (temp <= 15) {
+        return <i className="bi bi-thermometer-low mx-3" aria-hidden="true"></i>
     }
-    else if(temp <=30){
-        return <i className="bi bi-thermometer-half mx-3"></i>
-    } 
-    else if(temp <=40){
-        return <i className="bi bi-thermometer-high mx-3 text-warning"></i>
+    else if (temp <= 30) {
+        return <i className="bi bi-thermometer-half mx-3" aria-hidden="true"></i>
     }
-    else{
-         return <i className="bi bi-thermometer-high mx-3 text-danger"></i>
+    else if (temp <= 40) {
+        return <i className="bi bi-thermometer-high mx-3 text-warning" aria-hidden="true"></i>
     }
-}  
+    else {
+        return <i className="bi bi-thermometer-high mx-3 text-danger" aria-hidden="true"></i>
+    }
+}
 
-export function getWindDirection (degrees) {
+export function getWindDirection(degrees) {
     if (degrees >= 337.5 || degrees < 22.5) {
         return 'N';
     } else if (degrees >= 22.5 && degrees < 67.5) {
@@ -94,100 +96,103 @@ export function getWindDirection (degrees) {
         return 'SW';
     } else if (degrees >= 247.5 && degrees < 292.5) {
         return 'W';
-    } else { 
+    } else {
         return 'NW';
     }
 };
 
-const warningIcon = <i className="bi bi-exclamation-triangle-fill text-warning mx-1 mx-lg-2"></i>;
-const dangerIcon = <i className="bi bi-exclamation-triangle-fill text-danger mx-1 mx-lg-2"></i>;
 
-export function getHumidityWaring(humidity){
-    if (humidity >= 60){
+const warningIcon = <i className="bi bi-exclamation-triangle-fill text-warning mx-1 mx-lg-2" role="img" aria-label="Warning: elevated level"></i>;
+const dangerIcon = <i className="bi bi-exclamation-triangle-fill text-danger mx-1 mx-lg-2" role="img" aria-label="Danger: hazardous level"></i>;
+
+// One threshold-check function per metric
+export function getHumidityWaring(humidity) {
+    if (humidity >= 60) {
         return warningIcon;
     }
 }
 
-export function getWindSpeedWarning(windspeed) {                                                                                                  
-    if (windspeed > 48) {                                                                                                                         
-       return warningIcon;                                                   
-    }        
-    else if (windspeed > 88){
-       return dangerIcon; 
-    }                                                                                                                                    
-    return null;                                                                                                                                  
-}                                                                                                                                                                                                                                                                                              
-                                                                                                                                                
-export function getUvIndexWarning(uvIndex) {                                                                                                      
-    if (uvIndex >= 6 && uvIndex <= 7) {                                                                                                                           
-       return warningIcon;                                                  
-    }          
-    else if (uvIndex >= 8){
+export function getWindSpeedWarning(windspeed) {
+    if (windspeed > 48) {
+        return warningIcon;
+    }
+    else if (windspeed > 88) {
+        return dangerIcon;
+    }
+    return null;
+}
+
+export function getUvIndexWarning(uvIndex) {
+    if (uvIndex >= 6 && uvIndex <= 7) {
+        return warningIcon;
+    }
+    else if (uvIndex >= 8) {
         return dangerIcon;
     }
 
-    return null;                                                                                                                                 
-}                                                                                                                                                 
-                                                                                                                                                 
-export function getPM10Warning(PM10) {                                                                                                       
-    if (PM10 >= 101 && PM10 <= 150) {                                                                                                                             
-        return warningIcon;                                                     
-    }                            
-    else if (PM10 > 150){
+    return null;
+}
+
+export function getPM10Warning(PM10) {
+    if (PM10 >= 101 && PM10 <= 150) {
+        return warningIcon;
+    }
+    else if (PM10 > 150) {
         return dangerIcon;
-    }                                                                                                                 
-    return null;                                                                                                                                  
-}      
+    }
+    return null;
+}
 
-export function getPM2_5Warning(PM2_5) {                                                                                                       
-    if (PM2_5 >= 56 && PM2_5 <= 150) {                                                                                                                             
-        return warningIcon;                                                     
-    }                            
-    else if (PM2_5 > 150){
+export function getPM2_5Warning(PM2_5) {
+    if (PM2_5 >= 56 && PM2_5 <= 150) {
+        return warningIcon;
+    }
+    else if (PM2_5 > 150) {
         return dangerIcon;
-    }                                                                                                                 
-    return null;                                                                                                                                  
-} 
+    }
+    return null;
+}
 
-export function getCarbonMonoxideWarning(C0) {                                                                                                       
-    if (C0 >= 35 && C0 <= 200) {                                                                                                                             
-        return warningIcon;                                                     
-    }                            
-    else if (C0 > 200){
+export function getCarbonMonoxideWarning(C0) {
+    if (C0 >= 35 && C0 <= 200) {
+        return warningIcon;
+    }
+    else if (C0 > 200) {
         return dangerIcon;
-    }                                                                                                                 
-    return null;                                                                                                                                  
-} 
+    }
+    return null;
+}
 
-export function getNitrogenDioxideWarning(N02) {                                                                                                       
-    if (N02 >= 200) {                                                                                                                             
-        return dangerIcon;                                                     
-    }                                                                                                                                           
-    return null;                                                                                                                                  
-} 
+export function getNitrogenDioxideWarning(N02) {
+    if (N02 >= 200) {
+        return dangerIcon;
+    }
+    return null;
+}
 
-export function getOzoneWarning(O3) {                                                                                                       
-    if (O3 >= 101 && O3 <= 150) {                                                                                                                             
-        return warningIcon;                                                     
-    }                            
-    else if (O3 > 150){
+export function getOzoneWarning(O3) {
+    if (O3 >= 101 && O3 <= 150) {
+        return warningIcon;
+    }
+    else if (O3 > 150) {
         return dangerIcon;
     }
 
-    return null;                                                                                                                                  
-} 
+    return null;
+}
 
-export function getSulphurDioxideWarning(SO2) {                                                                                                       
-    if (SO2 >= 1 && SO2 <= 5) {                                                                                                                             
-        return warningIcon;                                                     
-    }                            
-    else if (SO2 > 20){
+export function getSulphurDioxideWarning(SO2) {
+    if (SO2 >= 1 && SO2 <= 5) {
+        return warningIcon;
+    }
+    else if (SO2 > 20) {
         return dangerIcon;
-    }                                                                                                                 
-    return null;                                                                                                                                  
-} 
+    }
+    return null;
+}
 
-export function isFavorite  (city, country, favorites) {
+// Case-insensitive check for whether a city/country pair is already in the favorites list
+export function isFavorite(city, country, favorites) {
     if (!city || !country || !favorites) return false;
     return favorites.some(fav =>
         fav && fav.name && fav.country &&

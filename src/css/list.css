@@ -18,13 +18,19 @@ body{
     width: 90%;
 }
 
-.filter-btn:hover, .filter-btn:active{
+.filter-btn:hover, .filter-btn:active, .filter-btn:focus{
     background: linear-gradient(60deg, var(--bs-secondary) 10%, var(--bs-secondary-light) 60%, var(--bs-secondary));
     color: var(--bs-text);
 }
 
-.list-btn:hover, .list-btn:active, .list-group-item button:hover{
+.list-btn:hover, .list-btn:active, .list-btn:focus, .list-group-item button:hover, .list-group-item button:focus{
   color: var(--bs-text);
+}
+
+/* Bootstrap zeroes out the native focus outline - restore it for keyboard users only */
+.filter-btn:focus-visible, .list-btn:focus-visible, .list-group-item button:focus-visible {
+    outline: 2px solid var(--bs-text);
+    outline-offset: 2px;
 }
 
 .list-group-item .form-check-input[type=checkbox]{

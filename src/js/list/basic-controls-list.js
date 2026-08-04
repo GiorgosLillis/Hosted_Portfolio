@@ -1,5 +1,5 @@
 import { addDragAndDropListeners } from "./list-features.js";
-import { saveShoppingList, loadShoppingList, deleteList } from "./memory-handle.js";
+import { saveShoppingList, loadShoppingList, deleteList, trackRemovedItem } from "./memory-handle.js";
 
 export const List = document.getElementById('displayList');
 export const list_items = List.children;
@@ -22,6 +22,7 @@ export const deleteBtn = document.getElementById('deleteBtn');
 export const allButtons = [submitBtn, resetBtn, downloadBtn, uploadBtn, saveBtn, deleteBtn, filterCategoryBtn, filterNameBtn, joinfilterBtn];
 
 
+// Blocks obviously bad input (empty, no letters, keyboard-mash repeats) before adding a new item
 function inputValidation(item, quantity, unit, errorMessage) {
   errorMessage.textContent = '';
 
@@ -83,6 +84,7 @@ function addToList(e) {
     return;
   }
 
+  // Matching is case-insensitive, uppercase is what actually gets compared/stored in the dataset
   let list_items_dom = Array.from(list_items);
   const newItemTextUppercase = itemValue.toUpperCase();
   const isDuplicate = list_items_dom.some(listItem => {
@@ -113,6 +115,13 @@ function addToList(e) {
   }
 }
 
+// Display-only, the stored casing (dataset.originalItem) is left untouched since it's
+// what gets matched/saved against the server
+function capitalizeFirst(str) {
+  return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
+}
+
+// Re-renders every list item's numbering, text and checkbox, called after any add/remove/reorder
 export function updateItemNumbers() {
 
   for (let i = 0; i < list_items.length; i++) {
@@ -120,7 +129,7 @@ export function updateItemNumbers() {
 
     const id = i + 1;
     listItem.dataset.id = id; // Store the id in the dataset
-    const itemText = listItem.dataset.originalItem;
+    const itemText = capitalizeFirst(listItem.dataset.originalItem);
     const quantity = listItem.dataset.quantity;
     const unit = listItem.dataset.unit;
     const category = listItem.dataset.category || 'Other';
@@ -128,8 +137,9 @@ export function updateItemNumbers() {
 
     let displayContent = `${id}) ${category}: ${itemText} ${quantity}${unit}`.trim();
     listItem.innerHTML = displayContent;
-
     listItem.draggable = "true";
+    listItem.appendChild(createMoveButton(listItem, 'up'));
+    listItem.appendChild(createMoveButton(listItem, 'down'));
     const removeBtn = createBtn();
     listItem.appendChild(removeBtn);
     let checkBox = document.createElement('input');
@@ -137,6 +147,7 @@ export function updateItemNumbers() {
     checkBox.id = 'gotItem' + (i + 1);
     checkBox.className = 'form-check-input mx-2 float-end'
     checkBox.checked = (check === 'true');
+    checkBox.setAttribute('aria-label', `Mark ${itemText} as purchased`);
     checkBox.onclick = function (_) {
       this.parentElement.dataset.checked = this.checked;
       return this.parentElement.ariaLabel = `${i + 1}. Category: ${category} Item:${itemText}, Quantity: ${quantity}${unit}, checkbox: ${this.checked ? 'checked' : 'not checked'}`;
@@ -147,12 +158,36 @@ export function updateItemNumbers() {
   }
 }
 
+function createMoveButton(listItem, direction) {
+  const isUp = direction === 'up';
+  const sibling = isUp ? listItem.previousElementSibling : listItem.nextElementSibling;
+
+  const btn = document.createElement('button');
+  btn.innerHTML = `<i class="bi bi-arrow-${isUp ? 'up' : 'down'}" aria-hidden="true"></i>`;
+  btn.className = 'btn btn-secondary btn-sm float-end ms-2';
+  btn.setAttribute('aria-label', isUp ? 'Move item up' : 'Move item down');
+  btn.disabled = !sibling;
+  btn.onclick = function () {
+    if (isUp) {
+      List.insertBefore(listItem, listItem.previousElementSibling);
+    } else {
+      List.insertBefore(listItem.nextElementSibling, listItem);
+    }
+    clearMessages();
+    updateItemNumbers();
+    // Refocus the move button
+    listItem.querySelector(`[aria-label="${isUp ? 'Move item up' : 'Move item down'}"]`)?.focus();
+  };
+  return btn;
+}
+
 function createBtn() {
   let btn = document.createElement('button');
-  btn.innerHTML = '<i class="bi bi-trash"></i>';
+  btn.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
   btn.className = 'btn btn-danger btn-sm float-end ms-2';
   btn.ariaLabel = 'Delete this item';
   btn.onclick = function () {
+    trackRemovedItem(this.parentElement.dataset.originalItem);
     this.parentElement.remove();
     clearMessages();
     updateItemNumbers();
@@ -169,8 +204,10 @@ export function resetList() {
   document.getElementById('quantity').value = '';
   document.getElementById('unit').value = '';
   document.getElementById('item').focus();
+  setActiveFilter(null);
 }
 
+// Download requires a confirm click first, verify() swaps the button into "Confirm Download" mode
 downloadBtn.addEventListener('click', verify);
 function verify() {
 
@@ -184,6 +221,7 @@ function verify() {
   let button = document.getElementById('downloadBtn');
   button.id = 'confirmDownloadBtn';
   button.textContent = 'Confirm Download';
+  button.setAttribute('aria-label', 'Confirm download of the list');
   button.removeEventListener('click', verify);
   button.addEventListener('click', downloadList);
 }
@@ -226,6 +264,7 @@ function downloadList() {
   button.removeEventListener('click', downloadList);
   button.id = 'downloadBtn';
   button.textContent = 'Download';
+  button.setAttribute('aria-label', 'Download the list');
   button.addEventListener('click', verify);
 }
 
@@ -273,6 +312,8 @@ function showFileExplorer(options) {
   });
 }
 
+// Parses a previously-downloaded .txt list back into list items, supports both the current
+// "CATEGORY ITEM QUANTITY UNIT" format and the older "ITEM QUANTITY UNIT" format
 async function processUploadedFile(file) {
 
   resetList();
@@ -368,6 +409,16 @@ function formatFileSize(bytes) {
 }
 
 /* LIST FILTERING LOGIC */
+// Which filter is currently applied ('category' | 'name' | 'join' | null)
+let activeFilter = null;
+
+function setActiveFilter(filter) {
+  activeFilter = filter;
+  filterCategoryBtn.setAttribute('aria-pressed', String(filter === 'category'));
+  filterNameBtn.setAttribute('aria-pressed', String(filter === 'name'));
+  joinfilterBtn.setAttribute('aria-pressed', String(filter === 'join'));
+}
+
 filterCategoryBtn.addEventListener('click', filterListByCategory);
 function filterListByCategory() {
   const selectedCategory = categoryInput.value;
@@ -378,6 +429,7 @@ function filterListByCategory() {
   })
 
   if (selectedCategory === '') {
+    setActiveFilter(null);
     return;
   }
 
@@ -389,6 +441,7 @@ function filterListByCategory() {
       listItem.style.display = 'none';
     }
   });
+  setActiveFilter('category');
   successMessage.textContent = 'Items within this category!';
 }
 
@@ -403,6 +456,7 @@ function filterListByName() {
   });
 
   if (item === '') {
+    setActiveFilter(null);
     return;
   }
 
@@ -415,6 +469,7 @@ function filterListByName() {
       listItem.style.display = 'none';
     }
   })
+  setActiveFilter('name');
   successMessage.textContent = 'Items with this name!';
 }
 
@@ -429,6 +484,7 @@ function joinFilter() {
   });
 
   if (item === '' || selectedCategory === '') {
+    setActiveFilter(null);
     return;
   }
 
@@ -442,10 +498,12 @@ function joinFilter() {
       listItem.style.display = 'none';
     }
   });
+  setActiveFilter('join');
   successMessage.textContent = 'Items that match all filters!';
 }
 
 saveBtn.addEventListener('click', () => saveShoppingList());
+// Delete requires a confirm click first, same two-step pattern as verify()/downloadList()
 deleteBtn.addEventListener('click', confirmDelete);
 export function confirmDelete() {
   clearMessages();
@@ -453,6 +511,7 @@ export function confirmDelete() {
   let button = deleteBtn;
   button.id = 'confirmDeleteBtn';
   button.textContent = 'Confirm Delete';
+  button.setAttribute('aria-label', 'Confirm deletion of all items');
   button.removeEventListener('click', verify);
   button.addEventListener('click', () => deleteList());
 

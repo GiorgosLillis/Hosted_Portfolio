@@ -1,6 +1,7 @@
 import axios from 'axios';
 import 'dotenv/config';
 
+// Calls Google's siteverify endpoint and returns the success/score for the given token
 export async function verifyRecaptcha(token) {
   if (!token) {
     throw new Error('reCAPTCHA token is required');
@@ -31,6 +32,7 @@ export async function verifyRecaptcha(token) {
   }
 }
 
+// Gate for mutating routes, blocks the request before it reaches the real handler if the token is missing/bad/low-score
 export async function recaptchaMiddleware(req, res, next) {
     const recaptchaToken = req.body['g-recaptcha-response'] || req.headers['g-recaptcha-response'];
 
@@ -52,6 +54,7 @@ export async function recaptchaMiddleware(req, res, next) {
             });
         }
 
+        // Below 0.5 is treated as a bot by Google's own scoring guidance
         if (score < 0.5) {
             return res.status(403).json({
                 success: false,

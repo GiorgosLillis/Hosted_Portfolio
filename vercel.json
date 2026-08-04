@@ -2,6 +2,7 @@
   "version": 2,
   "builds": [
     { "src": "api/email.js", "use": "@vercel/node" },
+    { "src": "api/keep-alive.js", "use": "@vercel/node" },
     { "src": "api/weather/weather.js", "use": "@vercel/node" },
     { "src": "api/weather/Reverse_Location.js", "use": "@vercel/node" },
     { "src": "api/weather/Forward_Location.js", "use": "@vercel/node" },
@@ -9,14 +10,18 @@
     { "src": "api/database/edit.js", "use": "@vercel/node" },
     { "src": "api/database/register.js", "use": "@vercel/node" },
     { "src": "api/database/logout.js", "use": "@vercel/node" },
+    { "src": "api/database/logoutDevices.js", "use": "@vercel/node" },
     { "src": "api/database/user.js", "use": "@vercel/node" },
     { "src": "api/database/deleteUser.js", "use": "@vercel/node" },
+    { "src": "api/database/forgotPassword.js", "use": "@vercel/node" },
+    { "src": "api/database/resetPassword.js", "use": "@vercel/node" },
     { "src": "api/database/list.js", "use": "@vercel/node" },
     { "src": "api/database/cities.js", "use": "@vercel/node" },
+    { "src": "api/database/exportData.js", "use": "@vercel/node" },
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-       "config": {
+      "config": {
         "buildCommand": "npm run build"
       }
     }
@@ -24,16 +29,26 @@
   "routes": [
     { "src": "/api/email", "dest": "/api/email.js" },
     { "src": "/api/weather", "dest": "/api/weather/weather.js" },
-    { "src": "/api/Reverse_Location", "dest": "/api/weather/Reverse_Location.js" },
-    { "src": "/api/Forward_Location", "dest": "/api/weather/Forward_Location.js" },
+    {
+      "src": "/api/Reverse_Location",
+      "dest": "/api/weather/Reverse_Location.js"
+    },
+    {
+      "src": "/api/Forward_Location",
+      "dest": "/api/weather/Forward_Location.js"
+    },
     { "src": "/api/login", "dest": "/api/database/login.js" },
     { "src": "/api/register", "dest": "/api/database/register.js" },
     { "src": "/api/edit", "dest": "/api/database/edit.js" },
     { "src": "/api/logout", "dest": "/api/database/logout.js" },
+    { "src": "/api/logoutDevices", "dest": "/api/database/logoutDevices.js" },
     { "src": "/api/user", "dest": "/api/database/user.js" },
     { "src": "/api/deleteUser", "dest": "/api/database/deleteUser.js" },
+    { "src": "/api/forgot", "dest": "/api/database/forgotPassword.js" },
+    { "src": "/api/reset", "dest": "/api/database/resetPassword.js" },
     { "src": "/api/list", "dest": "/api/database/list.js" },
-    { "src": "/api/cities", "dest": "/api/database/cities.js" }
+    { "src": "/api/cities", "dest": "/api/database/cities.js" },
+    { "src": "/api/export", "dest": "/api/database/exportData.js" }
   ],
   "crons": [
     {

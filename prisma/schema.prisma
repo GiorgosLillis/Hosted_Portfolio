@@ -19,6 +19,7 @@ model User {
   passwordHash  String   @map("password_hash")
   firstName     String?  @map("first_name")
   lastName      String?  @map("last_name")
+  tokenVersion  Int      @default(0)
   
   // Timestamps (Recommended)
   createdAt     DateTime @default(now()) @map("created_at")

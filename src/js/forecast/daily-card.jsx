@@ -1,10 +1,10 @@
 import React, { memo } from 'react';
-import './card.css'
+import '../../css/card.css'
 import { formatters, useScrollEffect } from './functions';
 import { useIntersectionObserver } from './useIntersectionObserver';
 
 // Individual daily forecast card component
-const DailyForecastCard = memo (({ day, onClick, Unit }) => {
+const DailyForecastCard = memo(({ day, onClick, Unit, isVisible }) => {
     const [ref, isIntersecting] = useIntersectionObserver({ threshold: 0.1 });
 
     if (!day || !day.date || !day.tempMax || !day.tempMin) {
@@ -17,7 +17,8 @@ const DailyForecastCard = memo (({ day, onClick, Unit }) => {
     let formattedDate = `${Day}/${month}`;
 
     return (
-        <div ref={ref} className={`d-flex justify-content-center align-items-center card-fade-in ${isIntersecting ? 'is-visible' : ''}`} onClick={onClick} aria-label='Press for more daily weather details'>
+        // Off-screen cards must be untabbable
+        <button type="button" ref={ref} tabIndex={isVisible ? 0 : -1} aria-hidden={!isVisible} className={`card-button-reset d-flex justify-content-center align-items-center card-fade-in ${isIntersecting ? 'is-visible' : ''}`} onClick={onClick} aria-label='Press for more daily weather details'>
             <div className="card text-white card-daily mb-3 daily-card col-12 rounded-3">
                 <div className="card-body text-center py-2 px-0 d-flex flex-column justify-content-center align-items-center">
                     <h4 className="card-title mb-1">{formattedDate}</h4>
@@ -25,29 +26,31 @@ const DailyForecastCard = memo (({ day, onClick, Unit }) => {
                         src={day.icon}
                         alt={day.condition}
                         className="weather-icon my-2"
-                     />
-                    <div className='d-flex flex-column flex-md-row justify-content-around align-items-center mt-1 w-100'> 
+                    />
+                    <div className='d-flex flex-column flex-md-row justify-content-around align-items-center mt-1 w-100'>
                         <p className="card-text mb-0">{formatters.temperature(day.tempMin, Unit)}</p>
                         <p className="card-text mb-0">{formatters.temperature(day.tempMax, Unit)}</p>
-                    </div>   
+                    </div>
                 </div>
             </div>
-        </div>
-      
+        </button>
+
     );
 });
 
+// Horizontally scrollable 4-day-at-a-time carousel, navigable by arrow buttons, swipe, or scroll
 export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
     if (!dailyForecast || dailyForecast.length === 0) {
         return <div className="p-4">No daily forecast available.</div>;
     }
-    
+
     const scrollRef = useScrollEffect();
     let visibleCards = 4;
     // Show up to 4 days starting from a given index (default 0)
     const [startIndex, setStartIndex] = React.useState(0);
     const [touchStartX, setTouchStartX] = React.useState(0);
 
+    // Swipe left/right on mobile moves the carousel one day at a time
     const handleTouchStart = (e) => {
         setTouchStartX(e.touches[0].clientX);
     };
@@ -65,27 +68,27 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
     };
 
     // Display weeek range as "DD/MM/YYYY - DD/MM/YYYY"
-    const firstDayOfWeek = new Date(dailyForecast[0].date); 
-    const lastDayOfWeek = new Date(dailyForecast[dailyForecast.length - 1].date); 
+    const firstDayOfWeek = new Date(dailyForecast[0].date);
+    const lastDayOfWeek = new Date(dailyForecast[dailyForecast.length - 1].date);
     const WeekStart = `${firstDayOfWeek.getDate().toString()}/${(firstDayOfWeek.getMonth() + 1).toString()}/${firstDayOfWeek.getFullYear().toString()}`;
     const WeekEnd = `${lastDayOfWeek.getDate().toString()}/${(lastDayOfWeek.getMonth() + 1).toString()}/${lastDayOfWeek.getFullYear().toString()}`;
     const formattedWeekRange = `${WeekStart} - ${WeekEnd}`;
-   
+
     return (
         <>
             <h2 className='mx-auto mb-0'>{formattedWeekRange}</h2>
             <section ref={scrollRef} className="row d-flex flex-row justify-content-center align-items-center daily-row my-3 mx-0">
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-end'>
-                    <button 
+                    <button
                         className="btn btn-link p-0 text-white col-4 nav-button"
                         disabled={startIndex == 0}
-                        onClick={() => setStartIndex(startIndex - 1)} 
-                        aria-label = "Previous hours">
-                         <i className="bi bi-caret-left-fill" 
-                            style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>   
+                        onClick={() => setStartIndex(startIndex - 1)}
+                        aria-label="Previous hours">
+                        <i className="bi bi-caret-left-fill" aria-hidden="true"
+                            style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                         </i>
                     </button>
-                
+
                 </div>
                 <div
                     className="col-12 col-md-10 col-lg-8 col-xl-6 "
@@ -102,19 +105,24 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
                     >
                         {dailyForecast.map((day, index) => (
                             <div key={index} style={{ flex: '0 0 25%', padding: '0 15px' }}>
-                                <DailyForecastCard day={day} onClick={() => onDayClick(day)} Unit={Unit} />
+                                <DailyForecastCard
+                                    day={day}
+                                    onClick={() => onDayClick(day)}
+                                    Unit={Unit}
+                                    isVisible={index >= startIndex && index < startIndex + visibleCards}
+                                />
                             </div>
                         ))}
                     </div>
                 </div>
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-start'>
-                    <button 
+                    <button
                         className="btn btn-link p-0 text-white col-4 nav-button"
                         disabled={startIndex + visibleCards >= dailyForecast.length}
                         onClick={() => setStartIndex(startIndex + 1)}
-                        aria-label = "Next hours">
-                        <i className="bi bi-caret-right-fill" 
-                            style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>   
+                        aria-label="Next hours">
+                        <i className="bi bi-caret-right-fill" aria-hidden="true"
+                            style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                         </i>
                     </button>
                 </div>

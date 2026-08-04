@@ -2,6 +2,7 @@ const LOCATION_CACHE_KEY = 'LocationInfo';
 export const WEATHER_CACHE_KEY = 'WeatherInfo';
 const CITY_CACHE_KEY = 'CityInfo';
 
+// Browser geolocation -> reverse geocoded city/country, cached in localStorage for 24 hours
 export async function getLocation() {
   const cachedLocation = JSON.parse(localStorage.getItem(LOCATION_CACHE_KEY));
   const currentTime = new Date().getTime();
@@ -17,6 +18,7 @@ export async function getLocation() {
   }
 }
 
+// Manual city/country search -> coordinates, same 24 hour cache as getLocation
 export async function getCityLocation(city, country) {
 
   const cachedCity = JSON.parse(localStorage.getItem(CITY_CACHE_KEY));
@@ -34,6 +36,8 @@ export async function getCityLocation(city, country) {
 }
 
 
+// Two modes in one function: pass a city name for forward geocoding, or nothing for
+// browser-geolocation + reverse geocoding
 async function callLocationAPI(city, country) {
   try {
     if (city) {
@@ -104,6 +108,7 @@ async function callLocationAPI(city, country) {
     return locationInfo;
 
   } catch (err) {
+    // Geolocation errors have a .code, network/API errors don't, message each one differently
     if (err.code) {
       let message;
       switch (err.code) {
@@ -139,6 +144,7 @@ function getCurrentPositionPromise() {
   });
 }
 
+// Calls  /api/weather proxy and caches the result for an hour
 export async function fetchWeather(locationInfo) {
   try {
     const res = await fetch('/api/weather', {
@@ -174,6 +180,7 @@ export async function fetchWeather(locationInfo) {
   }
 }
 
+// Returns the cached weather only if it's still fresh AND for the same city, otherwise null
 export function getCachedWeather(currentLocationInfo) {
   if (isWeatherDataFresh()) {
     const weather_temp = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));

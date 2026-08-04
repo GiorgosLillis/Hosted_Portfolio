@@ -1,7 +1,8 @@
-import nodemailer from 'nodemailer';
-import sanitizeHTML from '../lib/sanitize.js';
-import { rateLimiter } from '../lib/rateLimiter.js';
-import { recaptchaMiddleware } from './recaptcha.js';
+import sanitizeHTML from './lib/sanitize.js';
+import { rateLimiter } from './lib/rateLimiter.js';
+import { recaptchaMiddleware } from './lib/recaptcha.js';
+import { getClientIp } from './lib/functions.js';
+import { transporter } from './lib/mailer.js';
 
 function validateInputs(email, subject, message) {
 
@@ -25,20 +26,7 @@ function validateInputs(email, subject, message) {
   return { errors, safe_subject, safe_message };
 }
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_ID,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-  connectionTimeout: 5000,
-  greetingTimeout: 5000,
-  socketTimeout: 10000
-});
-
+// POST only, sends the portfolio contact form to the site owner's inbox
 const emailHandler = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({
@@ -49,7 +37,8 @@ const emailHandler = async (req, res) => {
 
   try {
 
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    // IP tracking for rate limiting
+    const ip = getClientIp(req);
     const { allowed, ttl } = await rateLimiter(ip, 5, 60);
     if (!allowed) {
       return res.status(429).json({
@@ -60,11 +49,11 @@ const emailHandler = async (req, res) => {
 
     const { email, subject, message } = req.body;
 
-
     if (!email || !subject || !message) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
+    // Format checks plus HTML sanitizing on subject/message
     const { errors: validationErrors, safe_subject, safe_message } = validateInputs(email, subject, message);
     if (validationErrors.length > 0) {
       return res.status(400).json({
@@ -102,5 +91,5 @@ const emailHandler = async (req, res) => {
 };
 
 export default (req, res) => {
-  recaptchaMiddleware(req, res, () => emailHandler(req, res));
+  return recaptchaMiddleware(req, res, () => emailHandler(req, res));
 };

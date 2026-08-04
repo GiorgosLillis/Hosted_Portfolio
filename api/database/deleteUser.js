@@ -1,12 +1,13 @@
-import { prisma } from '../../lib/prisma.js';
+import { prisma } from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
-import { checkToken, clearAuthCookies, RegexValidation, setCorsHeaders } from './functions.js';
-import { rateLimiter } from '../../lib/rateLimiter.js';
-import { recaptchaMiddleware } from '../recaptcha.js';
+import { checkToken, clearAuthCookies, isValidPassword, setCorsHeaders, getClientIp } from '../lib/functions.js';
+import { rateLimiter } from '../lib/rateLimiter.js';
+import { recaptchaMiddleware } from '../lib/recaptcha.js';
 
 const deleteUserHandler = async (req, res) => {
     setCorsHeaders(res);
 
+    // DELETE only valid method
     if (req.method === 'OPTIONS') {
         return res.status(204).end();
     }
@@ -19,14 +20,24 @@ const deleteUserHandler = async (req, res) => {
     }
 
     try {
+        // Validate request body data 
         const user = await checkToken(req);
         if (!user) {
             return res.status(401).json({ success: false, message: 'Not authenticated' });
         }
 
+        const ip = getClientIp(req);
+        const ipCheck = await rateLimiter(`delete_user_attempt_ip:${ip}`, 10, 3600); // 10 requests per hour per IP
+        if (!ipCheck.allowed) {
+            res.setHeader('Retry-After', ipCheck.ttl);
+            return res.status(429).json({
+                success: false,
+                message: `Too many delete requests. Please try again in ${ipCheck.ttl} seconds.`
+            });
+        }
+
         const userKey = `delete_user_attempt:${user.id}`;
         const { allowed, ttl } = await rateLimiter(userKey, 3, 3600); // 3 requests per hour
-
         if (!allowed) {
             res.setHeader('Retry-After', ttl);
             return res.status(429).json({
@@ -43,14 +54,12 @@ const deleteUserHandler = async (req, res) => {
             });
         }
 
-        if(!RegexValidation(null, null, password, null, null, 'delete')){
-             return res.status(400).json({ 
+        if (!isValidPassword(password)) {
+            return res.status(400).json({
                 success: false,
-                message: 'Invalid password.' 
+                message: 'Invalid password.'
             });
         }
-
- 
         const passwordMatch = await bcrypt.compare(password, user.passwordHash);
         if (!passwordMatch) {
             return res.status(401).json({
@@ -74,7 +83,13 @@ const deleteUserHandler = async (req, res) => {
 
     } catch (error) {
         console.error('Server error on delete:', error);
-        if (error.code === 'P2025') { 
+        if (error.message === 'Invalid or expired token.') {
+            return res.status(401).json({
+                success: false,
+                message: error.message
+            });
+        }
+        if (error.code === 'P2025') {
             return res.status(404).json({
                 success: false,
                 message: 'User not found.'
@@ -89,5 +104,5 @@ const deleteUserHandler = async (req, res) => {
 }
 
 export default async function handler(req, res) {
-    recaptchaMiddleware(req, res, () => deleteUserHandler(req, res));
+    return recaptchaMiddleware(req, res, () => deleteUserHandler(req, res));
 }

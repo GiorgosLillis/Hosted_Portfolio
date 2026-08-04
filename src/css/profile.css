@@ -25,15 +25,21 @@ h5, h4{
   height: 50px;
 }
 
-.btn-danger:hover, .btn-danger:active {
+.btn-danger:hover, .btn-danger:active, .btn-danger:focus {
     background: linear-gradient(60deg, var(--bs-danger) 10%, var(--bs-danger) 60%, var(--bs-danger));
     color: var(--bs-text);
     border: none !important;
 }
 
-.btn-primary:hover, .btn-primary:active {
+.btn-primary:hover, .btn-primary:active, .btn-primary:focus {
     background: linear-gradient(60deg, var(--bs-secondary) 10%, var(--bs-secondary) 60%, var(--bs-secondary));
     color: var(--bs-text);
     border: none !important;
+}
+
+/* Bootstrap zeroes out the native focus outline - restore it for keyboard users only */
+.btn-danger:focus-visible, .btn-primary:focus-visible {
+    outline: 2px solid var(--bs-text);
+    outline-offset: 2px;
 }
 

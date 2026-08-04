@@ -10,11 +10,13 @@ import {
 export const current_weather = document.getElementById('current_weather');
 export const location = document.getElementById('location');
 
+// Small weather teaser shown on the home page, uses the same API client as the full weather page
 async function init() {
     showLoadingIndicator();
 
     try {
         const locationInfo = await getLocation();
+        // Use the cached weather if it's still fresh, only hit the API when it isn't
         let weatherInfo = getCachedWeather();
         if (weatherInfo) {
             console.log("Weather info is fresh, displaying from localStorage");

@@ -1,8 +1,7 @@
-import { setCorsHeaders } from '../database/functions.js';
-import { rateLimiter } from '../../lib/rateLimiter.js';
+import { setCorsHeaders, getClientIp } from '../lib/functions.js';
+import { rateLimiter } from '../lib/rateLimiter.js';
 
-const cache = {};
-
+// City name -> coordinates, proxies OpenStreetMap Nominatim so no API key is needed
 export default async (req, res) => {
     setCorsHeaders(res);
 
@@ -13,7 +12,9 @@ export default async (req, res) => {
     // Cache for 24 hours at the Edge
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
 
-    const userKey = `forward_location_attempt:${req.ip}`;
+    // IP tracking for rate limiting
+    const ip = getClientIp(req);
+    const userKey = `forward_location_attempt:${ip}`;
     const { allowed, ttl } = await rateLimiter(userKey, 10, 60); // 10 requests per minute per IP
 
     if (!allowed) {
@@ -49,10 +50,7 @@ export default async (req, res) => {
 
         const GeoUrl = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&format=json&limit=1&addressdetails=1&accept-language=en`;
 
-        if (cache[GeoUrl]) {
-            return res.status(200).json(cache[GeoUrl]);
-        }
-
+        // Nominatim's usage policy requires a descriptive User-Agent
         const response = await fetch(GeoUrl, {
             headers: {
                 'User-Agent': 'Hosted Portfolio App - (https://www.giorgoslillis.com/)'
@@ -75,6 +73,7 @@ export default async (req, res) => {
         const lon = data[0].lon;
         const CountryName = result.country;
         const countryCode = result.country_code.toUpperCase();
+        // Nominatim doesn't always return a "city" field
         const name = data[0].name || result.city || result.town || result.village || result.county;
         const formattedData = {
             latitude: lat,
@@ -83,8 +82,6 @@ export default async (req, res) => {
             country: countryCode,
             city: name
         };
-
-        cache[GeoUrl] = formattedData;
 
         res.status(200).json(formattedData);
 

@@ -1,8 +1,7 @@
-import { setCorsHeaders } from '../database/functions.js';
-import { rateLimiter } from '../../lib/rateLimiter.js';
+import { setCorsHeaders, getClientIp } from '../lib/functions.js';
+import { rateLimiter } from '../lib/rateLimiter.js';
 import { Redis } from '@upstash/redis';
 
-const cache = {};
 const redis = Redis.fromEnv();
 
 const PathtoImg = 'assets/weather-images/'
@@ -53,6 +52,7 @@ function getNoonInfo(currentDate, hourlyTimes, hourlyWeatherCodes) {
 
 }
 
+// Proxies Open-Meteo so the API key-free upstream call happens server-side, with caching at every layer
 export default async (req, res) => {
     setCorsHeaders(res);
 
@@ -62,6 +62,16 @@ export default async (req, res) => {
 
     // Cache for 1 hour (3600s) at the Edge
     res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=600');
+
+    // IP tracking for rate limiting
+    const ip = getClientIp(req);
+    const { allowed, ttl } = await rateLimiter(ip, 20, 60);
+    if (!allowed) {
+        return res.status(429).json({
+            success: false,
+            message: `Too many requests. Please try again in ${ttl} seconds.`
+        });
+    }
 
     const { lat, lon } = req.method === 'GET' ? req.query : req.body;
 
@@ -75,27 +85,21 @@ export default async (req, res) => {
         return res.status(400).json({ error: "Invalid longitude. Must be a number between -180 and 180." });
     }
 
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const { allowed, ttl } = await rateLimiter(ip, 20, 60);
-    if (!allowed) {
-        return res.status(429).json({
-            success: false,
-            message: `Too many requests. Please try again in ${ttl} seconds.`
-        });
-    }
 
+
+    // Redis is the real 1-hour cache, if it's down just fetch fresh instead of failing
     const cacheKey = `weather_data:${parsedLat}:${parsedLon}`;
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-        return res.status(200).json(cachedData);
+    try {
+        const cachedData = await redis.get(cacheKey);
+        if (cachedData) {
+            return res.status(200).json(cachedData);
+        }
+    } catch (error) {
+        console.error('Redis read failed for weather cache, fetching fresh:', error);
     }
 
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${parsedLat}&longitude=${parsedLon}&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,uv_index,apparent_temperature,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&forecast_days=7&timezone=auto`;
     const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${parsedLat}&longitude=${parsedLon}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,sulphur_dioxide&timezone=auto`;
-
-    if (cache[url] && cache[airQualityUrl]) {
-        return res.status(200).json(cache[url]);
-    }
 
     try {
         const [res1, res2] = await Promise.all([
@@ -211,9 +215,11 @@ export default async (req, res) => {
             daily: dailyInfo,
         };
 
-        cache[url] = weatherInfo;
-        cache[airQualityUrl] = weatherInfo;
-        await redis.set(cacheKey, weatherInfo, { ex: 3600 }); // Cache for 1 hour
+        try {
+            await redis.set(cacheKey, weatherInfo, { ex: 3600 }); //cache for 1 hour
+        } catch (error) {
+            console.error('Redis write failed for weather cache:', error);
+        }
 
         res.status(200).json(weatherInfo);
     } catch (error) {

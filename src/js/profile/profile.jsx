@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
-import { AuthProvider, useAuth } from './auth.jsx'; 
+import { AuthProvider, useAuth } from './auth.jsx';
 import LoginForm from './login.jsx';
 import SignUpForm from './sign-up.jsx';
 import EditForm from './edit.jsx';
+import ForgotForm from './forgot.jsx';
 import { showToast } from '../common/toast.js';
 
+// Switches between the login/signup/edit views based on auth state, no routing library involved
 const AuthManager = () => {
     const { isAuthenticated, user, logout, isLoading } = useAuth();
     const [view, setView] = useState('initial'); // 'initial', 'login', 'signup'
@@ -14,6 +16,7 @@ const AuthManager = () => {
         return <h1 className="p-0 my-3 text-center">Loading...</h1>;
     }
 
+    // Logged-in users always see the edit form, regardless of which view was selected before
     if (isAuthenticated) {
         return <EditForm userData={user} switchToLogout={logout} showToast={showToast} />;
     }
@@ -46,9 +49,11 @@ const AuthManager = () => {
 
     switch (view) {
         case 'login':
-            return <LoginForm switchToSignUp={() => setView('signup')} showToast={showToast} />;
+            return <LoginForm switchToSignUp={() => setView('signup')} switchToForgot={() => setView('forgot')} showToast={showToast} />;
         case 'signup':
             return <SignUpForm switchToLogin={() => setView('login')} showToast={showToast} />;
+        case 'forgot':
+            return <ForgotForm switchToLogin={() => setView('login')} showToast={showToast} />;
         case 'initial':
         default:
             return renderInitialView();
@@ -56,24 +61,25 @@ const AuthManager = () => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  let container = document.getElementById('profile-form');
-  if (!container) {
-    container = document.createElement('form');
-    container.id = 'profile-form';
-    const main = document.querySelector('main');
-    if (main) {
-        main.appendChild(container);
-    } else {
-        document.body.appendChild(container);
+    // profile.html may not have the mount point yet, create it if it's missing
+    let container = document.getElementById('profile-form');
+    if (!container) {
+        container = document.createElement('form');
+        container.id = 'profile-form';
+        const main = document.querySelector('main');
+        if (main) {
+            main.appendChild(container);
+        } else {
+            document.body.appendChild(container);
+        }
     }
-  }
 
-  const root = ReactDOM.createRoot(container);
-  root.render(
-    <React.StrictMode>
-      <AuthProvider> 
-        <AuthManager />
-      </AuthProvider>
-    </React.StrictMode>
-  );
+    const root = ReactDOM.createRoot(container);
+    root.render(
+        <React.StrictMode>
+            <AuthProvider>
+                <AuthManager />
+            </AuthProvider>
+        </React.StrictMode>
+    );
 });

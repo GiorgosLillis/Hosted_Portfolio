@@ -15,7 +15,8 @@ export default defineConfig({
         main: path.resolve(__dirname, 'index.html'),
         list: path.resolve(__dirname, 'list.html'),
         weather: path.resolve(__dirname, 'weather.html'),
-        profile: path.resolve(__dirname, 'profile.html')
+        profile: path.resolve(__dirname, 'profile.html'),
+        reset: path.resolve(__dirname, 'reset.html')
       },
     },
   },

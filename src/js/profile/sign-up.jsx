@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from './auth.jsx';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
-
-const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+;':",./?-])[A-Za-z\d@$!%*?&#^_+;':",./?-]{8,}$/;
-const nameRegex = /^[a-zA-Z'-]{1,50}$/;
+import { isValidEmail, isValidPassword, isValidName } from '../common/validation.js';
 
 const SignUp = ({ switchToLogin, showToast }) => {
     const [email, setEmail] = useState('');
@@ -13,9 +10,11 @@ const SignUp = ({ switchToLogin, showToast }) => {
     const [last_name, setLastName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth() || {};
+    const headingRef = useRef(null);
 
     useEffect(() => {
         loadRecaptchaScript();
+        headingRef.current?.focus();
     }, []);
 
     const handleSignUp = async () => {
@@ -23,19 +22,20 @@ const SignUp = ({ switchToLogin, showToast }) => {
 
         try {
 
-            if (!email || !emailRegex.test(email)) {
+            // Same format rules the server enforces
+            if (!isValidEmail(email)) {
                 showToast('Please enter a valid email address', 'danger');
                 return;
             }
-            if (!password || !passwordRegex.test(password)) {
+            if (!isValidPassword(password)) {
                 showToast('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character', 'danger');
                 return;
             }
-            if (!first_name || !nameRegex.test(first_name)) {
+            if (!isValidName(first_name)) {
                 showToast('Please enter a valid first name (1-50 characters, letters, hyphens, apostrophes only)', 'danger');
                 return;
             }
-            if (!last_name || !nameRegex.test(last_name)) {
+            if (!isValidName(last_name)) {
                 showToast('Please enter a valid last name (1-50 characters, letters, hyphens, apostrophes only)', 'danger');
                 return;
             }
@@ -48,10 +48,10 @@ const SignUp = ({ switchToLogin, showToast }) => {
                     'Content-Type': 'application/json',
                     'g-recaptcha-response': token
                 },
-                body: JSON.stringify({ 
-                    email, 
-                    password, 
-                    first_name, 
+                body: JSON.stringify({
+                    email,
+                    password,
+                    first_name,
                     last_name
                 }),
             });
@@ -79,12 +79,12 @@ const SignUp = ({ switchToLogin, showToast }) => {
 
     return (
         <>
-            <h1 className="p-0 my-3 text-center">Profile</h1>
+            <h1 ref={headingRef} tabIndex={-1} className="p-0 my-3 text-center">Sign Up</h1>
 
             <div className="row p-0 mb-4 w-100 d-flex justify-content-around align-items-center" id="list-form">
                 <div className="col-10 col-md-8 mb-4">
                     <label className="form-label mb-0" htmlFor="email">
-                        <h2>Email</h2>
+                        <span className="h2">Email</span>
                     </label>
                     <input
                         type="email"
@@ -99,56 +99,59 @@ const SignUp = ({ switchToLogin, showToast }) => {
                 </div>
                 <div className="col-10 col-md-8 mb-4">
                     <label htmlFor="password" className="form-label mb-0">
-                        <h2>Password</h2>
+                        <span className="h2">Password</span>
                     </label>
                     <input
-                        type="password" 
+                        type="password"
                         className="form-control"
                         id="password"
                         placeholder="*********"
                         aria-label="Write your password here"
+                        aria-describedby="password-conditions"
                         value={password}
                         minLength={8}
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={isLoading}
                     />
-                    <span className="d-flex text-start conditions">A least 8 characters long with uppercase, lowercase, number, and special character</span>
+                    <span id="password-conditions" className="d-flex text-start conditions">At least 8 characters long with uppercase, lowercase, number, and special character</span>
                 </div>
-                 <div className="col-10 col-md-8 mb-4">
+                <div className="col-10 col-md-8 mb-4">
                     <label htmlFor="first-name" className="form-label mb-0">
-                        <h2>First name</h2>
+                        <span className="h2">First name</span>
                     </label>
                     <input
-                        type="text" 
+                        type="text"
                         className="form-control"
                         id="first-name"
                         placeholder="First Name"
                         aria-label="Write your first name here"
+                        aria-describedby="first-name-conditions"
                         value={first_name}
                         minLength={1}
                         maxLength={50}
                         onChange={(e) => setFirstName(e.target.value)}
                         disabled={isLoading}
                     />
-                    <span className="d-flex text-start conditions">At most 50 characters long</span>
+                    <span id="first-name-conditions" className="d-flex text-start conditions">At most 50 characters long</span>
                 </div>
-                 <div className="col-10 col-md-8 mb-4">
+                <div className="col-10 col-md-8 mb-4">
                     <label htmlFor="last-name" className="form-label mb-0">
-                        <h2>Last name</h2>
+                        <span className="h2">Last name</span>
                     </label>
                     <input
-                        type="text" 
+                        type="text"
                         className="form-control"
                         id="last-name"
                         placeholder="Last Name"
                         aria-label="Write your last name here"
+                        aria-describedby="last-name-conditions"
                         value={last_name}
                         minLength={1}
                         maxLength={50}
                         onChange={(e) => setLastName(e.target.value)}
                         disabled={isLoading}
                     />
-                    <span className="d-flex text-start conditions">At most 50 characters long</span>
+                    <span id="last-name-conditions" className="d-flex text-start conditions">At most 50 characters long</span>
                 </div>
             </div>
 

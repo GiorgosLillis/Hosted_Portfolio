@@ -4,6 +4,7 @@ const RECAPTCHA_SITE_KEY = '6Lc560ErAAAAAP7bly7AL_F_5AxlDf8zW7xxbML6';
 
 let isRecaptchaLoaded = false;
 
+// Injects Google's reCAPTCHA v3 script once per page load
 function loadRecaptchaScript() {
     if (isRecaptchaLoaded) {
         return;
@@ -17,6 +18,7 @@ function loadRecaptchaScript() {
     isRecaptchaLoaded = true;
 }
 
+// Gets a fresh token for the given action, needed before every gated form submit
 async function getRecaptchaToken(action) {
     if (typeof grecaptcha === 'undefined' || !grecaptcha.execute) {
         showToast('reCAPTCHA not loaded, please try again later.', 'danger');

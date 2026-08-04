@@ -1,5 +1,6 @@
 const getElement = (id) => document.getElementById(id);
 
+// Skips setting the background if the change came from the small home-page widget, only the full weather page changes the page background
 export function setBackground(img, target) {
     if (target && target.id !== 'current_weather') {
         document.body.style.backgroundImage = `url('${img}')`;
@@ -26,6 +27,7 @@ export function displayCurrentWeather(temperature, condition, icon, time) {
 }
 
 
+// Builds the hourly forecast strip, only shows hours from now onward, not the whole day
 export function displayForecast(hourlyData) {
     const forecastContainer = getElement('forecast-container');
     if (!forecastContainer || !hourlyData) {
@@ -54,6 +56,7 @@ export function displayForecast(hourlyData) {
     return forecastHTML;
 }
 
+// Builds the 7-day forecast list
 export function displayDailyForecast(dailyData) {
     const dailyContainer = getElement('daily-forecast-container');
     if (!dailyContainer || !dailyData) {
@@ -82,6 +85,7 @@ export function displayDailyForecast(dailyData) {
     return dailyHTML;
 }
 
+// Builds the air quality grid, skips any pollutant the API didn't return
 export function displayAirQuality(airQualityData) {
     const airQualityContainer = getElement('air-quality-container');
     if (!airQualityContainer) return;
