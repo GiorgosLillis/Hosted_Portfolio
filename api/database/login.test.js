@@ -47,7 +47,6 @@ const loginHandler = (await import('./login.js')).default;
 
 // functions.js (imported by login.js, left unmocked) creates its own Redis.fromEnv()
 // instance internally as a dependency - it's evaluated before login.js's own top-level
-// code runs, so it claims results[0]. login.js's own instance (used for redis.set here) is results[1].
 const redis = Redis.fromEnv.mock.results[1].value;
 
 const credentials = { email: 'user@example.com', password: 'Str0ng!Pass' };

@@ -1,24 +1,29 @@
 import { prisma } from '../lib/prisma.js';
 import jsonwebtoken from 'jsonwebtoken';
-import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { Redis } from '@upstash/redis';
-import { rateLimiter } from '../lib/rateLimiter.js';
-import { checkToken, setAuthCookies, setCorsHeaders, getClientIp } from '../lib/functions.js';
+import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
+import { checkToken, clearAuthCookies, setAuthCookies, setCorsHeaders, getClientIp, enforceRateLimit, handleApiError } from '../lib/functions.js';
+
 const redis = Redis.fromEnv();
 
-const LogoutDevicesHandler = async (req, res) => {
-
+// GET logs out the current device, POST logs out every other device
+async function sessionHandler(req, res) {
     setCorsHeaders(res);
 
     if (req.method === 'OPTIONS') {
         return res.status(204).end();
     }
 
+    if (req.method === 'GET') {
+        clearAuthCookies(res);
+        return res.status(200).json({ success: true, message: 'Logged out successfully' });
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({
             success: false,
-            message: 'Only POST requests are allowed'
+            message: 'Only GET and POST requests are allowed'
         });
     }
 
@@ -29,25 +34,8 @@ const LogoutDevicesHandler = async (req, res) => {
         }
 
         const ip = getClientIp(req);
-        const ipCheck = await rateLimiter(`logout_devices_attempt_ip:${ip}`, 30, 60); // 30 requests per minute per IP
-        if (!ipCheck.allowed) {
-            res.setHeader('Retry-After', ipCheck.ttl);
-            return res.status(429).json({
-                success: false,
-                message: `Too many requests. Please try again in ${ipCheck.ttl} seconds.`
-            });
-        }
-
-        const userKey = `logout_devices_attempt:${user.id}`;
-        const { allowed, ttl } = await rateLimiter(userKey, 15, 60); // 15 requests per minute
-
-        if (!allowed) {
-            res.setHeader('Retry-After', ttl);
-            return res.status(429).json({
-                success: false,
-                message: `Too many requests. Please try again in ${ttl} seconds.`
-            });
-        }
+        if (!(await enforceRateLimit(res, `logout_devices_attempt_ip:${ip}`, 30, 60))) return; // 30 requests per minute per IP
+        if (!(await enforceRateLimit(res, `logout_devices_attempt:${user.id}`, 15, 60))) return; // 15 requests per minute
 
         const updatedUser = await prisma.user.update({ where: { id: user.id }, data: { tokenVersion: { increment: 1 } } });
 
@@ -82,17 +70,13 @@ const LogoutDevicesHandler = async (req, res) => {
         });
 
     } catch (error) {
-        if (error.message === 'Invalid or expired token.') {
-            return res.status(401).json({ success: false, message: error.message });
-        }
-        return res.status(500).json({
-            success: false,
-            message: 'An unexpected error occurred',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+        return handleApiError(res, error, 'Server error in session (logout devices):');
     }
 }
 
 export default async function handler(req, res) {
-    return recaptchaMiddleware(req, res, () => LogoutDevicesHandler(req, res));
+    if (req.method === 'POST') {
+        return recaptchaMiddleware(req, res, () => sessionHandler(req, res));
+    }
+    return sessionHandler(req, res);
 }

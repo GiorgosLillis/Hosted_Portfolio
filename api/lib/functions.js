@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 import { serialize } from 'cookie';
 import { Redis } from '@upstash/redis';
+import { rateLimiter } from './rateLimiter.js';
 
 const redis = Redis.fromEnv();
 
@@ -14,6 +15,29 @@ const nameRegex = /^[a-zA-Z'-]{1,50}$/;
 
 export function getClientIp(req) {
     return req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+}
+
+// Runs a rate-limit check and sends the 429 itself if exceeded. Returns whether the caller should continue.
+export async function enforceRateLimit(res, key, limit, windowSeconds) {
+    const { allowed, ttl } = await rateLimiter(key, limit, windowSeconds);
+    if (!allowed) {
+        res.setHeader('Retry-After', ttl);
+        res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
+    }
+    return allowed;
+}
+
+// Standard catch-all for handler try/catch blocks: auth errors become 401, everything else a generic 500
+export function handleApiError(res, error, context) {
+    if (error.message === 'Invalid or expired token.' || error.message === 'Not authenticated') {
+        return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+    console.error(context, error);
+    return res.status(500).json({
+        success: false,
+        message: 'An unexpected error occurred',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
 }
 
 export function setCorsHeaders(res) {

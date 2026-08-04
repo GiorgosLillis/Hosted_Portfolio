@@ -103,8 +103,8 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                 id,
                 email,
                 current_password,
-                firstName,
-                lastName
+                first_name: firstName,
+                last_name: lastName
             };
 
             if (hasPasswordChange) {

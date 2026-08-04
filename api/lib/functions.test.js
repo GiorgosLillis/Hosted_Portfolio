@@ -22,7 +22,7 @@ const { Redis } = await import('@upstash/redis');
 const { prisma } = await import('./prisma.js');
 const { checkToken, isValidEmail, isValidPassword, isValidName, getClientIp } = await import('./functions.js');
 
-const redis = Redis.fromEnv.mock.results[0].value;
+const redis = Redis.fromEnv.mock.results[1].value;
 
 function signToken(payload, options = {}) {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d', ...options });

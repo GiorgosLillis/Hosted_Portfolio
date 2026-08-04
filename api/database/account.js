@@ -2,56 +2,67 @@ import { prisma } from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
 import sanitizeHTML from '../lib/sanitize.js';
-import { checkToken, isValidEmail, isValidPassword, isValidName, setAuthCookies, setCorsHeaders, getClientIp } from '../lib/functions.js';
-import { rateLimiter } from '../lib/rateLimiter.js';
+import { checkToken, isValidEmail, isValidPassword, isValidName, setAuthCookies, clearAuthCookies, setCorsHeaders, getClientIp, enforceRateLimit, handleApiError } from '../lib/functions.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
 import { Redis } from '@upstash/redis';
 
 const redis = Redis.fromEnv();
 
-// PUT only, updates the logged-in user's own account
-const editUserHandler = async (req, res) => {
+// GET returns the logged-in user's own data, PUT edits it, DELETE removes the account
+async function accountHandler(req, res) {
     setCorsHeaders(res);
 
     if (req.method === 'OPTIONS') {
         return res.status(204).end();
     }
 
-    if (req.method !== 'PUT') {
-        return res.status(405).json({
-            success: false,
-            message: 'Only PUT requests are allowed'
-        });
+    if (req.method === 'GET') {
+        return getAccount(req, res);
+    }
+    if (req.method === 'PUT') {
+        return editAccount(req, res);
+    }
+    if (req.method === 'DELETE') {
+        return deleteAccount(req, res);
     }
 
+    return res.status(405).json({
+        success: false,
+        message: 'Only GET, PUT and DELETE requests are allowed'
+    });
+}
+
+async function getAccount(req, res) {
     try {
-        // Check user token validation
+        const user = await checkToken(req);
+        const userKey = `get_user_attempt:${user.id}`;
+
+        if (!(await enforceRateLimit(res, userKey, 30, 60))) return; // 30 requests per minute
+
+        const userData = {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            createdAt: user.createdAt
+        };
+        res.status(200).json({ user: userData });
+    } catch (error) {
+        res.status(401).json({ error: 'Not authenticated' });
+    }
+}
+
+async function editAccount(req, res) {
+    try {
         const user = await checkToken(req);
         if (!user) {
             return res.status(401).json({ success: false, message: 'Not authenticated' });
         }
 
         const ip = getClientIp(req);
-        const ipCheck = await rateLimiter(`edit_user_attempt_ip:${ip}`, 30, 60); // 30 requests per minute per IP
-        if (!ipCheck.allowed) {
-            res.setHeader('Retry-After', ipCheck.ttl);
-            return res.status(429).json({
-                success: false,
-                message: `Too many requests. Please try again in ${ipCheck.ttl} seconds.`
-            });
-        }
-
-        const userKey = `edit_user_attempt:${user.id}`;
-        const { allowed, ttl } = await rateLimiter(userKey, 15, 60); // 15 requests per minute
-
-        if (!allowed) {
-            res.setHeader('Retry-After', ttl);
-            return res.status(429).json({
-                success: false,
-                message: `Too many requests. Please try again in ${ttl} seconds.`
-            });
-        }
+        if (!(await enforceRateLimit(res, `edit_user_attempt_ip:${ip}`, 30, 60))) return; // 30 requests per minute per IP
+        if (!(await enforceRateLimit(res, `edit_user_attempt:${user.id}`, 15, 60))) return; // 15 requests per minute
 
         const { email, current_password, password, first_name, last_name } = req.body;
         const updateData = {};
@@ -141,18 +152,70 @@ const editUserHandler = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Server error on edit:', error);
-        if (error.message === 'Invalid or expired token.') {
-            return res.status(401).json({ success: false, message: error.message });
+        return handleApiError(res, error, 'Server error on edit:');
+    }
+}
+
+async function deleteAccount(req, res) {
+    try {
+        const user = await checkToken(req);
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Not authenticated' });
         }
-        return res.status(500).json({
-            success: false,
-            message: 'An unexpected error occurred',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+
+        const ip = getClientIp(req);
+        if (!(await enforceRateLimit(res, `delete_user_attempt_ip:${ip}`, 10, 3600))) return; // 10 requests per hour per IP
+        if (!(await enforceRateLimit(res, `delete_user_attempt:${user.id}`, 3, 3600))) return; // 3 requests per hour
+
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password is required for account deletion.'
+            });
+        }
+
+        if (!isValidPassword(password)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid password.'
+            });
+        }
+        const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+        if (!passwordMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid password.'
+            });
+        }
+
+        await prisma.user.delete({
+            where: {
+                id: user.id,
+            },
         });
+
+        clearAuthCookies(res);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Account deleted successfully.'
+        });
+
+    } catch (error) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found.'
+            });
+        }
+        return handleApiError(res, error, 'Server error on delete:');
     }
 }
 
 export default async function handler(req, res) {
-    return recaptchaMiddleware(req, res, () => editUserHandler(req, res));
+    if (req.method === 'PUT' || req.method === 'DELETE') {
+        return recaptchaMiddleware(req, res, () => accountHandler(req, res));
+    }
+    return accountHandler(req, res);
 }
