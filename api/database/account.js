@@ -12,6 +12,8 @@ const redis = Redis.fromEnv();
 // GET returns the logged-in user's own data, PUT edits it, DELETE removes the account
 async function accountHandler(req, res) {
     setCorsHeaders(res);
+    // Never let the browser/CDN cache this - a cached response would keep showing a logged-in user after logout
+    res.setHeader('Cache-Control', 'no-store');
 
     if (req.method === 'OPTIONS') {
         return res.status(204).end();

@@ -10,6 +10,8 @@ const redis = Redis.fromEnv();
 // GET logs out the current device, POST logs out every other device
 async function sessionHandler(req, res) {
     setCorsHeaders(res);
+    // Never let the browser/CDN cache this - a cached logout response would keep replaying stale cookies
+    res.setHeader('Cache-Control', 'no-store');
 
     if (req.method === 'OPTIONS') {
         return res.status(204).end();
