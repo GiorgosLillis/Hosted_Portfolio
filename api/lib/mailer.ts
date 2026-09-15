@@ -16,6 +16,13 @@ const transporter = nodemailer.createTransport({
 
 export { transporter };
 
-export async function sendEmail({ from, to, subject, message }) {
+interface SendEmailOptions {
+    from: string;
+    to: string;
+    subject: string;
+    message: string;
+}
+
+export async function sendEmail({ from, to, subject, message }: SendEmailOptions) {
     return transporter.sendMail({ from, to, subject, html: message });
 }

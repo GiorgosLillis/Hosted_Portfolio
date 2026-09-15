@@ -17,7 +17,7 @@ vi.mock('../lib/functions.js', () => ({
 
 vi.mock('../lib/prisma.js', () => ({
     prisma: {
-        City: {
+        city: {
             findMany: vi.fn(),
             deleteMany: vi.fn(),
             upsert: vi.fn(),
@@ -38,8 +38,8 @@ beforeEach(() => {
     vi.clearAllMocks();
     rateLimiter.mockResolvedValue({ allowed: true, ttl: 0 });
     checkToken.mockResolvedValue(fakeUser);
-    prisma.City.deleteMany.mockResolvedValue({});
-    prisma.City.upsert.mockResolvedValue({});
+    prisma.city.deleteMany.mockResolvedValue({});
+    prisma.city.upsert.mockResolvedValue({});
 });
 
 describe('cities handler', () => {
@@ -67,7 +67,7 @@ describe('cities handler', () => {
 
     describe('GET', () => {
         it('returns the saved city list on success', async () => {
-            prisma.City.findMany.mockResolvedValue([validCity]);
+            prisma.city.findMany.mockResolvedValue([validCity]);
             const req = createMockReq({ method: 'GET' });
             const res = createMockRes();
             await citiesHandler(req, res);
@@ -78,7 +78,7 @@ describe('cities handler', () => {
         });
 
         it('returns 500 when the database throws', async () => {
-            prisma.City.findMany.mockRejectedValue(new Error('DB is down'));
+            prisma.city.findMany.mockRejectedValue(new Error('DB is down'));
             const req = createMockReq({ method: 'GET' });
             const res = createMockRes();
             await citiesHandler(req, res);
@@ -136,8 +136,8 @@ describe('cities handler', () => {
             const res = createMockRes();
             await citiesHandler(req, res);
 
-            expect(prisma.City.deleteMany).not.toHaveBeenCalled();
-            expect(prisma.City.upsert).toHaveBeenCalledTimes(1);
+            expect(prisma.city.deleteMany).not.toHaveBeenCalled();
+            expect(prisma.city.upsert).toHaveBeenCalledTimes(1);
             expect(res.status).toHaveBeenCalledWith(200);
         });
 
@@ -147,19 +147,19 @@ describe('cities handler', () => {
             const res = createMockRes();
             await citiesHandler(req, res);
 
-            expect(prisma.City.deleteMany).toHaveBeenCalledWith(
+            expect(prisma.city.deleteMany).toHaveBeenCalledWith(
                 expect.objectContaining({
                     where: expect.objectContaining({
                         OR: [{ name: removedCity.name, country: removedCity.country }]
                     })
                 })
             );
-            expect(prisma.City.upsert).toHaveBeenCalledTimes(1);
+            expect(prisma.city.upsert).toHaveBeenCalledTimes(1);
             expect(res.status).toHaveBeenCalledWith(200);
         });
 
         it('returns 500 when the delete step fails', async () => {
-            prisma.City.deleteMany.mockRejectedValue(new Error('DB is down'));
+            prisma.city.deleteMany.mockRejectedValue(new Error('DB is down'));
             const req = createMockReq({ method: 'POST', body: { list: [validCity], removed: [{ name: 'Paris', country: 'FR' }] } });
             const res = createMockRes();
             await citiesHandler(req, res);
@@ -167,7 +167,7 @@ describe('cities handler', () => {
         });
 
         it('returns 500 when the upsert step fails', async () => {
-            prisma.City.upsert.mockRejectedValue(new Error('DB is down'));
+            prisma.city.upsert.mockRejectedValue(new Error('DB is down'));
             const req = createMockReq({ method: 'POST', body: { list: [validCity] } });
             const res = createMockRes();
             await citiesHandler(req, res);

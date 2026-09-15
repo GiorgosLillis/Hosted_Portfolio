@@ -6,11 +6,12 @@ import { rateLimiter } from '../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
 import { Redis } from '@upstash/redis';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const redis = Redis.fromEnv();
 
 // POST only, verifies credentials and starts a session
-const loginHandler = async (req, res) => {
+const loginHandler = async (req: VercelRequest, res: VercelResponse) => {
     setCorsHeaders(res);
 
     if (req.method === 'OPTIONS') {
@@ -35,6 +36,7 @@ const loginHandler = async (req, res) => {
             rateLimiter(ipKey, 5, 300), // 5 attempts per 5 minutes for IP
             rateLimiter(usernameKey, 5, 900) // 5 attempts per 15 minutes for username
         ]);
+
 
         if (!ipResult.allowed || !usernameResult.allowed) {
             const ttl = Math.max(ipResult.ttl, usernameResult.ttl);
@@ -66,12 +68,21 @@ const loginHandler = async (req, res) => {
             });
         }
 
+        if (!process.env.JWT_SECRET) {
+            return res.status(500).json({
+                success: false,
+                message: 'JWT secret is not configured on the server'
+            });
+        }
+
         if (!isValidEmail(email) || !isValidPassword(password)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid input. Please ensure all fields are correctly filled.'
             });
         }
+
+
 
         // Look up by email and compare the submitted password against the stored hash
         const user = await prisma.user.findUnique({
@@ -84,13 +95,6 @@ const loginHandler = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid credentials.'
-            });
-        }
-
-        if (!process.env.JWT_SECRET) {
-            return res.status(500).json({
-                success: false,
-                message: 'JWT secret is not configured on the server'
             });
         }
 
@@ -110,7 +114,7 @@ const loginHandler = async (req, res) => {
         setAuthCookies(res, token);
 
         const userData = { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName };
-        return res.status(200).json({ user: userData });
+        return res.status(200).json({ success: true, user: userData });
     }
     catch (error) {
 
@@ -118,13 +122,13 @@ const loginHandler = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: 'An unexpected error occurred',
-            error: process.env.NODE_ENV === 'development' ? error.message : null
+            error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : null
         });
 
 
     }
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     return recaptchaMiddleware(req, res, () => loginHandler(req, res));
 }

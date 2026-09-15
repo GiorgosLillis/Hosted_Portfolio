@@ -1,8 +1,9 @@
 import { prisma } from '../lib/prisma.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
-import { checkToken, setAuthCookies, setCorsHeaders, getClientIp } from '../lib/functions.js';
+import { checkToken, setCorsHeaders, getClientIp, handleApiError } from '../lib/functions.js';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const ExportHandler = async (req, res) => {
+const ExportHandler = async (req: VercelRequest, res: VercelResponse) => {
 
     setCorsHeaders(res);
 
@@ -71,14 +72,7 @@ const ExportHandler = async (req, res) => {
             }
         });
     } catch (error) {
-        if (error.message === 'Invalid or expired token.') {
-            return res.status(401).json({ success: false, message: error.message });
-        }
-        return res.status(500).json({
-            success: false,
-            message: 'An unexpected error occurred',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+        return handleApiError(res, error, 'Server error in export:');
     }
 }
 

@@ -1,5 +1,6 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 
 // Create the context object
 const AuthContext = createContext(null);
@@ -14,7 +15,7 @@ export const AuthProvider = ({ children }) => {
 
     // On first load, ask the server if the cookie is still valid, this is how a refresh keeps you logged in
     useEffect(() => {
-        fetch('/api/user')
+        fetchWithTimeout('/api/user')
             .then(response => {
                 if (response.ok) {
                     return response.json();
@@ -39,7 +40,7 @@ export const AuthProvider = ({ children }) => {
 
     // Clears the cookie server-side, and clears local state regardless of whether that call succeeds
     const logout = () => {
-        fetch('/api/logout')
+        fetchWithTimeout('/api/logout')
             .catch(error => {
                 console.error('Logout failed:', error);
             })

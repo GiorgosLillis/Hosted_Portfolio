@@ -23,6 +23,7 @@ Now:
 - Vercel serverless functions
 - Prisma ORM with PostgreSQL (Neon)
 - Upstash Redis (rate limiting, caching, sessions)
+- web-push (Web Push API / VAPID) for daily weather notifications
 
 ---
 
@@ -68,6 +69,8 @@ You must set up a `.env` file in project root. The file ought to store:
 - In case you wish to use an email account, it is required to enable 2FA and use an app passwords(not your account's password)
 - A PostgreSQL connection string (I use [Neon](https://neon.tech/))
 - Upstash Redis credentials
+- VAPID keys for Web Push notifications: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (a `mailto:` address or URL identifying you, per the Web Push spec) - generate the key pair with `npx web-push generate-vapid-keys`
+- A `CRON_SECRET` value (any random string) - Vercel automatically sends it as a bearer token on cron-triggered requests, so the notification endpoint can verify the call actually came from Vercel's scheduler and not a random request
 
 Make sure to also add these same variables to your Vercel project's Environment Variables settings (Project Settings → Environment Variables), otherwise the deployed site won't have access to them even if your local `.env` works.
 
@@ -105,7 +108,7 @@ Make sure to also add these same variables to your Vercel project's Environment 
 
   Features to add (weather.html):
 
-- Daily forecast with: ✅
+- Daily forecast with:
   Min-Max Temperature ✅
   Weather conditions at noon ✅
   Sunrise and sunset times ✅
@@ -126,6 +129,13 @@ Make sure to also add these same variables to your Vercel project's Environment 
   Country code and name resolved automatically via Nominatim ✅
   Searching with both fields empty defaults to the users location ✅
   Saving favorite cities ✅
+
+- Daily notification (browser push, via a Service Worker + the Web Push API):
+  Sends a summary of tomorrow's forecast once a day, at an hour of your choosing
+  Not tied to your account - subscribing is anonymous and per-browser/device, so it works the same whether you're logged in or not (it just won't follow you to another device, unlike favorites/shopping list)
+  Vercel's Hobby plan only lets a single cron job fire once a day, so instead of one daily cron there are 24 separate hourly cron entries in vercel.json, each checking only the subscriptions that picked that hour
+  Dead or expired subscriptions are pruned automatically once the push service reports them gone
+  Requires HTTPS (or localhost) and notification permission; on iOS Safari it only works if the site has been added to the home screen
 
 ---
 

@@ -1,6 +1,7 @@
 import { checkAuth } from "../common/getcookie.js";
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { showToast } from '../common/toast.js';
+import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 
 loadRecaptchaScript();
 
@@ -20,7 +21,7 @@ export async function saveCityList(cityList, removedCities = []) {
 
         showToast('Saving favorites to server...', 'info');
         const token = await getRecaptchaToken('save_city_list');
-        const response = await fetch('/api/cities', {
+        const response = await fetchWithTimeout('/api/cities', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -54,7 +55,7 @@ export async function loadCityList() {
         }
 
         showToast('Loading favorites from server...', 'info');
-        const response = await fetch(`/api/cities`);
+        const response = await fetchWithTimeout(`/api/cities`);
         if (!response.ok) {
             showToast('Could not fetch favorites from server.', 'danger');
             // Still authenticated, fall back to the last-known account cache

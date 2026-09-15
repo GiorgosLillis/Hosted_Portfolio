@@ -4,11 +4,12 @@ import { Redis } from '@upstash/redis';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
 import { checkToken, clearAuthCookies, setAuthCookies, setCorsHeaders, getClientIp, enforceRateLimit, handleApiError } from '../lib/functions.js';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const redis = Redis.fromEnv();
 
 // GET logs out the current device, POST logs out every other device
-async function sessionHandler(req, res) {
+async function sessionHandler(req: VercelRequest, res: VercelResponse) {
     setCorsHeaders(res);
     // Never let the browser/CDN cache this - a cached logout response would keep replaying stale cookies
     res.setHeader('Cache-Control', 'no-store');
@@ -47,6 +48,10 @@ async function sessionHandler(req, res) {
             console.error('Failed to clear cached session:', error);
         }
 
+        if (!process.env.JWT_SECRET) {
+            throw new Error('JWT_SECRET is not configured on the server');
+        }
+
         // Re-issue the session token since the user's data (e.g. email) may have changed
         const token = jsonwebtoken.sign(
             { userId: user.id, email: updatedUser.email, tokenVersion: updatedUser.tokenVersion },
@@ -76,7 +81,7 @@ async function sessionHandler(req, res) {
     }
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'POST') {
         return recaptchaMiddleware(req, res, () => sessionHandler(req, res));
     }

@@ -1,6 +1,7 @@
 import { showToast } from '../common/toast.js';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { isValidPassword } from '../common/validation.js';
+import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 
 loadRecaptchaScript();
 
@@ -44,7 +45,7 @@ if (!token || !email) {
         try {
             const recaptchaToken = await getRecaptchaToken('reset');
 
-            const response = await fetch("/api/reset", {
+            const response = await fetchWithTimeout("/api/reset", {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",

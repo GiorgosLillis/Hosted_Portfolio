@@ -1,6 +1,7 @@
 import { updateItemNumbers, List, list_items, errorMessage, successMessage, clearMessages, confirmDelete, resetList, allButtons } from "./basic-controls-list.js";
 import { checkAuth } from "../common/getcookie.js";
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
+import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 
 loadRecaptchaScript();
 
@@ -69,7 +70,7 @@ export async function saveShoppingList() {
 
         const token = await getRecaptchaToken('save_list');
         const data = JSON.stringify({ id: user.id, list: shoppingList, removed: removedItemNames });
-        const response = await fetch('/api/list', {
+        const response = await fetchWithTimeout('/api/list', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ export async function deleteList() {
         if (user) {
             loading.textContent = 'Wait for a moment';
             const token = await getRecaptchaToken('delete_list');
-            const response = await fetch('/api/list', {
+            const response = await fetchWithTimeout('/api/list', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -179,7 +180,7 @@ export function loadShoppingList() {
     checkAuth().then(user => {
         if (user) {
             logStatus.textContent = "Hello " + user.firstName + ' ' + user.lastName;
-            fetch(`/api/list?id=${user.id}`)
+            fetchWithTimeout(`/api/list?id=${user.id}`)
                 .then(res => {
                     if (!res.ok) {
                         throw new Error('Server response was not ok.');

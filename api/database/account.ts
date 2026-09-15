@@ -6,11 +6,12 @@ import { checkToken, isValidEmail, isValidPassword, isValidName, setAuthCookies,
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
 import { Redis } from '@upstash/redis';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const redis = Redis.fromEnv();
 
 // GET returns the logged-in user's own data, PUT edits it, DELETE removes the account
-async function accountHandler(req, res) {
+async function accountHandler(req: VercelRequest, res: VercelResponse) {
     setCorsHeaders(res);
     // Never let the browser/CDN cache this - a cached response would keep showing a logged-in user after logout
     res.setHeader('Cache-Control', 'no-store');
@@ -35,7 +36,7 @@ async function accountHandler(req, res) {
     });
 }
 
-async function getAccount(req, res) {
+async function getAccount(req: VercelRequest, res: VercelResponse) {
     try {
         const user = await checkToken(req);
         const userKey = `get_user_attempt:${user.id}`;
@@ -49,13 +50,13 @@ async function getAccount(req, res) {
             lastName: user.lastName,
             createdAt: user.createdAt
         };
-        res.status(200).json({ user: userData });
+        res.status(200).json({ success: true, user: userData });
     } catch (error) {
-        res.status(401).json({ error: 'Not authenticated' });
+        res.status(401).json({ success: false, message: 'Not authenticated' });
     }
 }
 
-async function editAccount(req, res) {
+async function editAccount(req: VercelRequest, res: VercelResponse) {
     try {
         const user = await checkToken(req);
         if (!user) {
@@ -66,8 +67,21 @@ async function editAccount(req, res) {
         if (!(await enforceRateLimit(res, `edit_user_attempt_ip:${ip}`, 30, 60))) return; // 30 requests per minute per IP
         if (!(await enforceRateLimit(res, `edit_user_attempt:${user.id}`, 15, 60))) return; // 15 requests per minute
 
+        if (!process.env.JWT_SECRET) {
+            return res.status(500).json({
+                success: false,
+                message: 'JWT secret is not configured on the server'
+            });
+        }
+
         const { email, current_password, password, first_name, last_name } = req.body;
-        const updateData = {};
+        const updateData: {
+            email?: string;
+            firstName?: string;
+            lastName?: string;
+            passwordHash?: string;
+            tokenVersion?: { increment: number };
+        } = {};
 
         // current_password, email, first_name and last_name are required to make any change, new password is optional
         if (!isValidEmail(email) || !isValidName(first_name) || !isValidName(last_name) || !isValidPassword(current_password)) {
@@ -103,7 +117,7 @@ async function editAccount(req, res) {
         }
 
         if (Object.keys(updateData).length === 0) {
-            return res.status(400).json({ error: 'No data to update.' });
+            return res.status(400).json({ success: false, message: 'No data to update.' });
         }
 
         const updatedUser = await prisma.user.update({
@@ -158,7 +172,7 @@ async function editAccount(req, res) {
     }
 }
 
-async function deleteAccount(req, res) {
+async function deleteAccount(req: VercelRequest, res: VercelResponse) {
     try {
         const user = await checkToken(req);
         if (!user) {
@@ -205,7 +219,7 @@ async function deleteAccount(req, res) {
         });
 
     } catch (error) {
-        if (error.code === 'P2025') {
+        if ((error as { code?: string }).code === 'P2025') {
             return res.status(404).json({
                 success: false,
                 message: 'User not found.'
@@ -215,7 +229,7 @@ async function deleteAccount(req, res) {
     }
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'PUT' || req.method === 'DELETE') {
         return recaptchaMiddleware(req, res, () => accountHandler(req, res));
     }

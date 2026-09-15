@@ -74,3 +74,20 @@ model UserShoppingListItem {
   @@map("user_shopping_list_items")
   @@unique([userId, name])
 }
+
+// ------------------------------------------------------------------
+// --- 4. Push Subscription Info ---
+// ------------------------------------------------------------------
+
+model PushSubscription {
+  id         Int      @id @default(autoincrement())
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  latitude   Float
+  longitude  Float
+  city       String?
+  country    String?
+  notifyHour Int      @default(6) // UTC hour (0-23) the daily alert cron should send to this subscription
+  createdAt  DateTime @default(now())
+}

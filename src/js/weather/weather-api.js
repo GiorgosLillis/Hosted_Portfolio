@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
+
 const LOCATION_CACHE_KEY = 'LocationInfo';
 export const WEATHER_CACHE_KEY = 'WeatherInfo';
 const CITY_CACHE_KEY = 'CityInfo';
@@ -41,7 +43,7 @@ export async function getCityLocation(city, country) {
 async function callLocationAPI(city, country) {
   try {
     if (city) {
-      const res = await fetch('/api/Forward_Location', {
+      const res = await fetchWithTimeout('/api/Forward_Location', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,7 +79,7 @@ async function callLocationAPI(city, country) {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
 
-    const res = await fetch('/api/Reverse_Location', {
+    const res = await fetchWithTimeout('/api/Reverse_Location', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -147,7 +149,7 @@ function getCurrentPositionPromise() {
 // Calls  /api/weather proxy and caches the result for an hour
 export async function fetchWeather(locationInfo) {
   try {
-    const res = await fetch('/api/weather', {
+    const res = await fetchWithTimeout('/api/weather', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

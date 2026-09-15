@@ -2,15 +2,13 @@ import { Redis } from '@upstash/redis';
 
 const redis = Redis.fromEnv();
 
-/**
- * @param {string} key - A unique identifier (e.g., user ID or IP address)
- * @param {number} limit - Max requests allowed
- * @param {number} windowInSeconds - Time window for the limit
- * @returns {Promise<{allowed: boolean, ttl: number}>} - An object with the allowed status and the remaining TTL
- */
+export interface RateLimitResult {
+    allowed: boolean;
+    ttl: number;
+}
 
 // Fixed-window counter in Redis, one key per identifier (IP, email, user id, etc.)
-export async function rateLimiter(key, limit, windowInSeconds) {
+export async function rateLimiter(key: string, limit: number, windowInSeconds: number): Promise<RateLimitResult> {
     const redisKey = `rate_limit:${key}`;
 
     try {

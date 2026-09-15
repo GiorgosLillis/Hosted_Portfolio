@@ -6,12 +6,13 @@ import { rateLimiter } from '../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
 import { Redis } from '@upstash/redis';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const redis = Redis.fromEnv();
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // POST requests a reset link, PUT redeems one and sets the new password
-async function passwordRecoveryHandler(req, res) {
+async function passwordRecoveryHandler(req: VercelRequest, res: VercelResponse) {
     setCorsHeaders(res);
 
     if (req.method === 'OPTIONS') {
@@ -32,7 +33,7 @@ async function passwordRecoveryHandler(req, res) {
     });
 }
 
-async function requestReset(req, res) {
+async function requestReset(req: VercelRequest, res: VercelResponse) {
     try {
         const { email } = req.body;
         // Rate limiting using IP and email
@@ -85,7 +86,7 @@ async function requestReset(req, res) {
     }
 }
 
-async function redeemReset(req, res) {
+async function redeemReset(req: VercelRequest, res: VercelResponse) {
     try {
         const { email, token, new_password } = req.body;
         // Rate limiting using IP and email
@@ -117,7 +118,7 @@ async function redeemReset(req, res) {
         // The raw token only ever lived in the emailed link, only its hash is stored
         const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
         const redisKey = `password_reset:${tokenHash}`;
-        const userId = await redis.get(redisKey);
+        const userId = await redis.get<number>(redisKey);
 
         if (!userId) {
             return res.status(400).json({
@@ -180,6 +181,6 @@ async function redeemReset(req, res) {
     }
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     return recaptchaMiddleware(req, res, () => passwordRecoveryHandler(req, res));
 }

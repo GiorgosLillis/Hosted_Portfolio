@@ -1,5 +1,6 @@
 import { showToast } from '../common/toast.js';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
+import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 
 loadRecaptchaScript();
 
@@ -46,7 +47,7 @@ form.addEventListener("submit", async function (e) {
         submitBtn.innerHTML = '<div class="status"><span class="spinner-border" role="status" aria-hidden="true"></span> Sending...</div>';
         submitBtn.disabled = true;
 
-        const response = await fetch("/api/email", {
+        const response = await fetchWithTimeout("/api/email", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

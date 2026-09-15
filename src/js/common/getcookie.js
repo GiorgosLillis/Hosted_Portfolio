@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from './fetchWithTimeout.js';
+
 // Plain, non-httpOnly cookie reader, works for the "session-active" flag but never the real JWT
 export function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -12,7 +14,7 @@ export function checkAuth() {
             return resolve(null);
         }
 
-        fetch('/api/user')
+        fetchWithTimeout('/api/user')
             .then(response => {
                 if (!response.ok) {
                     return resolve(null);

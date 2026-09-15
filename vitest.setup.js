@@ -6,3 +6,7 @@ process.env.RECAPTCHA_SECRET_KEY = 'test-recaptcha-secret';
 process.env.EMAIL_ID = 'test@example.com';
 process.env.EMAIL_PASSWORD = 'test-email-password';
 process.env.NODE_ENV = 'test';
+process.env.CRON_SECRET = 'test-cron-secret';
+process.env.VAPID_PUBLIC_KEY = 'test-vapid-public-key';
+process.env.VAPID_PRIVATE_KEY = 'test-vapid-private-key';
+process.env.VAPID_SUBJECT = 'mailto:test@example.com';

@@ -1,18 +1,19 @@
-import { setCorsHeaders, getClientIp, enforceRateLimit } from '../lib/functions.js';
+import { setCorsHeaders, getClientIp, enforceRateLimit, fetchWithTimeout } from '../lib/functions.js';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Nominatim's usage policy requires a descriptive User-Agent
 const NOMINATIM_HEADERS = {
   'User-Agent': 'Hosted Portfolio App - (https://www.giorgoslillis.com/)'
 };
 
-async function queryNominatim(url) {
-  const response = await fetch(url, { headers: NOMINATIM_HEADERS });
+async function queryNominatim(url: string) {
+  const response = await fetchWithTimeout(url, 8000, { headers: NOMINATIM_HEADERS });
   const data = await response.json();
   return { response, data };
 }
 
 // Nominatim doesn't always return a "city" field, hence the fallback chain
-function extractLocation(address, cityOverride) {
+function extractLocation(address: any, cityOverride?: string) {
   return {
     country_name: address.country,
     country: address.country_code.toUpperCase(),
@@ -21,26 +22,26 @@ function extractLocation(address, cityOverride) {
 }
 
 // Shared IP rate limit + 24h edge cache, identical for both directions
-async function applyGeoRateLimit(req, res, keyPrefix) {
+async function applyGeoRateLimit(req: VercelRequest, res: VercelResponse, keyPrefix: string): Promise<boolean> {
   res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
   const ip = getClientIp(req);
   return enforceRateLimit(res, `${keyPrefix}:${ip}`, 10, 60); // 10 requests per minute per IP
 }
 
 // Coordinates -> city/country name
-async function reverseLocation(req, res) {
+async function reverseLocation(req: VercelRequest, res: VercelResponse) {
   if (!(await applyGeoRateLimit(req, res, 'reverse_location_attempt'))) return;
 
   const { lat, lon } = req.method === 'GET' ? req.query : req.body;
 
   const parsedLat = parseFloat(lat);
   if (isNaN(parsedLat) || parsedLat < -90 || parsedLat > 90) {
-    return res.status(400).json({ error: "Invalid latitude. Must be a number between -90 and 90." });
+    return res.status(400).json({ success: false, message: "Invalid latitude. Must be a number between -90 and 90." });
   }
 
   const parsedLon = parseFloat(lon);
   if (isNaN(parsedLon) || parsedLon < -180 || parsedLon > 180) {
-    return res.status(400).json({ error: "Invalid longitude. Must be a number between -180 and 180." });
+    return res.status(400).json({ success: false, message: "Invalid longitude. Must be a number between -180 and 180." });
   }
 
   try {
@@ -49,36 +50,36 @@ async function reverseLocation(req, res) {
 
     if (!response.ok || data.error) {
       console.error("OpenStreetMap Reverse Geocoding API error:", data.error || response.statusText);
-      return res.status(response.status).json({ error: data.error || 'Failed to reverse geocode coordinates.' });
+      return res.status(response.status).json({ success: false, message: data.error || 'Failed to reverse geocode coordinates.' });
     }
 
     res.status(200).json(extractLocation(data.address));
 
   } catch (err) {
     console.error("Reverse Geocoding proxy error:", err);
-    res.status(500).json({ error: "Server error during reverse geocoding." });
+    res.status(500).json({ success: false, message: "Server error during reverse geocoding." });
   }
 }
 
 // City name -> coordinates
-async function forwardLocation(req, res) {
+async function forwardLocation(req: VercelRequest, res: VercelResponse) {
   if (!(await applyGeoRateLimit(req, res, 'forward_location_attempt'))) return;
 
   const { city, country } = req.method === 'GET' ? req.query : req.body;
 
   if (typeof city !== 'string' || city.trim() === '') {
-    return res.status(400).json({ error: "City name is required and must be a non-empty string." });
+    return res.status(400).json({ success: false, message: "City name is required and must be a non-empty string." });
   }
   if (city.length > 100) {
-    return res.status(400).json({ error: "City name is too long." });
+    return res.status(400).json({ success: false, message: "City name is too long." });
   }
 
   if (country) {
     if (typeof country !== 'string' || country.trim() === '') {
-      return res.status(400).json({ error: "Country must be a non-empty string if provided." });
+      return res.status(400).json({ success: false, message: "Country must be a non-empty string if provided." });
     }
     if (country.length > 100) {
-      return res.status(400).json({ error: "Country name is too long." });
+      return res.status(400).json({ success: false, message: "Country name is too long." });
     }
   }
 
@@ -88,11 +89,11 @@ async function forwardLocation(req, res) {
 
     if (!response.ok || data.error) {
       console.error("OpenStreetMap Forward Geocoding API error:", data);
-      return res.status(response.status).json({ error: data.error || 'Failed to forward geocode coordinates.' });
+      return res.status(response.status).json({ success: false, message: data.error || 'Failed to forward geocode coordinates.' });
     }
 
     if (data === undefined || data.length === 0) {
-      return res.status(404).json({ error: "City not found." });
+      return res.status(404).json({ success: false, message: "City not found." });
     }
 
     const result = data[0];
@@ -104,11 +105,11 @@ async function forwardLocation(req, res) {
 
   } catch (err) {
     console.error("Forward Geocoding proxy error:", err);
-    res.status(500).json({ error: "Server error during forward geocoding." });
+    res.status(500).json({ success: false, message: "Server error during forward geocoding." });
   }
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
 
   if (req.method === 'OPTIONS') {
@@ -123,5 +124,5 @@ export default async function handler(req, res) {
     return forwardLocation(req, res);
   }
 
-  return res.status(400).json({ error: "Unknown or missing geolocation action." });
+  return res.status(400).json({ success: false, message: "Unknown or missing geolocation action." });
 }

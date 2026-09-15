@@ -2,9 +2,10 @@ import { prisma } from '../lib/prisma.js';
 import { checkToken, setCorsHeaders, getClientIp } from '../lib/functions.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // GET to get cities list, POST to create said list
-async function citiesHandler(req, res) {
+async function citiesHandler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
 
   if (req.method === 'OPTIONS') {
@@ -33,7 +34,7 @@ async function citiesHandler(req, res) {
         return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
       }
 
-      await GET(req, res, user);
+      await GET(res, user);
     } else if (req.method === 'POST') {
 
       const ipCheck = await rateLimiter(`cities_post_attempt_ip:${ip}`, 40, 60); // 40 requests per minute per IP
@@ -58,19 +59,19 @@ async function citiesHandler(req, res) {
       res.status(405).end(`Method ${req.method} Not Allowed`);
     }
   } catch (error) {
-    if (error.message === 'Invalid or expired token.' || error.message === 'Not authenticated') {
+    if ((error as { message?: string }).message === 'Invalid or expired token.' || (error as { message?: string }).message === 'Not authenticated') {
       return res.status(401).json({ success: false, message: 'Not authenticated' });
     }
     console.error('Server error in list API:', error);
     return res.status(500).json({
       success: false,
       message: 'An unexpected error occurred',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
     });
   }
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     return recaptchaMiddleware(req, res, () => citiesHandler(req, res));
   } else {
@@ -78,11 +79,11 @@ export default async function handler(req, res) {
   }
 }
 
-async function GET(req, res, user) {
+async function GET(res: VercelResponse, user: any) {
 
   // search by user id and return all cities
   try {
-    const citiesList = await prisma.City.findMany({
+    const citiesList = await prisma.city.findMany({
       where: {
         userId: user.id
       },
@@ -110,7 +111,7 @@ async function GET(req, res, user) {
   }
 }
 
-async function POST(req, res, user) {
+async function POST(req: VercelRequest, res: VercelResponse, user: any) {
 
   const list = req.body.list;
   const removed = req.body.removed || [];
@@ -158,7 +159,7 @@ async function POST(req, res, user) {
   try {
     // Delete cities the client explicitly removed
     if (removed.length > 0) {
-      await prisma.City.deleteMany({
+      await prisma.city.deleteMany({
         where: {
           userId: user.id,
           OR: removed.map(city => ({
@@ -171,7 +172,7 @@ async function POST(req, res, user) {
 
     // Store the cities
     const upsertPromises = list.map(city => {
-      return prisma.City.upsert({
+      return prisma.city.upsert({
         where: {
           name_country_userId: {
             name: city.name,
@@ -205,7 +206,7 @@ async function POST(req, res, user) {
     return res.status(500).json({
       success: false,
       message: 'Failed to update city list.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
     });
   }
 }

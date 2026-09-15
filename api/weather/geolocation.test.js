@@ -13,6 +13,7 @@ vi.mock('../lib/functions.js', () => ({
         }
         return allowed;
     }),
+    fetchWithTimeout: vi.fn((url, timeoutMs, options) => global.fetch(url, options)),
 }));
 
 vi.mock('../lib/rateLimiter.js', () => ({

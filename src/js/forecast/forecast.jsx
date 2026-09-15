@@ -8,6 +8,8 @@ import ViewToggle from './view-toggle.jsx';
 import HourlyForecast from './hourly-card.jsx';
 import Header from './search.jsx';
 import { saveCityList, loadCityList } from './memory-handle.js';
+import { isPushSupported, getExistingSubscription, subscribeToWeatherAlerts, unsubscribeFromWeatherAlerts, getStoredNotifyHour } from '../weather/push-notifications.js';
+import { showToast } from '../common/toast.js';
 
 // Last-viewed city survives a refresh, expires after an hour like the weather cache
 const LAST_LOCATION_KEY = 'lastViewedLocation';
@@ -30,6 +32,9 @@ function Forecast() {
     const [openPanel, setOpenPanel] = useState(null); // null, 'search', or 'favorites'
     const [searchCity, setSearchCity] = useState('');
     const [searchCountry, setSearchCountry] = useState('');
+    const [isPushSubscribed, setIsPushSubscribed] = useState(false);
+    const [isPushLoading, setIsPushLoading] = useState(false);
+    const [notifyHour, setNotifyHour] = useState(getStoredNotifyHour());
 
 
     // Load saved favorite cities on first render (server if logged in, localStorage otherwise)
@@ -39,6 +44,22 @@ function Forecast() {
             setFavorites(list);
         };
         initializeFavorites();
+    }, []);
+
+    // Reflects whatever this browser is actually subscribed to, not just a localStorage flag
+    useEffect(() => {
+        if (!isPushSupported()) {
+            return;
+        }
+        let cancelled = false;
+        getExistingSubscription().then((subscription) => {
+            if (!cancelled) {
+                setIsPushSubscribed(!!subscription);
+            }
+        });
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     // On load, restore whichever city was last viewed
@@ -235,6 +256,48 @@ function Forecast() {
         }
     };
 
+    const handleTogglePush = async () => {
+        if (!isPushSupported()) {
+            showToast('Push notifications are not supported in this browser.', 'danger');
+            return;
+        }
+
+        setIsPushLoading(true);
+        try {
+            if (isPushSubscribed) {
+                await unsubscribeFromWeatherAlerts();
+                setIsPushSubscribed(false);
+                showToast('Daily weather alerts turned off.', 'success');
+            } else {
+                await subscribeToWeatherAlerts(locationInfo, notifyHour);
+                setIsPushSubscribed(true);
+                showToast('Daily weather alerts enabled for this location!', 'success');
+            }
+        } catch (err) {
+            showToast(err.message || 'Something went wrong.', 'danger');
+        } finally {
+            setIsPushLoading(false);
+        }
+    };
+
+    // Re-subscribes with the new hour: same endpoint, so the server just updates the existing row
+    const handleChangeNotifyHour = async (newHour) => {
+        setNotifyHour(newHour);
+        if (!isPushSubscribed) {
+            return;
+        }
+
+        setIsPushLoading(true);
+        try {
+            await subscribeToWeatherAlerts(locationInfo, newHour);
+            showToast('Daily weather alert time updated.', 'success');
+        } catch (err) {
+            showToast(err.message || 'Something went wrong.', 'danger');
+        } finally {
+            setIsPushLoading(false);
+        }
+    };
+
     if (loading) {
         return <LoadingIndicator />;
     }
@@ -258,6 +321,11 @@ function Forecast() {
                 onSearchCityChange={setSearchCity}
                 searchCountry={searchCountry}
                 onSearchCountryChange={setSearchCountry}
+                isPushSubscribed={isPushSubscribed}
+                isPushLoading={isPushLoading}
+                onTogglePush={handleTogglePush}
+                notifyHour={notifyHour}
+                onChangeNotifyHour={handleChangeNotifyHour}
             />
 
             <div id="main-content">

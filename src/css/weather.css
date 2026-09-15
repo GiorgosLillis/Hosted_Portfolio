@@ -127,6 +127,39 @@ h1, h2, h3, .nav-link, i{
     text-align: inherit;
 }
 
+.hour-dropdown{
+  font-size: 1.5rem;
+  background: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  color: aliceblue;
+  cursor: pointer;
+}
+
+.hour-dropdown:hover{
+  transform: scale(1.1);
+}
+
+.hour-dropdown:focus{
+  background: none;
+  box-shadow: none;
+  outline: none;
+  color: aliceblue;
+}
+
+/* The dropdown's open option list is rendered by the browser outside the page, so backdrop-filter/transparency
+   can't reach it - this is the closest approximation, and only Chromium browsers honor it fully. */
+.hour-dropdown option {
+  background-color: rgba(20, 30, 45, 0.95);
+  color: aliceblue;
+}
+
+.hour-dropdown option:checked,
+.hour-dropdown option:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
 .favButton:hover{
     cursor: pointer;
 }

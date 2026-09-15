@@ -1,18 +1,18 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/email.js", "use": "@vercel/node" },
+    { "src": "api/email.ts", "use": "@vercel/node" },
     { "src": "api/keep-alive.js", "use": "@vercel/node" },
-    { "src": "api/weather/weather.js", "use": "@vercel/node" },
-    { "src": "api/weather/geolocation.js", "use": "@vercel/node" },
-    { "src": "api/database/login.js", "use": "@vercel/node" },
-    { "src": "api/database/register.js", "use": "@vercel/node" },
-    { "src": "api/database/session.js", "use": "@vercel/node" },
-    { "src": "api/database/account.js", "use": "@vercel/node" },
-    { "src": "api/database/passwordRecovery.js", "use": "@vercel/node" },
-    { "src": "api/database/list.js", "use": "@vercel/node" },
-    { "src": "api/database/cities.js", "use": "@vercel/node" },
-    { "src": "api/database/exportData.js", "use": "@vercel/node" },
+    { "src": "api/weather/weather.ts", "use": "@vercel/node" },
+    { "src": "api/weather/geolocation.ts", "use": "@vercel/node" },
+    { "src": "api/database/login.ts", "use": "@vercel/node" },
+    { "src": "api/database/register.ts", "use": "@vercel/node" },
+    { "src": "api/database/session.ts", "use": "@vercel/node" },
+    { "src": "api/database/account.ts", "use": "@vercel/node" },
+    { "src": "api/database/passwordRecovery.ts", "use": "@vercel/node" },
+    { "src": "api/database/list.ts", "use": "@vercel/node" },
+    { "src": "api/database/cities.ts", "use": "@vercel/node" },
+    { "src": "api/database/exportData.ts", "use": "@vercel/node" },
     {
       "src": "package.json",
       "use": "@vercel/static-build",
@@ -22,33 +22,70 @@
     }
   ],
   "routes": [
-    { "src": "/api/email", "dest": "/api/email.js" },
-    { "src": "/api/weather", "dest": "/api/weather/weather.js" },
+    { "src": "/api/email", "dest": "/api/email.ts" },
+    { "src": "/api/weather", "dest": "/api/weather/weather.ts" },
+    {
+      "src": "/api/vapid-key",
+      "dest": "/api/weather/weather.ts?action=vapid-key"
+    },
+    {
+      "src": "/api/subscribe",
+      "dest": "/api/weather/weather.ts?action=subscribe"
+    },
+    {
+      "src": "/api/unsubscribe",
+      "dest": "/api/weather/weather.ts?action=unsubscribe"
+    },
+    { "src": "/api/notify", "dest": "/api/weather/weather.ts?action=notify" },
     {
       "src": "/api/Reverse_Location",
-      "dest": "/api/weather/geolocation.js?action=reverse"
+      "dest": "/api/weather/geolocation.ts?action=reverse"
     },
     {
       "src": "/api/Forward_Location",
-      "dest": "/api/weather/geolocation.js?action=forward"
+      "dest": "/api/weather/geolocation.ts?action=forward"
     },
-    { "src": "/api/login", "dest": "/api/database/login.js" },
-    { "src": "/api/register", "dest": "/api/database/register.js" },
-    { "src": "/api/edit", "dest": "/api/database/account.js" },
-    { "src": "/api/logout", "dest": "/api/database/session.js" },
-    { "src": "/api/logoutDevices", "dest": "/api/database/session.js" },
-    { "src": "/api/user", "dest": "/api/database/account.js" },
-    { "src": "/api/deleteUser", "dest": "/api/database/account.js" },
-    { "src": "/api/forgot", "dest": "/api/database/passwordRecovery.js" },
-    { "src": "/api/reset", "dest": "/api/database/passwordRecovery.js" },
-    { "src": "/api/list", "dest": "/api/database/list.js" },
-    { "src": "/api/cities", "dest": "/api/database/cities.js" },
-    { "src": "/api/export", "dest": "/api/database/exportData.js" }
+    { "src": "/api/login", "dest": "/api/database/login.ts" },
+    { "src": "/api/register", "dest": "/api/database/register.ts" },
+    { "src": "/api/edit", "dest": "/api/database/account.ts" },
+    { "src": "/api/logout", "dest": "/api/database/session.ts" },
+    { "src": "/api/logoutDevices", "dest": "/api/database/session.ts" },
+    { "src": "/api/user", "dest": "/api/database/account.ts" },
+    { "src": "/api/deleteUser", "dest": "/api/database/account.ts" },
+    { "src": "/api/forgot", "dest": "/api/database/passwordRecovery.ts" },
+    { "src": "/api/reset", "dest": "/api/database/passwordRecovery.ts" },
+    { "src": "/api/list", "dest": "/api/database/list.ts" },
+    { "src": "/api/cities", "dest": "/api/database/cities.ts" },
+    { "src": "/api/export", "dest": "/api/database/exportData.ts" }
   ],
   "crons": [
     {
       "path": "/api/keep-alive",
       "schedule": "0 0 * * *"
-    }
+    },
+    { "path": "/api/notify?hour=0", "schedule": "0 0 * * *" },
+    { "path": "/api/notify?hour=1", "schedule": "0 1 * * *" },
+    { "path": "/api/notify?hour=2", "schedule": "0 2 * * *" },
+    { "path": "/api/notify?hour=3", "schedule": "0 3 * * *" },
+    { "path": "/api/notify?hour=4", "schedule": "0 4 * * *" },
+    { "path": "/api/notify?hour=5", "schedule": "0 5 * * *" },
+    { "path": "/api/notify?hour=6", "schedule": "0 6 * * *" },
+    { "path": "/api/notify?hour=7", "schedule": "0 7 * * *" },
+    { "path": "/api/notify?hour=8", "schedule": "0 8 * * *" },
+    { "path": "/api/notify?hour=9", "schedule": "0 9 * * *" },
+    { "path": "/api/notify?hour=10", "schedule": "0 10 * * *" },
+    { "path": "/api/notify?hour=11", "schedule": "0 11 * * *" },
+    { "path": "/api/notify?hour=12", "schedule": "0 12 * * *" },
+    { "path": "/api/notify?hour=13", "schedule": "0 13 * * *" },
+    { "path": "/api/notify?hour=14", "schedule": "0 14 * * *" },
+    { "path": "/api/notify?hour=15", "schedule": "0 15 * * *" },
+    { "path": "/api/notify?hour=16", "schedule": "0 16 * * *" },
+    { "path": "/api/notify?hour=17", "schedule": "0 17 * * *" },
+    { "path": "/api/notify?hour=18", "schedule": "0 18 * * *" },
+    { "path": "/api/notify?hour=19", "schedule": "0 19 * * *" },
+    { "path": "/api/notify?hour=20", "schedule": "0 20 * * *" },
+    { "path": "/api/notify?hour=21", "schedule": "0 21 * * *" },
+    { "path": "/api/notify?hour=22", "schedule": "0 22 * * *" },
+    { "path": "/api/notify?hour=23", "schedule": "0 23 * * *" }
   ]
 }

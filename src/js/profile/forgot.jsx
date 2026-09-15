@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { isValidEmail } from '../common/validation.js';
+import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 
 const Forgot = ({ switchToLogin, showToast }) => {
     const [email, setEmail] = useState('');
@@ -28,7 +29,7 @@ const Forgot = ({ switchToLogin, showToast }) => {
 
             const token = await getRecaptchaToken('forgot');
 
-            const response = await fetch('/api/forgot', {
+            const response = await fetchWithTimeout('/api/forgot', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

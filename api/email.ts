@@ -3,10 +3,11 @@ import { rateLimiter } from './lib/rateLimiter.js';
 import { recaptchaMiddleware } from './lib/recaptcha.js';
 import { getClientIp } from './lib/functions.js';
 import { transporter } from './lib/mailer.js';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
-function validateInputs(email, subject, message) {
+function validateInputs(email: string, subject: string, message: string) {
 
-  const errors = [];
+  const errors: string[] = [];
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errors.push('Please enter a valid email address');
@@ -27,7 +28,7 @@ function validateInputs(email, subject, message) {
 }
 
 // POST only, sends the portfolio contact form to the site owner's inbox
-const emailHandler = async (req, res) => {
+const emailHandler = async (req: VercelRequest, res: VercelResponse) => {
   if (req.method !== 'POST') {
     return res.status(405).json({
       success: false,
@@ -50,7 +51,7 @@ const emailHandler = async (req, res) => {
     const { email, subject, message } = req.body;
 
     if (!email || !subject || !message) {
-      return res.status(400).json({ message: 'Missing required fields' });
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
     // Format checks plus HTML sanitizing on subject/message
@@ -85,11 +86,11 @@ const emailHandler = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'An unexpected error occurred',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     });
   }
 };
 
-export default (req, res) => {
+export default (req: VercelRequest, res: VercelResponse) => {
   return recaptchaMiddleware(req, res, () => emailHandler(req, res));
 };

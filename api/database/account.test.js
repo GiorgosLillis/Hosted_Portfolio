@@ -135,6 +135,7 @@ describe('account handler', () => {
 
             expect(res.status).toHaveBeenCalledWith(200);
             expect(res.json).toHaveBeenCalledWith({
+                success: true,
                 user: {
                     id: fakeUser.id,
                     email: fakeUser.email,

@@ -5,9 +5,10 @@ import { isValidEmail, isValidPassword, isValidName, setAuthCookies, setCorsHead
 import sanitizeHTML from '../lib/sanitize.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // POST only, creates a new account
-const registerHandler = async (req, res) => {
+const registerHandler = async (req: VercelRequest, res: VercelResponse) => {
     setCorsHeaders(res);
 
     if (req.method === 'OPTIONS') {
@@ -42,6 +43,12 @@ const registerHandler = async (req, res) => {
             });
         }
 
+        if (!process.env.JWT_SECRET) {
+            return res.status(500).json({
+                success: false,
+                message: 'JWT secret is not configured on the server'
+            });
+        }
 
         // Check if fields are in valid format
         if (!isValidEmail(email) || !isValidPassword(password) || !isValidName(first_name) || !isValidName(last_name)) {
@@ -89,18 +96,18 @@ const registerHandler = async (req, res) => {
         setAuthCookies(res, token);
 
         const userData = { id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName };
-        return res.status(200).json({ user: userData });
+        return res.status(200).json({ success: true, user: userData });
 
     } catch (error) {
         console.error('Server error on register:', error);
         return res.status(500).json({
             success: false,
             message: 'An unexpected error occurred',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
         });
     }
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     return recaptchaMiddleware(req, res, () => registerHandler(req, res));
 }

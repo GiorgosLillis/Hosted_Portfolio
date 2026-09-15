@@ -1,6 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import Favorites from './favorite.jsx';
 
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => ({
+    value: hour,
+    label: new Date(2000, 0, 1, hour).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+}));
+
 // City/country search inputs, submits on Enter
 const Search = ({ city, onCityChange, country, onCountryChange, onSearch, onClose }) => {
     const cityInputRef = useRef(null);
@@ -61,7 +66,12 @@ const Header = ({
     searchCity,
     onSearchCityChange,
     searchCountry,
-    onSearchCountryChange
+    onSearchCountryChange,
+    isPushSubscribed,
+    isPushLoading,
+    onTogglePush,
+    notifyHour,
+    onChangeNotifyHour
 }) => {
 
     const handleSearchFromPanel = (city, country) => {
@@ -108,6 +118,32 @@ const Header = ({
                                 <i className="bi bi-search" aria-hidden="true"></i>
                             </button>
                         </li>
+                        <li className={`nav-item ms-3 ${isPushSubscribed ? 'me-2' : 'me-3'}`}>
+                            <button
+                                onClick={onTogglePush}
+                                className="icon-button nav-button"
+                                aria-label={isPushSubscribed ? 'Disable daily weather alerts' : 'Enable daily weather alerts'}
+                                aria-pressed={isPushSubscribed}
+                                disabled={isPushLoading}
+                            >
+                                <i className={`bi ${isPushSubscribed ? 'bi-bell-fill' : 'bi-bell'}`} aria-hidden="true"></i>
+                            </button>
+                        </li>
+                        {isPushSubscribed && (
+                            <li className="nav-item me-3 ms-1">
+                                <select
+                                    className="form-select form-select-sm hour-dropdown"
+                                    value={notifyHour}
+                                    onChange={(e) => onChangeNotifyHour(parseInt(e.target.value, 10))}
+                                    disabled={isPushLoading}
+                                    aria-label="Daily weather alert time"
+                                >
+                                    {HOUR_OPTIONS.map(({ value, label }) => (
+                                        <option key={value} value={value}>{label}</option>
+                                    ))}
+                                </select>
+                            </li>
+                        )}
                         <li className="nav-item mx-3">
                             <a className="icon-button nav-button" href="./profile.html" aria-label="Go to profile" target="_blank" rel="noopener noreferrer">
                                 <i className="bi bi-person-fill" aria-hidden="true"></i>

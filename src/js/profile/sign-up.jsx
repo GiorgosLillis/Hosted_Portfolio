@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from './auth.jsx';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { isValidEmail, isValidPassword, isValidName } from '../common/validation.js';
+import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 
 const SignUp = ({ switchToLogin, showToast }) => {
     const [email, setEmail] = useState('');
@@ -42,7 +43,7 @@ const SignUp = ({ switchToLogin, showToast }) => {
 
             const token = await getRecaptchaToken('signup');
 
-            const response = await fetch('/api/register', {
+            const response = await fetchWithTimeout('/api/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

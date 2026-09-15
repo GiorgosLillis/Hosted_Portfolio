@@ -2,8 +2,9 @@ import { prisma } from '../lib/prisma.js';
 import { checkToken, setCorsHeaders, getClientIp } from '../lib/functions.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-async function listHandler(req, res) {
+async function listHandler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
 
   if (req.method === 'OPTIONS') {
@@ -33,7 +34,7 @@ async function listHandler(req, res) {
         res.setHeader('Retry-After', ttl);
         return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
       }
-      await GET(req, res, user);
+      await GET(res, user);
     } else if (req.method === 'POST') {
       const ipCheck = await rateLimiter(`list_post_attempt_ip:${ip}`, 40, 60); // 40 requests per minute per IP
       if (!ipCheck.allowed) {
@@ -63,25 +64,25 @@ async function listHandler(req, res) {
         res.setHeader('Retry-After', ttl);
         return res.status(429).json({ success: false, message: `Too many delete requests. Please try again in ${ttl} seconds.` });
       }
-      await DELETE(req, res, user);
+      await DELETE(res, user);
     } else {
       res.setHeader('Allow', ['GET', 'POST', 'DELETE', 'OPTIONS']);
       res.status(405).end(`Method ${req.method} Not Allowed`);
     }
   } catch (error) {
-    if (error.message === 'Invalid or expired token.' || error.message === 'Not authenticated') {
+    if ((error as { message?: string }).message === 'Invalid or expired token.' || (error as { message?: string }).message === 'Not authenticated') {
       return res.status(401).json({ success: false, message: 'Not authenticated' });
     }
     console.error('Server error in list API:', error);
     return res.status(500).json({
       success: false,
       message: 'An unexpected error occurred',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
     });
   }
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST' || req.method === 'DELETE') {
     return recaptchaMiddleware(req, res, () => listHandler(req, res));
   } else {
@@ -89,7 +90,7 @@ export default async function handler(req, res) {
   }
 }
 
-async function GET(req, res, user) {
+async function GET(res: VercelResponse, user: any) {
   try {
     // Searching by user id and return list
     const shoppingList = await prisma.userShoppingListItem.findMany({
@@ -125,7 +126,7 @@ async function GET(req, res, user) {
   }
 }
 
-async function POST(req, res, user) {
+async function POST(req: VercelRequest, res: VercelResponse, user: any) {
 
   // Check if the list exists and if the fields are in valid format
   const list = req.body.list;
@@ -197,12 +198,12 @@ async function POST(req, res, user) {
     return res.status(500).json({
       success: false,
       message: 'Failed to update shopping list.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
     });
   }
 }
 
-async function DELETE(_req, res, user) {
+async function DELETE(res: VercelResponse, user: any) {
   try {
     // Delete list that belongs to this user id
     await prisma.userShoppingListItem.deleteMany({
@@ -221,7 +222,7 @@ async function DELETE(_req, res, user) {
     return res.status(500).json({
       success: false,
       message: 'Failed to delete shopping list.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
     });
   }
 }

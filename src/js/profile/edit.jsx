@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from './auth.jsx';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { isValidEmail, isValidPassword, isValidName } from '../common/validation.js';
+import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 
 const ProfileEdit = ({ switchToLogout, showToast }) => {
 
@@ -111,7 +112,7 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                 payload.password = password;
             }
 
-            const response = await fetch('/api/edit', {
+            const response = await fetchWithTimeout('/api/edit', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -149,7 +150,7 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
         try {
             const token = await getRecaptchaToken('export');
 
-            const response = await fetch('/api/export', {
+            const response = await fetchWithTimeout('/api/export', {
                 method: 'GET',
                 headers: {
                     'g-recaptcha-response': token
@@ -215,7 +216,7 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
         try {
             const token = await getRecaptchaToken('delete');
 
-            const response = await fetch('/api/deleteUser', {
+            const response = await fetchWithTimeout('/api/deleteUser', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -247,7 +248,7 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
 
             const token = await getRecaptchaToken('logoutDevices');
 
-            const response = await fetch('/api/logoutDevices', {
+            const response = await fetchWithTimeout('/api/logoutDevices', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
