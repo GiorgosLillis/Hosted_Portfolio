@@ -14,7 +14,7 @@
     "nodemailer": "^9.0.5",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "vercel": "^59.10.0",
+    "vercel": "^59.17.0",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
@@ -39,6 +39,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "postinstall": "npx prisma generate",
     "prebuild": "npm test",
     "build": "npx prisma migrate deploy && npx prisma generate && vite build",
     "preview": "vite preview",
