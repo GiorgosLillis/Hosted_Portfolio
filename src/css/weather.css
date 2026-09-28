@@ -109,7 +109,7 @@ h1, h2, h3, .nav-link, i{
 }
 
 .icon-button {
-  font-size: 2rem;
+  font-size: 2.5rem;
   background: none;
   margin: 0;
   padding: 0;
@@ -128,7 +128,7 @@ h1, h2, h3, .nav-link, i{
 }
 
 .hour-dropdown{
-  font-size: 1.5rem;
+  font-size: 2rem;
   background: none;
   margin: 0;
   padding: 0;
@@ -177,8 +177,19 @@ h1, h2, h3, .nav-link, i{
 }
 
 
+@media screen and (max-width: 480px){
+
+    #navbar .icon-button{
+        font-size: 2rem;
+    }
+
+    #navbar .hour-dropdown{
+        font-size: 1.2rem;
+    }
+}
+
 @media screen and (min-width: 375px){
- 
+
     .search-input-visible{
         max-width: 175px;
     }

@@ -43,6 +43,7 @@ Now:
 - Automated test suite covering every API endpoint and key client-side logic (Vitest)
 - Accessibility tools including ARIA roles, keyboard navigation and focus management
 - SEO optimizations such as meta tags and descriptive titles
+- Every outgoing fetch (client-side, and server-side calls to upstream weather/geocoding APIs) is bounded by a timeout, so a hung request fails cleanly instead of hanging the UI forever
 
 ---
 
@@ -76,7 +77,7 @@ Make sure to also add these same variables to your Vercel project's Environment 
 
 ---
 
-### Shopping List App
+### Shopping List
 
 - I have recently developed a simple shopping list
 - You can add and delete items, reset the list, download the list as a text file and upload a text file
@@ -151,6 +152,13 @@ Make sure to also add these same variables to your Vercel project's Environment 
 
 ---
 
+### Installable App (PWA)
+
+- The weather forecast and profile pages can be installed as a standalone app (desktop or mobile) straight from the browser's own install option
+- Only supported on Chromium-based browsers (Chrome, Edge, Samsung Internet). Safari/iOS has no equivalent install prompt, and desktop Firefox dropped PWA install support entirely
+
+---
+
 ### Testing
 
 - Automated test suite built with Vitest
@@ -186,4 +194,14 @@ npm test
 # Run the project locally
 vercel dev
 
+
+# To test on your phone over the same WiFi network (HTTPS is required for geolocation to work off-localhost):
+
+# 1. Run the API separately on its own port
+vercel dev --listen 3001
+
+# 2. Run the frontend with Vite instead (HTTPS + LAN-accessible, proxies /api/* to the vercel dev instance above)
+npm run dev
+
+# Then browse to https://<your-PC's-LAN-IP>:3000 from your phone, accepting the self-signed certificate warning once
 ```

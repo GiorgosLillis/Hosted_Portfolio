@@ -29,8 +29,10 @@
     />
     <link rel="stylesheet" href="src/css/global.css" />
     <link rel="stylesheet" href="src/css/styles.css" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <script type="module" src="src/js/home/main-index.js"></script>
     <script type="module" src="src/js/common/effects.js"></script>
+    <script type="module" src="src/js/common/appworker.js"></script>
     <script type="module" src="src/js/home/handler.js"></script>
     <title>Giorgos Lillis | Portfolio</title>
     <link
@@ -38,7 +40,6 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/icons/file-person-fill.svg"
       type="image/svg+xml"
     />
-
     <meta
       name="description"
       content="Portfolio of Giorgos Lillis, a graduate of University of Peloponnese who is passionate about website and web application development."
@@ -253,6 +254,14 @@
                     serverless functions, a PostgreSQL database via Prisma,
                     Redis for caching and rate-limiting, and JWT-based
                     authentication.
+                  </li>
+                  <li class="mb-3">
+                    Turned the weather forecast into an installable app with
+                    daily push notifications for tomorrow's forecast.
+                    <a href="./weather.html" class="align-baseline"
+                      >You can install it by the browser</a
+                    >, if it supports it (Chrome, Edge, and other
+                    Chromium-based browsers).
                   </li>
                   <li class="mb-3">
                     I have gained a solid understanding of back-end and database

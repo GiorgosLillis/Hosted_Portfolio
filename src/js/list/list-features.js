@@ -121,10 +121,12 @@ export function addDragAndDropListeners(listItem) {
         currentTouchDropTarget = null;
     });
 
-    // Touch has no native drag event, so a long-press starts the drag instead
+    // Touch has no native drag event, so a long-press starts the drag instead.
+    // No preventDefault() here - doing so would cancel the browser's synthesized click for
+    // every tap inside the item (checkbox, move/delete buttons), not just actual long-press drags.
+    // touchmove already scopes its own preventDefault() to once a drag is confirmed in progress.
     listItem.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
-            e.preventDefault();
             const touch = e.touches[0];
             touchStartX = touch.clientX;
             touchStartY = touch.clientY;

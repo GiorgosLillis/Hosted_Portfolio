@@ -103,22 +103,22 @@ const Header = ({
             <nav id="navbar" className="navbar navbar-expand d-flex align-items-start">
                 <section className="container-fluid d-flex justify-content-end align-items-center px-0 py-2">
                     <ul className="navbar-nav d-flex align-items-center flex-row">
-                        <li className="nav-item mx-3">
+                        <li className="nav-item mx-2 mx-md-3">
                             <button onClick={onSaveFavorites} className="icon-button nav-button" aria-label="Save favorite locations">
                                 <i className="bi bi-cloud-upload-fill" aria-hidden="true"></i>
                             </button>
                         </li>
-                        <li className="nav-item mx-3">
+                        <li className="nav-item mx-2 mx-md-3">
                             <button ref={favoritesToggleRef} onClick={onToggleFavorites} className="icon-button nav-button" aria-label="Show favorite locations" aria-expanded={isFavoritesOpen} aria-controls="favorite-section">
                                 <i className="bi bi-star-fill" aria-hidden="true"></i>
                             </button>
                         </li>
-                        <li className="nav-item mx-3">
+                        <li className="nav-item mx-2 mx-md-3">
                             <button ref={searchToggleRef} onClick={onToggleSearch} className="icon-button nav-button" aria-label="Search for a location" aria-expanded={isSearchOpen} aria-controls="search-section">
                                 <i className="bi bi-search" aria-hidden="true"></i>
                             </button>
                         </li>
-                        <li className={`nav-item ms-3 ${isPushSubscribed ? 'me-2' : 'me-3'}`}>
+                        <li className={`nav-item ms-2 ms-md-3 ${isPushSubscribed ? 'me-1 me-md-2' : 'me-2 me-md-3'}`}>
                             <button
                                 onClick={onTogglePush}
                                 className="icon-button nav-button"
@@ -130,7 +130,7 @@ const Header = ({
                             </button>
                         </li>
                         {isPushSubscribed && (
-                            <li className="nav-item me-3 ms-1">
+                            <li className="nav-item me-2 me-md-3 ms-1 ms-md-2">
                                 <select
                                     className="form-select form-select-sm hour-dropdown"
                                     value={notifyHour}
@@ -144,12 +144,12 @@ const Header = ({
                                 </select>
                             </li>
                         )}
-                        <li className="nav-item mx-3">
+                        <li className="nav-item mx-2 mx-md-3">
                             <a className="icon-button nav-button" href="./profile.html" aria-label="Go to profile" target="_blank" rel="noopener noreferrer">
                                 <i className="bi bi-person-fill" aria-hidden="true"></i>
                             </a>
                         </li>
-                        <li className="nav-item ms-3 me-3 me-lg-4">
+                        <li className="nav-item mx-2 mx-md-3">
                             <a className="icon-button nav-button" href="./index.html" aria-label="Go to home">
                                 <i className="bi bi-house-door-fill" aria-hidden="true"></i>
                             </a>

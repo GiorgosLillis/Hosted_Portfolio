@@ -40,6 +40,13 @@ body{
     accent-color: var(--bs-secondary); /* Changes the check color */
 }
 
+/* Suppresses the native text-selection/callout popup during a long-press drag, without
+   calling preventDefault() on touchstart (which would also block normal taps on mobile) */
+.list-group-item {
+    -webkit-touch-callout: none;
+    user-select: none;
+}
+
 
 #list-form .form-control, #list-form .form-select{
     font-size: 16px;

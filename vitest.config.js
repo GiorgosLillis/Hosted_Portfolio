@@ -8,6 +8,7 @@ export default defineConfig({
         globals: true,
         setupFiles: ['./vitest.setup.js'],
         include: ['**/*.test.js', '**/*.test.jsx'],
+        silent: 'passed-only',
         coverage: {
             provider: 'v8',
             reporter: ['text', 'html'],

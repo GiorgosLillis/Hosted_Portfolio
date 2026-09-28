@@ -1,14 +1,29 @@
-// sw.js
-self.addEventListener('install', () => {
+const OFFLINE_CACHE = 'offline-shell-v1';
+const OFFLINE_URL = '/offline.html';
+
+self.addEventListener('install', (event) => {
+    event.waitUntil(caches.open(OFFLINE_CACHE).then((cache) => cache.add(OFFLINE_URL)));
     self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(
+        caches.keys().then((keys) =>
+            Promise.all(keys.filter((key) => key !== OFFLINE_CACHE).map((key) => caches.delete(key)))
+        ).then(() => self.clients.claim())
+    );
+});
+
+// Only intercepts full page loads 
+self.addEventListener('fetch', (event) => {
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request).catch(() => caches.match(OFFLINE_URL))
+        );
+    }
 });
 
 self.addEventListener('push', (event) => {
-    // 1. Setup fallback data just in case the payload is incomplete
     let data = {
         cityName: 'your area',
         condition: 'Clear',
@@ -18,7 +33,6 @@ self.addEventListener('push', (event) => {
         img: null
     };
 
-    // 2. Parse the incoming push payload from your backend
     try {
         if (event.data) {
             data = { ...data, ...event.data.json() };
@@ -27,14 +41,12 @@ self.addEventListener('push', (event) => {
         console.error('Failed to parse push payload:', err);
     }
 
-    // 3. Format the paths and replace SVG with PNG
     const formatPath = (path) => (path && !path.startsWith('/') ? `/${path}` : path);
 
     let rawIconPath = formatPath(data.icon);
     let iconUrl = rawIconPath ? rawIconPath.replace('.svg', '.png') : '';
     let imageUrl = formatPath(data.img);
 
-    // 4. Trigger the notification
     event.waitUntil(
         self.registration.showNotification(`Tomorrow's weather in ${data.cityName}`, {
             body: `${data.condition}, ${data.tempMin}° - ${data.tempMax}°`,
