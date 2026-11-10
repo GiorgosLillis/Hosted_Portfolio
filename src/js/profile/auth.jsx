@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
 
     // Clears the cookie server-side, and clears local state regardless of whether that call succeeds
     const logout = () => {
-        fetchWithTimeout('/api/logout')
+        return fetchWithTimeout('/api/logout')
             .catch(error => {
                 console.error('Logout failed:', error);
             })

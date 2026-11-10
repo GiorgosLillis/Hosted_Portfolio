@@ -1,3 +1,5 @@
+import i18next from './i18n.js';
+
 // Builds and shows a Bootstrap toast, self-removes from the DOM once it's dismissed
 function showToast(message, type = 'success', duration = 5000) {
     const toastContainer = document.querySelector('.toast-container');
@@ -6,14 +8,7 @@ function showToast(message, type = 'success', duration = 5000) {
         return;
     }
 
-    const defaultMessages = {
-        success: 'Operation successful!',
-        info: 'Information message.',
-        warning: 'Warning!',
-        danger: 'An error occurred!'
-    };
-
-    const displayMessage = message || defaultMessages[type] || 'Message';
+    const displayMessage = message || (i18next.exists(`toast-default-${type}`) ? i18next.t(`toast-default-${type}`) : 'Message');
 
     const toastEl = document.createElement('div');
     toastEl.className = `toast text-white bg-${type} border-0 fs-5`;
@@ -26,13 +21,13 @@ function showToast(message, type = 'success', duration = 5000) {
 
     const status = document.createElement('strong');
     status.className = 'me-auto';
-    status.textContent = type.toUpperCase();
+    status.textContent = (i18next.exists(`toast-label-${type}`) ? i18next.t(`toast-label-${type}`) : type).toLocaleUpperCase(i18next.language);
     
     const closeButton = document.createElement('button');
     closeButton.type = 'button';
     closeButton.className = 'btn-close btn-close-white';
     closeButton.setAttribute('data-bs-dismiss', 'toast');
-    closeButton.setAttribute('aria-label', 'Close');
+    closeButton.setAttribute('aria-label', i18next.t('close'));
 
     toastHeader.appendChild(status);
     toastHeader.appendChild(closeButton);

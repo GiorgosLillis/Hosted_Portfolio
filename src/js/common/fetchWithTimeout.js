@@ -1,3 +1,5 @@
+import i18next from './i18n.js';
+
 const DEFAULT_TIMEOUT_MS = 15000;
 
 // Bounds a fetch to our own API so a stalled network/cold start can't hang the UI forever
@@ -9,7 +11,7 @@ export async function fetchWithTimeout(url, options = {}, timeoutMs = DEFAULT_TI
         return await fetch(url, { ...options, signal: controller.signal });
     } catch (err) {
         if (err.name === 'AbortError') {
-            throw new Error('Request timed out. Please check your connection and try again.');
+            throw new Error(i18next.t('request-timeout'));
         }
         throw err;
     } finally {

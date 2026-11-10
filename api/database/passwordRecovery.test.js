@@ -12,6 +12,7 @@ vi.mock('../lib/rateLimiter.js', () => ({
 }));
 
 vi.mock('../lib/functions.js', () => ({
+    sendStatus: (res, status, code, message, extra = {}) => res.status(status).json({ success: status < 400, code, message, ...extra }),
     setCorsHeaders: vi.fn(),
     getClientIp: vi.fn((req) => req.headers['x-forwarded-for'] || req.socket.remoteAddress),
     isValidEmail: vi.fn(() => true),

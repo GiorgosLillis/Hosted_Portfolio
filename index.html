@@ -11,14 +11,25 @@
     />
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css"
+      integrity="sha384-Bk5cbLkZQ5raZ0+H2/+VbfYx3WpvxvQK4zqXZr7sYODuaX7bKXoSOnipQxkaS8sv"
+      crossorigin="anonymous"
     />
-    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.6/dist/purify.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.js"
+      integrity="sha384-wziAfh6b/qT+3LrqebF9WeK4+J5sehS6FA10J1t3a866kJ/fvU5UwofWnQyzLtwu"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.css"
+      integrity="sha384-/rJKQnzOkEo+daG0jMjU1IwwY9unxt1NBw3Ef2fmOJ3PW/TfAg2KXVoWwMZQZtw9"
+      crossorigin="anonymous"
     />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -34,7 +45,8 @@
     <script type="module" src="src/js/common/effects.js"></script>
     <script type="module" src="src/js/common/appworker.js"></script>
     <script type="module" src="src/js/home/handler.js"></script>
-    <title>Giorgos Lillis | Portfolio</title>
+    <script type="module" src="src/js/common/i18n.js"></script>
+    <title data-i18n="portfolio">Giorgos Lillis | Portfolio</title>
     <link
       rel="icon"
       href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/icons/file-person-fill.svg"
@@ -68,7 +80,9 @@
   </head>
 
   <body class="theme-default mb-5 pb-4">
-    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <a href="#main-content" class="skip-link" data-i18n="skip"
+      >Skip to main content</a
+    >
     <header>
       <nav
         id="navbar"
@@ -81,7 +95,9 @@
             data-bs-target="#navbarColor"
             aria-controls="navbarColor"
             aria-expanded="false"
-            aria-label="Color Themes Toggle"
+            aria-label="Toggle color themes"
+            data-i18n="colors"
+            data-i18n-attr="aria-label:colors-aria"
           >
             Colors ▼
           </button>
@@ -91,8 +107,10 @@
                 <button
                   type="button"
                   class="btn fs-1"
-                  onclick="setTheme('light')"
+                  data-theme="light"
                   aria-label="Light Mode"
+                  data-i18n="light-mode"
+                  data-i18n-attr="aria-label:light-mode-aria"
                 >
                   Light Mode
                 </button>
@@ -101,8 +119,10 @@
                 <button
                   type="button"
                   class="btn fs-1"
-                  onclick="setTheme('dark')"
+                  data-theme="dark"
                   aria-label="Dark Mode"
+                  data-i18n="dark-mode"
+                  data-i18n-attr="aria-label:dark-mode-aria"
                 >
                   Dark Mode
                 </button>
@@ -111,8 +131,10 @@
                 <button
                   type="button"
                   class="btn fs-1"
-                  onclick="setTheme('default')"
+                  data-theme="default"
                   aria-label="Default Mode"
+                  data-i18n="default-mode"
+                  data-i18n-attr="aria-label:default-mode-aria"
                 >
                   Default
                 </button>
@@ -127,6 +149,8 @@
             aria-controls="navbarNav"
             aria-expanded="false"
             aria-label="Toggle navigation"
+            data-i18n="pages"
+            data-i18n-attr="aria-label:nav-toggle-aria"
           >
             Pages ▼
           </button>
@@ -139,10 +163,12 @@
                 <a
                   class="nav-link fs-1"
                   href="./profile.html"
-                  aria-label="Go to profile"
+                  aria-label="Go to account"
                   target="_blank"
                   rel="noopener noreferrer"
-                  >Profile</a
+                  data-i18n="account"
+                  data-i18n-attr="aria-label:account-aria"
+                  >Account</a
                 >
               </li>
               <li class="nav-item navbar-brand">
@@ -150,6 +176,8 @@
                   class="nav-link fs-1"
                   href="./list.html"
                   aria-label="Go to list"
+                  data-i18n="list"
+                  data-i18n-attr="aria-label:list-aria"
                   >List</a
                 >
               </li>
@@ -157,8 +185,10 @@
                 <a
                   class="nav-link fs-1"
                   href="./weather.html"
-                  aria-label="Go to weather"
-                  >Weather</a
+                  aria-label="Go to forecast"
+                  data-i18n="weather"
+                  data-i18n-attr="aria-label:weather-aria"
+                  >Forecast</a
                 >
               </li>
             </ul>
@@ -174,22 +204,30 @@
         data-aos="flip-down"
         data-aos-duration="2000"
       >
-        <h1 class="display-1 my-5">Welcome to my portfolio page</h1>
-        <h2 class="fs-1 my-2">I am Giorgos Lillis</h2>
-        <h2 class="fs-2 my-2">
+        <h1 class="display-1 my-5" data-i18n="home.welcome">
+          Welcome to my portfolio page
+        </h1>
+        <h2 class="fs-1 my-2" data-i18n="name">I am Giorgos Lillis</h2>
+        <h2 class="fs-2 my-2" data-i18n-html="uni">
           A
           <a href="https://dit.uop.gr" target="_blank" rel="noopener noreferrer"
             >University of Peloponnese</a
           >
           graduate with a passion for web development
         </h2>
-        <h2 class="fs-2 my-2" id="location" aria-live="polite">
+        <h2
+          class="fs-2 my-2"
+          id="location"
+          aria-live="polite"
+          data-i18n="get-location"
+        >
           Getting location
         </h2>
         <h2
           class="fs-2 my-2 row d-flex align-items-center justify-content-center col-11 col-lg-9 col-xl-6 gx-0"
           id="current_weather"
           aria-live="polite"
+          data-i18n-html="load-weather"
         >
           <span id="loading">Loading weather</span>
         </h2>
@@ -200,7 +238,9 @@
         class="d-flex flex-column text-center mb-5 h-100"
         data-aos-duration="1000"
       >
-        <h3 class="display-3 mb-5">A bit of explanation regarding me</h3>
+        <h3 class="display-3 mb-5" data-i18n="bio-header">
+          A bit of explanation regarding me
+        </h3>
         <section class="row row-cols-1 row-cols-lg-2 g-0">
           <div class="col mb-5 d-flex justify-content-center">
             <div
@@ -208,8 +248,10 @@
               data-aos="zoom-in"
               data-aos-duration="1500"
             >
-              <h3 class="card-title fs-1 my-3">About me:</h3>
-              <div class="card-body px-4">
+              <h3 class="card-title fs-1 my-3" data-i18n="about-header">
+                About me:
+              </h3>
+              <div class="card-body px-4" data-i18n-html="about">
                 <ul class="fs-4 card-text list-unstyled">
                   <li class="mb-3">
                     I recently completed my Bachelor's degree in Informatics and
@@ -245,8 +287,10 @@
               data-aos="zoom-in"
               data-aos-duration="1500"
             >
-              <h3 class="card-title fs-1 my-3">Achievements:</h3>
-              <div class="card-body px-4">
+              <h3 class="card-title fs-1 my-3" data-i18n="achieve-header">
+                Achievements:
+              </h3>
+              <div class="card-body px-4" data-i18n-html="achieve">
                 <ul class="fs-4 card-text list-unstyled">
                   <li class="mb-3">
                     Built and deployed this portfolio itself as a full-stack
@@ -260,8 +304,8 @@
                     daily push notifications for tomorrow's forecast.
                     <a href="./weather.html" class="align-baseline"
                       >You can install it by the browser</a
-                    >, if it supports it (Chrome, Edge, and other
-                    Chromium-based browsers).
+                    >, if it supports it (Chrome, Edge, and other Chromium-based
+                    browsers).
                   </li>
                   <li class="mb-3">
                     I have gained a solid understanding of back-end and database
@@ -303,9 +347,14 @@
               data-aos="zoom-in"
               data-aos-duration="1500"
             >
-              <h3 class="card-title fs-1 my-3">Current goals:</h3>
+              <h3 class="card-title fs-1 my-3" data-i18n="current-header">
+                Current goals:
+              </h3>
               <div class="card-body px-4">
-                <ul class="fs-4 card-text list-unstyled">
+                <ul
+                  class="fs-4 card-text list-unstyled"
+                  data-i18n-html="current"
+                >
                   <li class="mb-3">
                     Actively looking for my first full-time role as a web or
                     software developer.
@@ -330,9 +379,14 @@
               data-aos="zoom-in"
               data-aos-duration="1500"
             >
-              <h3 class="card-title fs-1 my-3">Future goals:</h3>
+              <h3 class="card-title fs-1 my-3" data-i18n="future_header">
+                Future goals:
+              </h3>
               <div class="card-body px-4">
-                <ul class="fs-4 card-text list-unstyled">
+                <ul
+                  class="fs-4 card-text list-unstyled"
+                  data-i18n-html="future"
+                >
                   <li class="mb-3">
                     The career path I am looking for back-end development,
                     specifically API or database development.
@@ -362,7 +416,7 @@
     <footer
       class="d-flex flex-column flex-wrap justify-content-center align-items-center my-4"
     >
-      <h2 class="display-3 text-center text-wrap px-3">
+      <h2 class="display-3 text-center text-wrap px-3" data-i18n="contact">
         If you wish to contact me
       </h2>
       <form
@@ -371,6 +425,7 @@
         id="contactForm"
         aria-label="Contact form"
         novalidate
+        data-i18n-attr="aria-label:contact-aria"
       >
         <input
           type="hidden"
@@ -380,7 +435,7 @@
         <div class="row row-cols-1 row-cols-md-2">
           <div class="mb-3">
             <label for="email" class="form-label"
-              ><span class="h2">Your Email</span></label
+              ><span class="h2" data-i18n="email">Your Email</span></label
             >
             <input
               type="email"
@@ -390,18 +445,19 @@
               aria-describedby="emailHelp"
               placeholder="name@email.com"
               required
+              data-i18n-attr="placeholder:email-placeholder"
             />
-            <small id="emailHelp" class="form-text">
+            <small id="emailHelp" class="form-text" data-i18n="email-help">
               We'll never share your email.
             </small>
-            <div class="invalid-feedback">
+            <div class="invalid-feedback" data-i18n="invalid-email">
               Please provide a valid email address.
             </div>
           </div>
 
           <div class="mb-3">
             <label for="subject" class="form-label"
-              ><span class="h2">Subject</span></label
+              ><span class="h2" data-i18n="subject">Subject</span></label
             >
             <input
               type="text"
@@ -411,13 +467,16 @@
               aria-describedby="subjectHelp"
               placeholder="Your subject here"
               required
+              data-i18n-attr="placeholder:subject-placeholder"
             />
-            <div class="invalid-feedback">Please write down a subject.</div>
+            <div class="invalid-feedback" data-i18n="invalid subject">
+              Please write down a subject.
+            </div>
           </div>
         </div>
         <div class="mb-3 row g-0">
           <label for="message" class="form-label"
-            ><span class="h2">Message</span></label
+            ><span class="h2" data-i18n="message">Message</span></label
           >
           <textarea
             class="form-control fs-5"
@@ -427,8 +486,11 @@
             aria-describedby="messageHelp"
             placeholder="Your message here"
             required
+            data-i18n-attr="placeholder:message-placeholder"
           ></textarea>
-          <div class="invalid-feedback">Please write your message.</div>
+          <div class="invalid-feedback" data-i18n="invalid message">
+            Please write your message.
+          </div>
         </div>
         <div
           class="row row-cols-1 row-cols-md-2 d-flex justify-content-between g-0"
@@ -438,6 +500,8 @@
             class="btn submit-btn my-3 fs-4 col"
             aria-label="Send Email"
             id="Email-Submit"
+            data-i18n="send-email"
+            data-i18n-attr="aria-label:send-email-aria"
           >
             Send Email
           </button>
@@ -458,12 +522,30 @@
                 class="icon-link"
                 href="https://www.linkedin.com/in/giorgos-lillis-92303a338/"
                 aria-label="My LinkedIn profile"
+                data-i18n-attr="aria-label:linkedin-aria"
                 ><i class="bi bi-linkedin fs-1" aria-hidden="true"></i
               ></a>
             </li>
           </ul>
         </div>
       </form>
+      <p class="recaptcha-attribution text-center mb-3">
+        This site is protected by reCAPTCHA and the Google
+        <a
+          href="https://policies.google.com/privacy"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Privacy Policy</a
+        >
+        and
+        <a
+          href="https://policies.google.com/terms"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Terms of Service</a
+        >
+        apply.
+      </p>
     </footer>
     <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
   </body>

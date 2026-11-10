@@ -1,7 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
-import { isValidEmail, isValidPassword, isValidName, setAuthCookies, setCorsHeaders, getClientIp } from '../lib/functions.js';
+import { isValidEmail, isValidPassword, isValidName, setAuthCookies, setCorsHeaders, getClientIp, sendStatus } from '../lib/functions.js';
 import sanitizeHTML from '../lib/sanitize.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
@@ -16,10 +16,7 @@ const registerHandler = async (req: VercelRequest, res: VercelResponse) => {
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({
-            success: false,
-            message: 'Only POST requests are allowed'
-        });
+        return sendStatus(res, 405, 'method-not-allowed', 'Only POST requests are allowed');
     }
 
     try {
@@ -37,25 +34,16 @@ const registerHandler = async (req: VercelRequest, res: VercelResponse) => {
         if (!ipResult.allowed || !emailResult.allowed) {
             const ttl = Math.max(ipResult.ttl, emailResult.ttl);
             res.setHeader('Retry-After', ttl);
-            return res.status(429).json({
-                success: false,
-                message: `Too many registration attempts. Please try again in ${ttl} seconds.`
-            });
+            return sendStatus(res, 429, 'rate-limited', `Too many registration attempts. Please try again in ${ttl} seconds.`, { ttl: ttl });
         }
 
         if (!process.env.JWT_SECRET) {
-            return res.status(500).json({
-                success: false,
-                message: 'JWT secret is not configured on the server'
-            });
+            return sendStatus(res, 500, 'server-misconfigured', 'JWT secret is not configured on the server');
         }
 
         // Check if fields are in valid format
         if (!isValidEmail(email) || !isValidPassword(password) || !isValidName(first_name) || !isValidName(last_name)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid input. Please ensure all fields are correctly filled.'
-            });
+            return sendStatus(res, 400, 'invalid-input', 'Invalid input. Please ensure all fields are correctly filled.');
         }
 
         // Strip any HTML/script content from user-supplied names
@@ -67,10 +55,7 @@ const registerHandler = async (req: VercelRequest, res: VercelResponse) => {
             where: { email: email }
         });
         if (existingUser) {
-            return res.status(400).json({
-                success: false,
-                message: "User with this email already exists"
-            });
+            return sendStatus(res, 400, 'email-exists', "User with this email already exists");
         }
 
         // Hash the password 
@@ -95,16 +80,12 @@ const registerHandler = async (req: VercelRequest, res: VercelResponse) => {
 
         setAuthCookies(res, token);
 
-        const userData = { id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName };
+        const userData = { id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, createdAt: newUser.createdAt };
         return res.status(200).json({ success: true, user: userData });
 
     } catch (error) {
         console.error('Server error on register:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'An unexpected error occurred',
-            error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
-        });
+        return sendStatus(res, 500, 'server-error', 'An unexpected error occurred', { error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined });
     }
 }
 

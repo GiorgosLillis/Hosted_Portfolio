@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { checkToken, setCorsHeaders, getClientIp } from '../lib/functions.js';
+import { checkToken, setCorsHeaders, getClientIp, sendStatus } from '../lib/functions.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -15,7 +15,7 @@ async function citiesHandler(req: VercelRequest, res: VercelResponse) {
   try {
     const user = await checkToken(req);
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Not authenticated' });
+      return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
     }
 
     const ip = getClientIp(req);
@@ -27,11 +27,11 @@ async function citiesHandler(req: VercelRequest, res: VercelResponse) {
 
       if (!ipCheck.allowed) {
         res.setHeader('Retry-After', ipCheck.ttl);
-        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ipCheck.ttl} seconds.` });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ipCheck.ttl} seconds.`, { ttl: ipCheck.ttl });
       }
       if (!allowed) {
         res.setHeader('Retry-After', ttl);
-        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
       }
 
       await GET(res, user);
@@ -40,7 +40,7 @@ async function citiesHandler(req: VercelRequest, res: VercelResponse) {
       const ipCheck = await rateLimiter(`cities_post_attempt_ip:${ip}`, 40, 60); // 40 requests per minute per IP
       if (!ipCheck.allowed) {
         res.setHeader('Retry-After', ipCheck.ttl);
-        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ipCheck.ttl} seconds.` });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ipCheck.ttl} seconds.`, { ttl: ipCheck.ttl });
       }
       // Rate limiting keyed on user id
       const userKey = `cities_post_attempt:${user.id}`;
@@ -48,10 +48,7 @@ async function citiesHandler(req: VercelRequest, res: VercelResponse) {
 
       if (!allowed) {
         res.setHeader('Retry-After', ttl);
-        return res.status(429).json({
-          success: false,
-          message: `Too many requests. Please try again in ${ttl} seconds.`
-        });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
       }
       await POST(req, res, user);
     } else {
@@ -60,14 +57,10 @@ async function citiesHandler(req: VercelRequest, res: VercelResponse) {
     }
   } catch (error) {
     if ((error as { message?: string }).message === 'Invalid or expired token.' || (error as { message?: string }).message === 'Not authenticated') {
-      return res.status(401).json({ success: false, message: 'Not authenticated' });
+      return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
     }
     console.error('Server error in list API:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'An unexpected error occurred',
-      error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
-    });
+    return sendStatus(res, 500, 'server-error', 'An unexpected error occurred', { error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined });
   }
 }
 
@@ -96,18 +89,11 @@ async function GET(res: VercelResponse, user: any) {
       }
     });
 
-    return res.status(200).json({
-      success: true,
-      message: 'City list fetched successfully',
-      list: citiesList
-    });
+    return sendStatus(res, 200, 'cities-fetched', 'City list fetched successfully', { list: citiesList });
 
   } catch (error) {
     console.error('Failed to retrieve list:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch city list'
-    });
+    return sendStatus(res, 500, 'cities-fetch-failed', 'Failed to fetch city list');
   }
 }
 
@@ -117,42 +103,36 @@ async function POST(req: VercelRequest, res: VercelResponse, user: any) {
   const removed = req.body.removed || [];
   // Check if the list exists and if the fields are in valid format
   if (!list || !Array.isArray(list)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid request body. Expected an array of items.'
-    });
+    return sendStatus(res, 400, 'invalid-body-array', 'Invalid request body. Expected an array of items.');
   }
 
   if (!Array.isArray(removed)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid request body. Expected an array of removed items.'
-    });
+    return sendStatus(res, 400, 'invalid-removed', 'Invalid request body. Expected an array of removed items.');
   }
 
   for (const city of list) {
     if (typeof city !== 'object' || city === null) {
-      return res.status(400).json({ success: false, message: 'Each item in the list must be a valid city object.' });
+      return sendStatus(res, 400, 'city-invalid', 'Each item in the list must be a valid city object.');
     }
     if (typeof city.name !== 'string' || city.name.trim() === '') {
-      return res.status(400).json({ success: false, message: 'City name is required and must be a non-empty string.' });
+      return sendStatus(res, 400, 'city-name-required', 'City name is required and must be a non-empty string.');
     }
     if (typeof city.country !== 'string' || city.country.trim() === '') {
-      return res.status(400).json({ success: false, message: 'City country is required and must be a non-empty string.' });
+      return sendStatus(res, 400, 'city-country-required', 'City country is required and must be a non-empty string.');
     }
     const latitude = parseFloat(city.latitude);
     const longitude = parseFloat(city.longitude);
     if (typeof latitude !== 'number' || latitude < -90 || latitude > 90) {
-      return res.status(400).json({ success: false, message: 'City latitude is required and must be a number between -90 and 90.' });
+      return sendStatus(res, 400, 'invalid-latitude', 'City latitude is required and must be a number between -90 and 90.');
     }
     if (typeof longitude !== 'number' || longitude < -180 || longitude > 180) {
-      return res.status(400).json({ success: false, message: 'City longitude is required and must be a number between -180 and 180.' });
+      return sendStatus(res, 400, 'invalid-longitude', 'City longitude is required and must be a number between -180 and 180.');
     }
   }
 
   for (const city of removed) {
     if (typeof city !== 'object' || city === null || typeof city.name !== 'string' || typeof city.country !== 'string') {
-      return res.status(400).json({ success: false, message: 'Each removed entry must include a name and country.' });
+      return sendStatus(res, 400, 'removed-invalid', 'Each removed entry must include a name and country.');
     }
   }
 
@@ -196,17 +176,10 @@ async function POST(req: VercelRequest, res: VercelResponse, user: any) {
 
     await Promise.all(upsertPromises);
 
-    return res.status(200).json({
-      success: true,
-      message: 'City list updated successfully.'
-    });
+    return sendStatus(res, 200, 'cities-updated', 'City list updated successfully.');
 
   } catch (error) {
     console.error('Batch Update Failed:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to update city list.',
-      error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
-    });
+    return sendStatus(res, 500, 'cities-update-failed', 'Failed to update city list.', { error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined });
   }
 }

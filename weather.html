@@ -11,7 +11,9 @@
     />
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css"
+      integrity="sha384-Bk5cbLkZQ5raZ0+H2/+VbfYx3WpvxvQK4zqXZr7sYODuaX7bKXoSOnipQxkaS8sv"
+      crossorigin="anonymous"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,7 +23,8 @@
     />
     <link rel="stylesheet" href="src/css/global.css" />
     <link rel="stylesheet" href="src/css/weather.css" />
-    <title>Weather Forecast</title>
+    <script type="module" src="src/js/common/i18n.js"></script>
+    <title data-i18n="forecast">Weather Forecast</title>
     <link
       rel="icon"
       href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/icons/cloud-moon-fill.svg"
@@ -55,11 +58,30 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Portfolio" />
   </head>
-  <body>
-    <a href="#main-content" class="skip-link">Skip to main content</a>
+  <body data-no-lang-switcher>
+    <a href="#main-content" class="skip-link" data-i18n="skip"
+      >Skip to main content</a
+    >
     <main class="container-fluid p-0 flex-grow-1">
       <div id="weather-app" class="d-flex flex-column h-100"></div>
     </main>
+    <p class="recaptcha-attribution text-center mb-3">
+      This site is protected by reCAPTCHA and the Google
+      <a
+        href="https://policies.google.com/privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Privacy Policy</a
+      >
+      and
+      <a
+        href="https://policies.google.com/terms"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Terms of Service</a
+      >
+      apply.
+    </p>
     <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
     <script type="module" src="src/js/forecast/forecast.jsx"></script>
     <script type="module" src="src/js/common/appworker.js"></script>

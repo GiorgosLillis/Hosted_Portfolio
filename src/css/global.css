@@ -14,6 +14,70 @@
     top: 0;
  }
 
+ /* Google's reCAPTCHA v3 badge: hiding it is only allowed per Google's terms if the required
+    attribution text below is shown instead - see the .recaptcha-attribution footer note on every
+    page that calls loadRecaptchaScript(). Also removes a fixed, asynchronously-injected element
+    that was contributing to a mobile layout overflow bug. */
+ .grecaptcha-badge {
+    visibility: hidden;
+ }
+
+ .recaptcha-attribution {
+    font-size: 0.75rem;
+    opacity: 0.8;
+ }
+
+ /* Greek text runs longer than English, so shrink the rem scale a little and let long words wrap instead of overflowing */
+ html[lang="el"] {
+    font-size: 90%;
+ }
+
+ html[lang="el"] body {
+    overflow-wrap: break-word;
+    hyphens: auto;
+ }
+
+ /* Language switcher, injected by i18n.js just after the navbar. Absolute (not in flow) so it never
+    pushes the page content, and below the navbar's z-index so an opened menu covers it. */
+ .lang-switcher {
+    position: absolute;
+    top: calc(var(--navbar-height, 4.5rem) + 0.5rem);
+    right: 1rem;
+    z-index: 1000;
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.15rem 0.35rem;
+    border: 2px solid var(--bs-secondary);
+    border-radius: 20px;
+    background-color: var(--bs-primary);
+ }
+
+ .lang-switcher button {
+    background: none;
+    border: 0;
+    border-radius: 20px;
+    padding: 0.1rem 0.6rem;
+    color: var(--bs-text);
+    font-size: 0.9rem;
+    cursor: pointer;
+ }
+
+ .lang-switcher button[aria-pressed="true"] {
+    background-color: var(--bs-secondary);
+    font-weight: bold;
+ }
+
+ .lang-switcher button:focus-visible {
+    outline: 2px solid var(--bs-text);
+    outline-offset: 2px;
+ }
+
+ @media print {
+    .lang-switcher {
+        display: none;
+    }
+ }
+
  body{
     box-sizing: border-box;
     color: var(--bs-text);

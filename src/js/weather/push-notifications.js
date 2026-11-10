@@ -1,3 +1,4 @@
+import i18next, { apiMessage } from '../common/i18n.js';
 import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 
@@ -47,21 +48,21 @@ export async function getExistingSubscription() {
 
 export async function subscribeToWeatherAlerts(locationInfo, localHour = DEFAULT_LOCAL_HOUR) {
     if (!isPushSupported()) {
-        throw new Error('Push notifications are not supported in this browser.');
+        throw new Error(i18next.t('push-unsupported'));
     }
     if (!locationInfo?.latitude || !locationInfo?.longitude) {
-        throw new Error('Location is not available yet. Please try again in a moment.');
+        throw new Error(i18next.t('push-no-location'));
     }
 
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-        throw new Error('Notification permission was not granted.');
+        throw new Error(i18next.t('push-denied'));
     }
 
     const keyResponse = await fetchWithTimeout('/api/vapid-key');
     const keyData = await keyResponse.json();
     if (!keyResponse.ok || !keyData.publicKey) {
-        throw new Error(keyData.message || 'Could not load push notification configuration.');
+        throw new Error(apiMessage(keyData, i18next.t('push-config-failed')));
     }
 
     const registration = await navigator.serviceWorker.register('/sw.js');
@@ -95,7 +96,7 @@ export async function subscribeToWeatherAlerts(locationInfo, localHour = DEFAULT
 
     if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || 'Failed to enable weather alerts.');
+        throw new Error(apiMessage(data, i18next.t('push-enable-failed')));
     }
 
     localStorage.setItem(SUBSCRIPTION_ENDPOINT_KEY, subscription.endpoint);

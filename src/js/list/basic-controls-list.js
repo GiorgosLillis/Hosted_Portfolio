@@ -1,5 +1,17 @@
 import { addDragAndDropListeners } from "./list-features.js";
 import { saveShoppingList, loadShoppingList, deleteList, trackRemovedItem } from "./memory-handle.js";
+import i18next from "../common/i18n.js";
+import { setButtonMode } from "./button-mode.js";
+
+const t = (key, options) => i18next.t(key, options);
+
+// Categories are stored in English (server + filters), only their displayed label is translated
+const CATEGORY_KEYS = {
+  'Produce': 'produce', 'Dairy': 'dairy', 'Meat': 'meat', 'Seafood': 'seafood', 'Bakery': 'bakery',
+  'Pantry': 'pantry', 'Frozen': 'frozen', 'Beverages': 'beverages', 'Snacks': 'snacks',
+  'Household': 'household', 'Personal Care': 'personal', 'Other': 'other',
+};
+const categoryLabel = (category) => CATEGORY_KEYS[category] ? t(CATEGORY_KEYS[category]) : category;
 
 export const List = document.getElementById('displayList');
 export const list_items = List.children;
@@ -27,34 +39,34 @@ function inputValidation(item, quantity, unit, errorMessage) {
   errorMessage.textContent = '';
 
   if (item.length < 2) {
-    errorMessage.textContent = "Write an item.";
+    errorMessage.textContent = t('item-required');
     return false;
   }
-  if (!/[a-zA-Z]/.test(item)) {
-    errorMessage.textContent = "Item has no letters.";
+  if (!/\p{L}/u.test(item)) {
+    errorMessage.textContent = t('item-no-letters');
     return false;
   }
   if (/(.)\1{3,}/.test(item)) {
-    errorMessage.textContent = "Item has too many repeating characters.";
+    errorMessage.textContent = t('item-repeating');
     return false;
   }
 
   const parsedQuantity = parseFloat(quantity);
   if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
-    errorMessage.textContent = "Quantity must be a positive number.";
+    errorMessage.textContent = t('quantity-invalid');
     return false;
   }
 
   if (unit.length < 1) {
-    errorMessage.textContent = "Select a unit.";
+    errorMessage.textContent = t('unit-required');
     return false;
   }
-  if (!/[a-zA-Z]/.test(unit)) {
-    errorMessage.textContent = "Unit has no letters.";
+  if (!/\p{L}/u.test(unit)) {
+    errorMessage.textContent = t('unit-no-letters');
     return false;
   }
   if (/(.)\1{3,}/.test(unit)) {
-    errorMessage.textContent = "Unit has too many repeating characters.";
+    errorMessage.textContent = t('unit-repeating');
     return false;
   }
 
@@ -92,7 +104,7 @@ function addToList(e) {
   });
 
   if (isDuplicate) {
-    errorMessage.textContent = 'Item already exists in the list';
+    errorMessage.textContent = t('item-duplicate');
     itemInput.value = '';
     return;
   }
@@ -115,6 +127,13 @@ function addToList(e) {
   }
 }
 
+// Bold label followed by a value, built from nodes so a file name can never be parsed as HTML
+function appendLabeled(parent, label, value) {
+  const strong = document.createElement('strong');
+  strong.textContent = label;
+  parent.append(strong, ` ${value}`);
+}
+
 // Display-only, the stored casing (dataset.originalItem) is left untouched since it's
 // what gets matched/saved against the server
 function capitalizeFirst(str) {
@@ -135,8 +154,16 @@ export function updateItemNumbers() {
     const category = listItem.dataset.category || 'Other';
     const check = listItem.dataset.checked;
 
-    let displayContent = `${id}) ${category}: ${itemText} ${quantity}${unit}`.trim();
-    listItem.innerHTML = displayContent;
+    const itemLabel = (isChecked) => t('item-aria', {
+      n: id, category: categoryLabel(category), item: itemText, quantity, unit,
+      state: isChecked ? t('checked') : t('not-checked'),
+    });
+    let displayContent = `${id}) ${categoryLabel(category)}: ${itemText} ${quantity}${unit}`.trim();
+    listItem.textContent = '';
+    const textSpan = document.createElement('span');
+    textSpan.className = 'item-text';
+    textSpan.textContent = displayContent;
+    listItem.appendChild(textSpan);
     listItem.draggable = "true";
     listItem.appendChild(createMoveButton(listItem, 'up'));
     listItem.appendChild(createMoveButton(listItem, 'down'));
@@ -147,13 +174,13 @@ export function updateItemNumbers() {
     checkBox.id = 'gotItem' + (i + 1);
     checkBox.className = 'form-check-input mx-2 float-end'
     checkBox.checked = (check === 'true');
-    checkBox.setAttribute('aria-label', `Mark ${itemText} as purchased`);
+    checkBox.setAttribute('aria-label', t('purchased-aria', { item: itemText }));
     checkBox.onclick = function (_) {
       this.parentElement.dataset.checked = this.checked;
-      return this.parentElement.ariaLabel = `${i + 1}. Category: ${category} Item:${itemText}, Quantity: ${quantity}${unit}, checkbox: ${this.checked ? 'checked' : 'not checked'}`;
+      return this.parentElement.ariaLabel = itemLabel(this.checked);
     }
     listItem.appendChild(checkBox);
-    listItem.ariaLabel = `${i + 1}. Category: ${category} Item:${itemText}, Quantity: ${quantity}${unit}, checkbox: ${checkBox.checked ? 'checked' : 'not checked'}`;
+    listItem.ariaLabel = itemLabel(checkBox.checked);
     addDragAndDropListeners(listItem);
   }
 }
@@ -165,7 +192,8 @@ function createMoveButton(listItem, direction) {
   const btn = document.createElement('button');
   btn.innerHTML = `<i class="bi bi-arrow-${isUp ? 'up' : 'down'}" aria-hidden="true"></i>`;
   btn.className = 'btn btn-secondary btn-sm float-end ms-2';
-  btn.setAttribute('aria-label', isUp ? 'Move item up' : 'Move item down');
+  btn.dataset.move = direction;
+  btn.setAttribute('aria-label', isUp ? t('move-up-aria') : t('move-down-aria'));
   btn.disabled = !sibling;
   btn.onclick = function () {
     if (isUp) {
@@ -176,7 +204,7 @@ function createMoveButton(listItem, direction) {
     clearMessages();
     updateItemNumbers();
     // Refocus the move button
-    listItem.querySelector(`[aria-label="${isUp ? 'Move item up' : 'Move item down'}"]`)?.focus();
+    listItem.querySelector(`[data-move="${direction}"]`)?.focus();
   };
   return btn;
 }
@@ -185,7 +213,7 @@ function createBtn() {
   let btn = document.createElement('button');
   btn.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
   btn.className = 'btn btn-danger btn-sm float-end ms-2';
-  btn.ariaLabel = 'Delete this item';
+  btn.ariaLabel = t('delete-item-aria');
   btn.onclick = function () {
     trackRemovedItem(this.parentElement.dataset.originalItem);
     this.parentElement.remove();
@@ -214,14 +242,13 @@ function verify() {
   clearMessages();
 
   if (list_items.length === 0) {
-    errorMessage.textContent = 'List is empty. Please add items before downloading.';
+    errorMessage.textContent = t('list-empty-download');
     return;
   }
 
   let button = document.getElementById('downloadBtn');
   button.id = 'confirmDownloadBtn';
-  button.textContent = 'Confirm Download';
-  button.setAttribute('aria-label', 'Confirm download of the list');
+  setButtonMode(button, 'confirm-download', 'confirm-download-aria');
   button.removeEventListener('click', verify);
   button.addEventListener('click', downloadList);
 }
@@ -232,7 +259,7 @@ function downloadList() {
   clearMessages();
 
   if (list_items.length === 0) {
-    errorMessage.textContent = 'List is empty. Please add items before downloading.';
+    errorMessage.textContent = t('list-empty-download');
   }
   else {
     let textContent = list_items_dom
@@ -263,8 +290,7 @@ function downloadList() {
   let button = document.getElementById('confirmDownloadBtn');
   button.removeEventListener('click', downloadList);
   button.id = 'downloadBtn';
-  button.textContent = 'Download';
-  button.setAttribute('aria-label', 'Download the list');
+  setButtonMode(button, 'download', 'download-aria');
   button.addEventListener('click', verify);
 }
 
@@ -282,10 +308,10 @@ async function uploadList(e) {
     if (files && files.length > 0) {
       await processUploadedFile(files[0]);
     } else {
-      errorMessage.textContent = 'No file selected';
+      errorMessage.textContent = t('no-file');
     }
   } catch (error) {
-    errorMessage.textContent = `Error: ${error.message}`;
+    errorMessage.textContent = t('error-generic', { message: error.message });
   }
 }
 
@@ -320,22 +346,23 @@ async function processUploadedFile(file) {
 
   errorMessage.textContent = '';
   if (!file || file.type !== 'text/plain') {
-    errorMessage.textContent = 'Please upload a valid text file';
+    errorMessage.textContent = t('invalid-file');
     return;
   }
 
 
   fileInfo.textContent = '';
   fileInfo.className = 'alert alert-info fs-5';
-  fileInfo.innerHTML = `<strong>Selected file:</strong> ${file.name}`;
-  fileInfo.innerHTML += `<br><strong>File size:</strong> ${formatFileSize(file.size)}`;
+  appendLabeled(fileInfo, t('selected-file'), file.name);
+  fileInfo.append(document.createElement('br'));
+  appendLabeled(fileInfo, t('file-size'), formatFileSize(file.size));
 
   try {
     const fileContent = await readFileAsText(file);
     const lines = fileContent.split('\n').filter(line => line.trim());
 
     if (lines.length === 0) {
-      errorMessage.textContent = 'File is empty or contains no valid items';
+      errorMessage.textContent = t('file-empty');
       return;
     }
 
@@ -345,7 +372,7 @@ async function processUploadedFile(file) {
       listItem.className = 'list-group-item fs-5 mb-3 rounded-3';
 
       // Regex for "CATEGORY ITEM QUANTITY UNIT Got it!"
-      const match = itemTextLine.match(/^([A-Za-z]+)\s+([A-Za-z\s]+?)\s*(\d+(\.\d+)?)\s*([A-Za-z]+)?\s*(Got it!)?$/i);
+      const match = itemTextLine.match(/^(\p{L}+)\s+([\p{L}\s]+?)\s*(\d+(\.\d+)?)\s*(\p{L}+)?\s*(Got it!)?$/iu);
 
       if (match) {
         const category = match[1].trim();
@@ -363,7 +390,7 @@ async function processUploadedFile(file) {
 
       } else {
         // Fallback for old format "ITEM QUANTITY UNIT"
-        const oldMatch = itemTextLine.match(/^([A-Za-z\s]+)\s*(\d+(\.\d+)?)\s*([A-Za-z]+)?\s*(Got it!)?$/i);
+        const oldMatch = itemTextLine.match(/^([\p{L}\s]+)\s*(\d+(\.\d+)?)\s*(\p{L}+)?\s*(Got it!)?$/iu);
         if (oldMatch) {
           const item = oldMatch[1].trim();
           const quantity = oldMatch[2] || '';
@@ -377,7 +404,7 @@ async function processUploadedFile(file) {
           listItem.dataset.category = 'Other';
           listItem.dataset.checked = isChecked;
         } else {
-          errorMessage.textContent = `Invalid format in line: "${itemTextLine}".`;
+          errorMessage.textContent = t('invalid-line', { line: itemTextLine });
           return;
         }
       }
@@ -385,9 +412,10 @@ async function processUploadedFile(file) {
     });
 
     updateItemNumbers();
-    fileInfo.innerHTML = `<strong>Selected file:</strong> ${file.name} (Loaded)`;
+    fileInfo.textContent = '';
+    appendLabeled(fileInfo, t('selected-file'), `${file.name} ${t('loaded')}`);
   } catch (error) {
-    errorMessage.textContent = `Error reading file: ${error.message}`;
+    errorMessage.textContent = t('read-error', { message: error.message });
   }
 }
 
@@ -442,7 +470,7 @@ function filterListByCategory() {
     }
   });
   setActiveFilter('category');
-  successMessage.textContent = 'Items within this category!';
+  successMessage.textContent = t('filter-category-msg');
 }
 
 filterNameBtn.addEventListener('click', filterListByName);
@@ -470,7 +498,7 @@ function filterListByName() {
     }
   })
   setActiveFilter('name');
-  successMessage.textContent = 'Items with this name!';
+  successMessage.textContent = t('filter-name-msg');
 }
 
 joinfilterBtn.addEventListener('click', joinFilter);
@@ -499,7 +527,7 @@ function joinFilter() {
     }
   });
   setActiveFilter('join');
-  successMessage.textContent = 'Items that match all filters!';
+  successMessage.textContent = t('filter-all-msg');
 }
 
 saveBtn.addEventListener('click', () => saveShoppingList());
@@ -510,11 +538,13 @@ export function confirmDelete() {
 
   let button = deleteBtn;
   button.id = 'confirmDeleteBtn';
-  button.textContent = 'Confirm Delete';
-  button.setAttribute('aria-label', 'Confirm deletion of all items');
+  setButtonMode(button, 'confirm-delete', 'confirm-delete-aria');
   button.removeEventListener('click', verify);
   button.addEventListener('click', () => deleteList());
 
 }
 
 document.addEventListener('DOMContentLoaded', loadShoppingList);
+
+// Item rows are generated in JS, so their text and aria-labels are rebuilt on a language switch
+i18next.on('languageChanged', updateItemNumbers);

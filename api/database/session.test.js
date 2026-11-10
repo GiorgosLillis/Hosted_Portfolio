@@ -102,7 +102,7 @@ describe('session handler', () => {
             await sessionHandler(req, res);
 
             expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Logged out successfully' });
+            expect(res.json).toHaveBeenCalledWith({ success: true, code: 'logged-out', message: 'Logged out successfully' });
 
             const setCookieCall = res.setHeader.mock.calls.find(call => call[0] === 'Set-Cookie');
             expect(setCookieCall[1][0]).toMatch(/^token=;/);

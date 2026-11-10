@@ -2,6 +2,10 @@ import { updateItemNumbers, List, list_items, errorMessage, successMessage, clea
 import { checkAuth } from "../common/getcookie.js";
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
+import i18next, { apiMessage } from '../common/i18n.js';
+import { setButtonMode } from './button-mode.js';
+
+const t = (key, options) => i18next.t(key, options);
 
 loadRecaptchaScript();
 
@@ -27,7 +31,7 @@ function setButtonsDisabled(disabled) {
 export async function saveShoppingList() {
 
     setButtonsDisabled(true);
-    loading.textContent = 'Wait for a moment';
+    loading.textContent = t('wait-moment');
     const list_items_dom = Array.from(list_items);
     clearMessages();
 
@@ -57,14 +61,14 @@ export async function saveShoppingList() {
 
     try {
         if (shoppingList.length === 0) {
-            errorMessage.textContent = 'Cannot save an empty list';
+            errorMessage.textContent = t('empty-list');
             return;
         }
 
         const user = await checkAuth();
         if (!user) {
             localStorage.setItem(LOCAL_SHOPPING_KEY, JSON.stringify(toRenderShape(shoppingList)));
-            successMessage.textContent = 'Saved on this device only. Log in or register to save your list to your account and access it everywhere.';
+            successMessage.textContent = t('saved-local');
             return;
         }
 
@@ -82,16 +86,16 @@ export async function saveShoppingList() {
         if (response.ok) {
             // Keep the account's local cache in sync with server
             localStorage.setItem(ACCOUNT_SHOPPING_KEY, JSON.stringify(toRenderShape(shoppingList)));
-            successMessage.textContent = 'Saved shopping list to server!';
+            successMessage.textContent = t('saved-server');
             removedItemNames = [];
         }
         else {
             const result = await response.json();
-            errorMessage.textContent = result.message || 'Error saving shopping list to server!';
+            errorMessage.textContent = apiMessage(result, t('save-error'));
         }
     } catch (error) {
         console.error('Error saving shopping list to server:', error);
-        errorMessage.textContent = 'Error saving shopping list to server!';
+        errorMessage.textContent = t('save-error');
     } finally {
         loading.textContent = '';
         setButtonsDisabled(false);
@@ -106,14 +110,13 @@ export async function deleteList() {
     let button = document.getElementById('confirmDeleteBtn');
     button.removeEventListener('click', () => deleteList());
     button.id = 'deleteBtn';
-    button.textContent = 'Delete';
-    button.setAttribute('aria-label', 'Delete all items on your profile');
+    setButtonMode(button, 'delete', 'delete-list-aria');
     button.addEventListener('click', confirmDelete);
 
     try {
         const user = await checkAuth();
         if (user) {
-            loading.textContent = 'Wait for a moment';
+            loading.textContent = t('wait-moment');
             const token = await getRecaptchaToken('delete_list');
             const response = await fetchWithTimeout('/api/list', {
                 method: 'DELETE',
@@ -131,15 +134,15 @@ export async function deleteList() {
             }
             else {
                 const result = await response.json();
-                errorMessage.textContent = result.message || 'Error deleting shopping list!';
+                errorMessage.textContent = apiMessage(result, t('delete-error'));
             }
         }
         else {
-            errorMessage.textContent = 'Log in or register to save and manage a shopping list on your account.';
+            errorMessage.textContent = t('delete-login');
         }
     } catch (error) {
         console.error('Error deleting shopping list:', error);
-        errorMessage.textContent = 'Error deleting shopping list!'
+        errorMessage.textContent = t('delete-error')
     } finally {
         loading.textContent = '';
         setButtonsDisabled(false);
@@ -173,13 +176,13 @@ export function loadShoppingList() {
                 List.append(listItem);
             });
             updateItemNumbers();
-            successMessage.textContent = 'Loaded shopping list from local storage!';
+            successMessage.textContent = t('loaded-local');
         }
     };
 
     checkAuth().then(user => {
         if (user) {
-            logStatus.textContent = "Hello " + user.firstName + ' ' + user.lastName;
+            logStatus.textContent = t('hello', { name: user.firstName + ' ' + user.lastName });
             fetchWithTimeout(`/api/list?id=${user.id}`)
                 .then(res => {
                     if (!res.ok) {
@@ -191,23 +194,23 @@ export function loadShoppingList() {
                     const list = data.list;
                     if (list && list.length > 0) {
                         localStorage.setItem(ACCOUNT_SHOPPING_KEY, JSON.stringify(list));
-                        successMessage.textContent = 'Loaded shopping list from server!';
+                        successMessage.textContent = t('loaded-server');
                     } else {
                         localStorage.removeItem(ACCOUNT_SHOPPING_KEY);
-                        errorMessage.textContent = "You don't have a saved list on the server.";
+                        errorMessage.textContent = t('no-server-list');
                     }
                     renderFromLocalStorage(ACCOUNT_SHOPPING_KEY);
                 })
                 .catch(error => {
                     console.error('Error loading shopping list from server:', error);
-                    errorMessage.textContent = 'Error loading from server. Trying local storage.';
+                    errorMessage.textContent = t('load-error');
                     renderFromLocalStorage(ACCOUNT_SHOPPING_KEY);
                 })
                 .finally(() => {
                     setButtonsDisabled(false);
                 });
         } else {
-            errorMessage.textContent = 'Showing your list saved on this device. Log in or register to save it to your account and access it everywhere.';
+            errorMessage.textContent = t('local-notice');
             renderFromLocalStorage(LOCAL_SHOPPING_KEY);
             setButtonsDisabled(false);
         }

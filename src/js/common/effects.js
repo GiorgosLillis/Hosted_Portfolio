@@ -9,13 +9,20 @@ AOS.init({
 });
 
 
-// Swaps the theme class and remembers the choice, exposed on window so inline onclick handlers can call it
+// Swaps the theme class and remembers the choice
 export function setTheme(theme) {
   document.body.classList.remove('theme-default', 'theme-light', 'theme-dark');
   document.body.classList.add(`theme-${theme}`);
   localStorage.setItem('site-theme', theme);
 }
-window.setTheme = setTheme;
+
+// Theme buttons carry data-theme instead of an inline onclick, which the Content-Security-Policy blocks
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-theme]');
+  if (button) {
+    setTheme(button.dataset.theme);
+  }
+});
 
 // Falls back to the OS-level light/dark preference if the user never picked a theme themselves
 function getSystemPreferredTheme() {

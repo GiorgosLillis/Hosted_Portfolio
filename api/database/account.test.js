@@ -11,6 +11,7 @@ vi.mock('../lib/rateLimiter.js', () => ({
 }));
 
 vi.mock('../lib/functions.js', () => ({
+    sendStatus: (res, status, code, message, extra = {}) => res.status(status).json({ success: status < 400, code, message, ...extra }),
     checkToken: vi.fn(),
     isValidEmail: vi.fn(() => true),
     isValidPassword: vi.fn(() => true),

@@ -13,7 +13,7 @@ header{
 
 #navbar{
     backdrop-filter: blur(20px);
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(20, 30, 45, 0.55);
     padding: 0;
     border: 0;
 }
@@ -27,7 +27,7 @@ header{
     flex-direction: row; 
     justify-content: center;
     align-items: center;
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(20, 30, 45, 0.55);
     backdrop-filter: blur(20px);
     padding: 1.5rem 0;
     border: 0;
@@ -162,6 +162,26 @@ h1, h2, h3, .nav-link, i{
 
 .favButton:hover{
     cursor: pointer;
+}
+
+/* The page background is a photo, so the footer note sits in a dark box to stay readable on any image */
+.recaptcha-attribution {
+    position: relative;
+    z-index: 1;
+    width: fit-content;
+    max-width: calc(100% - 2rem);
+    margin: 0 auto 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background-color: rgba(20, 30, 45, 0.75);
+    backdrop-filter: blur(10px);
+    color: aliceblue;
+    opacity: 1;
+}
+
+.recaptcha-attribution a {
+    color: inherit;
+    text-decoration: underline;
 }
 
 .sr-only {

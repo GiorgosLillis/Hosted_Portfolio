@@ -1,6 +1,7 @@
 import axios from 'axios';
 import 'dotenv/config';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { sendStatus } from './functions.js';
 
 interface RecaptchaResult {
     success: boolean;
@@ -45,38 +46,24 @@ export async function recaptchaMiddleware(req: VercelRequest, res: VercelRespons
     const recaptchaToken = req.body?.['g-recaptcha-response'] || req.headers['g-recaptcha-response'];
 
     if (!recaptchaToken) {
-        return res.status(400).json({
-            success: false,
-            message: 'reCAPTCHA token is required'
-        });
+        return sendStatus(res, 400, 'recaptcha-missing', 'reCAPTCHA token is required');
     }
 
     try {
         const { success, score, errors } = await verifyRecaptcha(recaptchaToken);
 
         if (!success) {
-            return res.status(403).json({
-                success: false,
-                message: 'reCAPTCHA verification failed!',
-                errors
-            });
+            return sendStatus(res, 403, 'recaptcha-failed', 'reCAPTCHA verification failed!', { errors });
         }
 
         // Below 0.5 is treated as a bot by Google's own scoring guidance
         if (score < 0.5) {
-            return res.status(403).json({
-                success: false,
-                message: 'reCAPTCHA score too low, suspected bot.',
-                score
-            });
+            return sendStatus(res, 403, 'recaptcha-low-score', 'reCAPTCHA score too low, suspected bot.', { score });
         }
 
         next();
     } catch (error) {
         console.error('reCAPTCHA middleware error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'An unexpected error occurred during reCAPTCHA verification'
-        });
+        return sendStatus(res, 500, 'recaptcha-error', 'An unexpected error occurred during reCAPTCHA verification');
     }
 }

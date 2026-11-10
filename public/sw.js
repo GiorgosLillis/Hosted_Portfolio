@@ -1,4 +1,4 @@
-const OFFLINE_CACHE = 'offline-shell-v1';
+const OFFLINE_CACHE = 'offline-shell-v2';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma.js';
-import { isValidEmail, isValidPassword, setCorsHeaders, getClientIp, handleApiError } from '../lib/functions.js';
+import { isValidEmail, isValidPassword, setCorsHeaders, getClientIp, handleApiError, sendStatus } from '../lib/functions.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
@@ -27,10 +27,7 @@ async function passwordRecoveryHandler(req: VercelRequest, res: VercelResponse) 
         return redeemReset(req, res);
     }
 
-    return res.status(405).json({
-        success: false,
-        message: 'Only POST and PUT requests are allowed'
-    });
+    return sendStatus(res, 405, 'method-not-allowed', 'Only POST and PUT requests are allowed');
 }
 
 async function requestReset(req: VercelRequest, res: VercelResponse) {
@@ -49,14 +46,11 @@ async function requestReset(req: VercelRequest, res: VercelResponse) {
         if (!ipResult.allowed || !emailResult.allowed) {
             const ttl = Math.max(ipResult.ttl, emailResult.ttl);
             res.setHeader('Retry-After', ttl);
-            return res.status(429).json({
-                success: false,
-                message: `Too many requests. Please try again in ${ttl} seconds.`
-            });
+            return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
         }
 
         if (!email || !emailRegex.test(email)) {
-            return res.status(400).json({ success: false, message: 'Invalid input.' });
+            return sendStatus(res, 400, 'invalid-input', 'Invalid input.');
         }
 
         // Generate token
@@ -77,10 +71,7 @@ async function requestReset(req: VercelRequest, res: VercelResponse) {
         }
 
         // Same response whether or not the account exists
-        return res.status(200).json({
-            success: true,
-            message: 'If an account with that email exists, a reset link has been sent.'
-        });
+        return sendStatus(res, 200, 'reset-link-sent', 'If an account with that email exists, a reset link has been sent.');
     } catch (error) {
         return handleApiError(res, error, 'Server error in password recovery (request):');
     }
@@ -102,17 +93,11 @@ async function redeemReset(req: VercelRequest, res: VercelResponse) {
         if (!ipResult.allowed || !emailResult.allowed) {
             const ttl = Math.max(ipResult.ttl, emailResult.ttl);
             res.setHeader('Retry-After', ttl);
-            return res.status(429).json({
-                success: false,
-                message: `Too many requests. Please try again in ${ttl} seconds.`
-            });
+            return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
         }
 
         if (!token || !isValidEmail(email) || !isValidPassword(new_password)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid input. Please ensure all fields are correctly filled.'
-            });
+            return sendStatus(res, 400, 'invalid-input', 'Invalid input. Please ensure all fields are correctly filled.');
         }
 
         // The raw token only ever lived in the emailed link, only its hash is stored
@@ -121,28 +106,19 @@ async function redeemReset(req: VercelRequest, res: VercelResponse) {
         const userId = await redis.get<number>(redisKey);
 
         if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid or expired reset link.'
-            });
+            return sendStatus(res, 400, 'reset-link-invalid', 'Invalid or expired reset link.');
         }
 
         // Look up the real account rather than trusting the client-submitted email,
         // also needed to compare against the current password below
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid or expired reset link.'
-            });
+            return sendStatus(res, 400, 'reset-link-invalid', 'Invalid or expired reset link.');
         }
 
         const isSameAsOldPassword = await bcrypt.compare(new_password, user.passwordHash);
         if (isSameAsOldPassword) {
-            return res.status(400).json({
-                success: false,
-                message: 'New password must be different from your current password.'
-            });
+            return sendStatus(res, 400, 'password-same', 'New password must be different from your current password.');
         }
 
         const passwordHash = await bcrypt.hash(new_password, 10);
@@ -171,10 +147,7 @@ async function redeemReset(req: VercelRequest, res: VercelResponse) {
             console.error('Failed to send password reset confirmation email:', error);
         }
 
-        return res.status(200).json({
-            success: true,
-            message: 'Password has been reset successfully.'
-        });
+        return sendStatus(res, 200, 'password-reset', 'Password has been reset successfully.');
 
     } catch (error) {
         return handleApiError(res, error, 'Server error in password recovery (redeem):');

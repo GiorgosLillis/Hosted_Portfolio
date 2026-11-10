@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMockReq, createMockRes } from '../testUtils/mockReqRes.js';
 
 vi.mock('../lib/functions.js', () => ({
+    sendStatus: (res, status, code, message, extra = {}) => res.status(status).json({ success: status < 400, code, message, ...extra }),
     setCorsHeaders: vi.fn(),
     getClientIp: vi.fn((req) => req.headers['x-forwarded-for'] || req.socket.remoteAddress),
     enforceRateLimit: vi.fn(async (res, key, limit, windowSeconds) => {

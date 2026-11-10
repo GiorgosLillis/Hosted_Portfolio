@@ -3,7 +3,7 @@ import jsonwebtoken from 'jsonwebtoken';
 import { Redis } from '@upstash/redis';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
-import { checkToken, clearAuthCookies, setAuthCookies, setCorsHeaders, getClientIp, enforceRateLimit, handleApiError } from '../lib/functions.js';
+import { checkToken, clearAuthCookies, setAuthCookies, setCorsHeaders, getClientIp, enforceRateLimit, handleApiError, sendStatus } from '../lib/functions.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const redis = Redis.fromEnv();
@@ -20,20 +20,17 @@ async function sessionHandler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'GET') {
         clearAuthCookies(res);
-        return res.status(200).json({ success: true, message: 'Logged out successfully' });
+        return sendStatus(res, 200, 'logged-out', 'Logged out successfully');
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({
-            success: false,
-            message: 'Only GET and POST requests are allowed'
-        });
+        return sendStatus(res, 405, 'method-not-allowed', 'Only GET and POST requests are allowed');
     }
 
     try {
         const user = await checkToken(req);
         if (!user) {
-            return res.status(401).json({ success: false, message: 'Not authenticated' });
+            return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
         }
 
         const ip = getClientIp(req);
@@ -71,10 +68,7 @@ async function sessionHandler(req: VercelRequest, res: VercelResponse) {
             console.error('Failed to send devices logout confirmation email:', error);
         }
 
-        return res.status(200).json({
-            success: true,
-            message: 'Logged out of other devices successfully',
-        });
+        return sendStatus(res, 200, 'logged-out-others', 'Logged out of other devices successfully');
 
     } catch (error) {
         return handleApiError(res, error, 'Server error in session (logout devices):');

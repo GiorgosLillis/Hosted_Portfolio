@@ -11,6 +11,7 @@ Tech stack I used:
 - Javascript ES2023
 - React (weather forecast and profile/account pages)
 - Bootstrap 5
+- i18next / react-i18next (English and Greek)
 
 ### Backend:
 
@@ -44,6 +45,9 @@ Now:
 - Accessibility tools including ARIA roles, keyboard navigation and focus management
 - SEO optimizations such as meta tags and descriptive titles
 - Every outgoing fetch (client-side, and server-side calls to upstream weather/geocoding APIs) is bounded by a timeout, so a hung request fails cleanly instead of hanging the UI forever
+- Offline page, shown instead of the browser's error when a page can't be loaded without a connection
+- The home, list, profile and password reset pages are available in English and Greek. The weather forecast page is not translated yet. The language is picked from the switcher, then remembered (`site-lang` in local storage), then the browser language, then English
+- Translation files live in `src/i18n/` (`en.json` is the full set, `el.json` holds the Greek translations). A key missing from `el.json` falls back to English. API responses carry a stable `code` (set through the `sendStatus` helper) next to the English message, and the client translates it through the `api-<code>` keys
 
 ---
 
@@ -62,6 +66,7 @@ In order to ensure system security and integrity hte following measures have bee
 - Passwords are hashed with bcrypt, never stored in plain text
 - Sessions are JWTs in httpOnly cookies, with a tokenVersion check so "log out everywhere" actually invalidates old sessions instead of just clearing a cookie
 - Rate limiting by IP and by account on every sensitive or mutating endpoint
+- A Content-Security-Policy header (set in `vercel.json`) that only allows scripts, styles, fonts, images and connections from the site itself and the few CDNs and Google reCAPTCHA hosts it uses. Inline scripts are blocked, so there are no inline event handlers (the theme buttons use `data-theme`), and the offline page's one inline `<style>` and `<script>` are allowed by SHA-256 hash. If you edit either block in `public/offline.html`, regenerate its hash in the policy, and bump the cache name in `public/sw.js` so visitors don't keep the old copy
 
 You must set up a `.env` file in project root. The file ought to store:
 
@@ -70,8 +75,8 @@ You must set up a `.env` file in project root. The file ought to store:
 - In case you wish to use an email account, it is required to enable 2FA and use an app passwords(not your account's password)
 - A PostgreSQL connection string (I use [Neon](https://neon.tech/))
 - Upstash Redis credentials
-- VAPID keys for Web Push notifications: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (a `mailto:` address or URL identifying you, per the Web Push spec) - generate the key pair with `npx web-push generate-vapid-keys`
-- A `CRON_SECRET` value (any random string) - Vercel automatically sends it as a bearer token on cron-triggered requests, so the notification endpoint can verify the call actually came from Vercel's scheduler and not a random request
+- VAPID keys for Web Push notifications: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (a `mailto:` address or URL identifying you, per the Web Push spec). Generate the key pair with `npx web-push generate-vapid-keys`
+- A `CRON_SECRET` value (any random string) that Vercel automatically sends as a bearer token on cron-triggered requests, so the notification endpoint can verify the call actually came from Vercel's scheduler and not a random request
 
 Make sure to also add these same variables to your Vercel project's Environment Variables settings (Project Settings → Environment Variables), otherwise the deployed site won't have access to them even if your local `.env` works.
 
@@ -130,10 +135,11 @@ Make sure to also add these same variables to your Vercel project's Environment 
   Country code and name resolved automatically via Nominatim ✅
   Searching with both fields empty defaults to the users location ✅
   Saving favorite cities ✅
+  Recently searched cities (last 5, newest first, with the time of the search) in a side panel next to the hour details, stored on the device, with a "Clear all" button. The panel and the hour details never open at the same time ✅
 
 - Daily notification (browser push, via a Service Worker + the Web Push API):
   Sends a summary of tomorrow's forecast once a day, at an hour of your choosing
-  Not tied to your account - subscribing is anonymous and per-browser/device, so it works the same whether you're logged in or not (it just won't follow you to another device, unlike favorites/shopping list)
+  Not tied to your account, subscribing is anonymous and per-browser/device, so it works the same whether you're logged in or not
   Vercel's Hobby plan only lets a single cron job fire once a day, so instead of one daily cron there are 24 separate hourly cron entries in vercel.json, each checking only the subscriptions that picked that hour
   Dead or expired subscriptions are pruned automatically once the push service reports them gone
   Requires HTTPS (or localhost) and notification permission; on iOS Safari it only works if the site has been added to the home screen

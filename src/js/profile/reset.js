@@ -1,7 +1,10 @@
+import i18next, { apiMessage } from '../common/i18n.js';
 import { showToast } from '../common/toast.js';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { isValidPassword } from '../common/validation.js';
 import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
+
+const t = (key) => i18next.t(key);
 
 loadRecaptchaScript();
 
@@ -14,7 +17,11 @@ const token = params.get('token');
 const email = params.get('email');
 
 if (!token || !email) {
-    form.innerHTML = '<h1 class="text-center">Invalid or missing reset link.</h1>';
+    form.innerHTML = '';
+    const invalidLink = document.createElement('h1');
+    invalidLink.className = 'text-center';
+    invalidLink.textContent = t('reset-invalid-link');
+    form.appendChild(invalidLink);
 } else {
     form.addEventListener("submit", async function (e) {
 
@@ -24,11 +31,11 @@ if (!token || !email) {
         const confirmPassword = confirmPass.value;
 
         if (!isValidPassword(newPassword)) {
-            showToast("Please type a password that meets the criteria below", 'danger');
+            showToast(t('reset-criteria'), 'danger');
             return;
         }
         if (newPassword != confirmPassword) {
-            showToast("Passwords are not identical", 'danger');
+            showToast(t('reset-mismatch'), 'danger');
             return;
         }
 
@@ -40,7 +47,7 @@ if (!token || !email) {
 
         const originalBtnText = resetBtn.innerHTML;
         resetBtn.disabled = true;
-        resetBtn.innerHTML = 'Resetting...';
+        resetBtn.textContent = t('resetting');
 
         try {
             const recaptchaToken = await getRecaptchaToken('reset');
@@ -58,19 +65,19 @@ if (!token || !email) {
             const result = await response.json();
 
             if (response.ok) {
-                showToast(result.message || "Password has been reset! A confirmation email has been sent.", "success");
+                showToast(apiMessage(result, t('reset-success')), "success");
                 form.reset();
                 setTimeout(() => {
                     window.location.href = 'profile.html';
                 }, 2000);
             } else {
-                showToast(result.message || "Failed to reset password.", "danger");
+                showToast(apiMessage(result, t('reset-failed')), "danger");
                 resetBtn.disabled = false;
                 resetBtn.innerHTML = originalBtnText;
             }
         } catch (err) {
             console.error(err);
-            showToast("An error occurred. Please try again later.", "danger");
+            showToast(t('error-try-later'), "danger");
             resetBtn.disabled = false;
             resetBtn.innerHTML = originalBtnText;
         }

@@ -1,4 +1,4 @@
-import { setCorsHeaders, getClientIp, handleApiError, fetchWithTimeout } from '../lib/functions.js';
+import { setCorsHeaders, getClientIp, handleApiError, fetchWithTimeout, sendStatus } from '../lib/functions.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { prisma } from '../lib/prisma.js';
@@ -85,10 +85,7 @@ async function weatherInfo(req: VercelRequest, res: VercelResponse) {
     const ip = getClientIp(req);
     const { allowed, ttl } = await rateLimiter(ip, 20, 60);
     if (!allowed) {
-        return res.status(429).json({
-            success: false,
-            message: `Too many requests. Please try again in ${ttl} seconds.`
-        });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
     }
 
     const { lat, lon } = req.method === 'GET' ? req.query : req.body;
@@ -97,10 +94,10 @@ async function weatherInfo(req: VercelRequest, res: VercelResponse) {
     const parsedLon = parseFloat(lon);
 
     if (isNaN(parsedLat) || parsedLat < -90 || parsedLat > 90) {
-        return res.status(400).json({ success: false, message: "Invalid latitude. Must be a number between -90 and 90." });
+        return sendStatus(res, 400, 'invalid-latitude', "Invalid latitude. Must be a number between -90 and 90.");
     }
     if (isNaN(parsedLon) || parsedLon < -180 || parsedLon > 180) {
-        return res.status(400).json({ success: false, message: "Invalid longitude. Must be a number between -180 and 180." });
+        return sendStatus(res, 400, 'invalid-longitude', "Invalid longitude. Must be a number between -180 and 180.");
     }
 
 
@@ -255,12 +252,12 @@ async function getVapidKey(req: VercelRequest, res: VercelResponse) {
     const { allowed, ttl } = await rateLimiter(`vapid_key_attempt_ip:${ip}`, 30, 60);
     if (!allowed) {
         res.setHeader('Retry-After', ttl);
-        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
     }
 
     if (!process.env.VAPID_PUBLIC_KEY) {
         console.error('VAPID_PUBLIC_KEY is not configured on the server');
-        return res.status(500).json({ success: false, message: 'Push notifications are not configured on the server.' });
+        return sendStatus(res, 500, 'push-not-configured', 'Push notifications are not configured on the server.');
     }
 
     return res.status(200).json({ success: true, publicKey: process.env.VAPID_PUBLIC_KEY });
@@ -269,37 +266,37 @@ async function getVapidKey(req: VercelRequest, res: VercelResponse) {
 // Anonymous, no login required: stores a browser push subscription tied to a location for the daily forecast
 async function subscribe(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ success: false, message: 'Only POST requests are allowed' });
+        return sendStatus(res, 405, 'method-not-allowed', 'Only POST requests are allowed');
     }
 
     const ip = getClientIp(req);
     const { allowed, ttl } = await rateLimiter(`push_subscribe_attempt_ip:${ip}`, 10, 3600); // 10 per hour per IP
     if (!allowed) {
         res.setHeader('Retry-After', ttl);
-        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
     }
 
     const { subscription, latitude, longitude, city, country, notifyHour } = req.body;
 
     if (!subscription || typeof subscription.endpoint !== 'string' || !subscription.endpoint.startsWith('https://')) {
-        return res.status(400).json({ success: false, message: 'A valid push subscription is required.' });
+        return sendStatus(res, 400, 'subscription-invalid', 'A valid push subscription is required.');
     }
     if (!subscription.keys || typeof subscription.keys.p256dh !== 'string' || typeof subscription.keys.auth !== 'string') {
-        return res.status(400).json({ success: false, message: 'Push subscription is missing encryption keys.' });
+        return sendStatus(res, 400, 'subscription-keys', 'Push subscription is missing encryption keys.');
     }
 
     const lat = parseFloat(latitude);
     const lon = parseFloat(longitude);
     if (!isValidLatitude(lat)) {
-        return res.status(400).json({ success: false, message: 'Invalid latitude. Must be a number between -90 and 90.' });
+        return sendStatus(res, 400, 'invalid-latitude', 'Invalid latitude. Must be a number between -90 and 90.');
     }
     if (!isValidLongitude(lon)) {
-        return res.status(400).json({ success: false, message: 'Invalid longitude. Must be a number between -180 and 180.' });
+        return sendStatus(res, 400, 'invalid-longitude', 'Invalid longitude. Must be a number between -180 and 180.');
     }
 
     const hour = notifyHour === undefined ? 6 : parseInt(notifyHour, 10);
     if (isNaN(hour) || hour < 0 || hour > 23) {
-        return res.status(400).json({ success: false, message: 'notifyHour must be an integer between 0 and 23.' });
+        return sendStatus(res, 400, 'notify-hour-invalid', 'notifyHour must be an integer between 0 and 23.');
     }
 
     try {
@@ -326,7 +323,7 @@ async function subscribe(req: VercelRequest, res: VercelResponse) {
             }
         });
 
-        return res.status(200).json({ success: true, message: 'Subscribed to daily weather alerts.' });
+        return sendStatus(res, 200, 'subscribed', 'Subscribed to daily weather alerts.');
     } catch (error) {
         return handleApiError(res, error, 'Server error in weather subscribe:');
     }
@@ -335,24 +332,24 @@ async function subscribe(req: VercelRequest, res: VercelResponse) {
 // Idempotent by design: removing a subscription that no longer exists is a no-op, not an error
 async function unsubscribe(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ success: false, message: 'Only POST requests are allowed' });
+        return sendStatus(res, 405, 'method-not-allowed', 'Only POST requests are allowed');
     }
 
     const ip = getClientIp(req);
     const { allowed, ttl } = await rateLimiter(`push_unsubscribe_attempt_ip:${ip}`, 20, 3600);
     if (!allowed) {
         res.setHeader('Retry-After', ttl);
-        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
     }
 
     const { endpoint } = req.body;
     if (typeof endpoint !== 'string' || !endpoint) {
-        return res.status(400).json({ success: false, message: 'An endpoint is required.' });
+        return sendStatus(res, 400, 'endpoint-required', 'An endpoint is required.');
     }
 
     try {
         await prisma.pushSubscription.deleteMany({ where: { endpoint } });
-        return res.status(200).json({ success: true, message: 'Unsubscribed from weather alerts.' });
+        return sendStatus(res, 200, 'unsubscribed', 'Unsubscribed from weather alerts.');
     } catch (error) {
         return handleApiError(res, error, 'Server error in weather unsubscribe:');
     }
@@ -362,7 +359,7 @@ async function unsubscribe(req: VercelRequest, res: VercelResponse) {
 // One of 24 cron entries in vercel.json hits this every hour, each passing its own UTC hour so only that hour's subscribers get sent to.
 async function notify(req: VercelRequest, res: VercelResponse) {
     if (!process.env.CRON_SECRET || req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) {
-        return res.status(401).json({ success: false, message: 'Not authenticated' });
+        return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
     }
 
     // hour=all is a manual-testing escape hatch (still gated by CRON_SECRET) so you don't have to match
@@ -373,7 +370,7 @@ async function notify(req: VercelRequest, res: VercelResponse) {
     if (!sendToAll) {
         hour = parseInt(hourParam, 10);
         if (isNaN(hour) || hour < 0 || hour > 23) {
-            return res.status(400).json({ success: false, message: 'A valid hour (0-23), or "all" for testing, is required.' });
+            return sendStatus(res, 400, 'hour-invalid', 'A valid hour (0-23), or "all" for testing, is required.');
         }
     }
 
@@ -426,10 +423,7 @@ async function notify(req: VercelRequest, res: VercelResponse) {
         }));
 
         const failed = results.filter(r => r.status === 'rejected').length;
-        return res.status(200).json({
-            success: true,
-            message: `Processed ${subscriptions.length} subscriptions, ${failed} failed.`
-        });
+        return sendStatus(res, 200, 'notify-processed', `Processed ${subscriptions.length} subscriptions, ${failed} failed.`, { count: subscriptions.length, failed });
     } catch (error) {
         return handleApiError(res, error, 'Server error in weather notify:');
     }

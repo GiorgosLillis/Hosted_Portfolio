@@ -16,6 +16,15 @@ body{
   overflow-y: auto;
 }
 
+/* The two text togglers ("Colors ▼", "Pages ▼") at fs-2 can combine to wider than
+   the viewport on narrow phones with no wrapping, pushing the whole page wider than
+   the screen - most visible with no browser chrome to mask it (standalone/installed app). */
+@media screen and (max-width: 480px) {
+  #navbar .navbar-toggler-text.fs-2 {
+    font-size: 1.3rem !important;
+  }
+}
+
 h1, a, .card-title{
   color: var(--bs-text-secondary);
   text-decoration: none;

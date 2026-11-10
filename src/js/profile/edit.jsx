@@ -3,10 +3,13 @@ import { useAuth } from './auth.jsx';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { isValidEmail, isValidPassword, isValidName } from '../common/validation.js';
 import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
+import { useTranslation } from 'react-i18next';
+import { apiMessage } from '../common/i18n.js';
 
 const ProfileEdit = ({ switchToLogout, showToast }) => {
 
     const { user } = useAuth();
+    const { t, i18n } = useTranslation();
     const headingRef = useRef(null);
     const [originalData, setOriginalData] = useState({});
     const [id, setId] = useState('');
@@ -16,7 +19,7 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [createdAt, setcreatedAt] = useState('');
-    const cre = new Date(createdAt).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+    const cre = new Date(createdAt).toLocaleDateString(i18n.language === 'el' ? 'el-GR' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
     // Which action is in flight 
     const [loadingAction, setLoadingAction] = useState(null);
     const isLoading = loadingAction !== null;
@@ -49,11 +52,11 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
     // A 401 means the token itself is dead (e.g. "log out everywhere")
     const handleUnauthorized = (response, result) => {
         if (response.status === 401) {
-            showToast('Your session has expired. Please log in again.', 'danger');
+            showToast(t('toast-session-expired'), 'danger');
             switchToLogout();
             return true;
         }
-        showToast(result.message, 'danger');
+        showToast(apiMessage(result), 'danger');
         return false;
     };
 
@@ -66,35 +69,35 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
             const currentPasswordProvided = current_password.length > 0;
 
             if ((!hasDataChanges && !hasPasswordChange)) {
-                showToast('No changes detected.', 'info');
+                showToast(t('toast-no-changes'), 'info');
                 setLoadingAction(null);
                 return;
             }
             // The current password is always required to make any change
             if (!currentPasswordProvided) {
-                showToast('Type your current password.', 'danger');
+                showToast(t('toast-current-pass'), 'danger');
                 setLoadingAction(null);
                 return;
             }
 
             if (email && !isValidEmail(email)) {
-                showToast('Please enter a valid email address', 'danger');
+                showToast(t('toast-invalid-email'), 'danger');
                 return;
             }
             if (current_password && !isValidPassword(current_password)) {
-                showToast('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character', 'danger');
+                showToast(t('toast-invalid-pass'), 'danger');
                 return;
             }
             if (password && !isValidPassword(password)) {
-                showToast('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character', 'danger');
+                showToast(t('toast-invalid-pass'), 'danger');
                 return;
             }
             if (firstName && !isValidName(firstName)) {
-                showToast('Please enter a valid first name (1-50 characters, letters, hyphens, apostrophes only)', 'danger');
+                showToast(t('toast-invalid-first-name'), 'danger');
                 return;
             }
             if (lastName && !isValidName(lastName)) {
-                showToast('Please enter a valid last name (1-50 characters, letters, hyphens, apostrophes only)', 'danger');
+                showToast(t('toast-invalid-last-name'), 'danger');
                 return;
             }
 
@@ -123,6 +126,7 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
 
             const data = await response.json();
             if (!response.ok) {
+                if (data.code === 'invalid-password') setCurrent_Password('');
                 handleUnauthorized(response, data);
                 return;
             }
@@ -135,7 +139,7 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
             });
             setPassword('');
             setCurrent_Password('');
-            showToast('Edit successful!', 'success');
+            showToast(t('toast-edit-success'), 'success');
 
         } catch (err) {
             showToast(err.message, 'danger');
@@ -166,7 +170,7 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
             const exportData = result.data;
             downloadBlob(new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' }), 'my-data.json');
             downloadBlob(new Blob(['\uFEFF' + toCsv(exportData)], { type: 'text/csv;charset=utf-8' }), 'my-data.csv');
-            showToast('An export of account data had been downloaded.', 'success');
+            showToast(t('toast-export-success'), 'success');
         } catch (err) {
             showToast(err.message, 'danger');
         } finally {
@@ -208,7 +212,7 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
     // Called only after the delete button has already been clicked once (the "Confirm?" state below)
     const handleDelete = async () => {
         if (current_password === '') {
-            showToast('Type your password.', 'danger');
+            showToast(t('toast-type-pass'), 'danger');
             return;
         }
 
@@ -229,17 +233,24 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
 
             const data = await response.json();
             if (!response.ok) {
+                if (data.code === 'invalid-password') setCurrent_Password('');
                 handleUnauthorized(response, data);
                 return;
             }
 
-            showToast('Account deleted successfully.', 'success');
+            showToast(t('toast-delete-success'), 'success');
             switchToLogout();
         } catch (err) {
             showToast(err.message, 'danger');
         } finally {
             setLoadingAction(null);
         }
+    };
+
+    // Tracked like every other action so the rest of the buttons are disabled until the logout finishes
+    const handleLogout = async () => {
+        setLoadingAction('logout');
+        await switchToLogout();
     };
 
     const handleLogoutDevices = async () => {
@@ -262,7 +273,7 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                 return;
             }
 
-            showToast('Logged out of the other devices.', 'success');
+            showToast(t('toast-logout-others-success'), 'success');
         } catch (err) {
             showToast(err.message, 'danger');
         } finally {
@@ -271,24 +282,24 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
     }
 
     if (isLoading && Object.keys(originalData).length === 0) {
-        return <h1 className="text-center my-5">Loading Profile Data...</h1>;
+        return <h1 className="text-center my-5">{t('loading-profile')}</h1>;
     }
 
     return (
         <>
-            <h1 ref={headingRef} tabIndex={-1} className="p-0 my-3 text-center">Edit Profile</h1>
+            <h1 ref={headingRef} tabIndex={-1} className="p-0 my-3 text-center">{t('edit-profile')}</h1>
 
             <div className="row p-0 mb-4 w-100 d-flex justify-content-around align-items-center" id="list-form">
                 <div className="col-10 col-md-8 mb-4">
                     <label className="form-label mb-0" htmlFor="email">
-                        <span className="h2">Email</span>
+                        <span className="h2">{t('edit-email')}</span>
                     </label>
                     <input
                         type="email"
                         className="form-control"
                         id="email"
-                        placeholder="Write your email here"
-                        aria-label="Enter your email"
+                        placeholder={t('edit-email-placeholder')}
+                        aria-label={t('edit-email-aria')}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         disabled={isLoading}
@@ -296,14 +307,14 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                 </div>
                 <div className="col-10 col-md-8 mb-4">
                     <label htmlFor="current_password" className="form-label mb-0">
-                        <span className="h2">Current Password</span>
+                        <span className="h2">{t('current-pass')}</span>
                     </label>
                     <input
                         type="password"
                         className="form-control"
                         id="current_password"
                         placeholder="*********"
-                        aria-label="Write your current password here"
+                        aria-label={t('current-pass-aria')}
                         value={current_password}
                         minLength={8}
                         onChange={(e) => setCurrent_Password(e.target.value)}
@@ -312,32 +323,32 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                 </div>
                 <div className="col-10 col-md-8 mb-4">
                     <label htmlFor="password" className="form-label mb-0">
-                        <span className="h2">Change Password</span>
+                        <span className="h2">{t('change-pass')}</span>
                     </label>
                     <input
                         type="password"
                         className="form-control"
                         id="password"
                         placeholder="*********"
-                        aria-label="Write your new password here"
+                        aria-label={t('change-pass-aria')}
                         aria-describedby="password-conditions"
                         value={password}
                         minLength={8}
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={isLoading}
                     />
-                    <span id="password-conditions" className="d-flex text-start conditions">At least 8 characters long with uppercase, lowercase, number, and special character</span>
+                    <span id="password-conditions" className="d-flex text-start conditions">{t('conditions')}</span>
                 </div>
                 <div className="col-10 col-md-8 mb-4">
                     <label htmlFor="first-name" className="form-label mb-0">
-                        <span className="h2">First name</span>
+                        <span className="h2">{t('first-name')}</span>
                     </label>
                     <input
                         type="text"
                         className="form-control"
                         id="first-name"
-                        placeholder="First Name"
-                        aria-label="Write your first name here"
+                        placeholder={t('first-name-placeholder')}
+                        aria-label={t('first-name-aria')}
                         aria-describedby="first-name-conditions"
                         value={firstName}
                         minLength={1}
@@ -345,18 +356,18 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                         onChange={(e) => setFirstName(e.target.value)}
                         disabled={isLoading}
                     />
-                    <span id="first-name-conditions" className="d-flex text-start conditions">At most 50 characters long</span>
+                    <span id="first-name-conditions" className="d-flex text-start conditions">{t('name-conditions')}</span>
                 </div>
                 <div className="col-10 col-md-8 mb-4">
                     <label htmlFor="last-name" className="form-label mb-0">
-                        <span className="h2">Last name</span>
+                        <span className="h2">{t('last-name')}</span>
                     </label>
                     <input
                         type="text"
                         className="form-control"
                         id="last-name"
-                        placeholder="Last Name"
-                        aria-label="Write your last name here"
+                        placeholder={t('last-name-placeholder')}
+                        aria-label={t('last-name-aria')}
                         aria-describedby="last-name-conditions"
                         value={lastName}
                         minLength={1}
@@ -364,10 +375,10 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                         onChange={(e) => setLastName(e.target.value)}
                         disabled={isLoading}
                     />
-                    <span id="last-name-conditions" className="d-flex text-start conditions">At most 50 characters long</span>
+                    <span id="last-name-conditions" className="d-flex text-start conditions">{t('name-conditions')}</span>
                 </div>
                 <div className="col-10 col-md-8 mb-4">
-                    <h5>Profile created at: {cre}</h5>
+                    {createdAt && <h5>{t('created-at', { date: cre })}</h5>}
                 </div>
             </div>
 
@@ -377,12 +388,12 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                         type="button"
                         className="btn px-0 controls text-center mb-3 btn-primary"
                         id="edit"
-                        aria-label="Edit your profile"
+                        aria-label={t('edit-aria')}
                         onClick={handleEdit}
                         disabled={isLoading}
                     >
                         <span className="d-flex text-center justify-content-center button-span">
-                            {loadingAction === 'edit' ? 'Editing...' : 'Edit account info'}
+                            {loadingAction === 'edit' ? t('editing') : t('edit-button')}
                         </span>
                     </button>
                 </div>
@@ -391,12 +402,12 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                         type="button"
                         className="btn px-0 controls text-center mb-3 btn-primary"
                         id="export"
-                        aria-label="Export your account data"
+                        aria-label={t('export-aria')}
                         onClick={handleExport}
                         disabled={isLoading}
                     >
                         <span className="d-flex text-center justify-content-center button-span">
-                            {loadingAction === 'export' ? 'Exporting...' : 'Export account info'}
+                            {loadingAction === 'export' ? t('exporting') : t('export-button')}
                         </span>
                     </button>
                 </div>
@@ -405,12 +416,12 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                         type="button"
                         className="btn px-0 controls text-center mb-3 btn-danger"
                         id="log-out"
-                        aria-label="Log out of your account"
-                        onClick={switchToLogout}
+                        aria-label={t('logout-device-aria')}
+                        onClick={handleLogout}
                         disabled={isLoading}
                     >
                         <span className="d-flex text-center justify-content-center button-span">
-                            Logout from this device
+                            {loadingAction === 'logout' ? t('logging-out') : t('logout-device')}
                         </span>
                     </button>
                 </div>
@@ -419,12 +430,12 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                         type="button"
                         className="btn px-0 controls text-center mb-3 btn-danger"
                         id="log-out-devices"
-                        aria-label="Log out of other devices"
+                        aria-label={t('logout-others-aria')}
                         onClick={handleLogoutDevices}
                         disabled={isLoading}
                     >
                         <span className="d-flex text-center justify-content-center button-span">
-                            {loadingAction === 'logoutDevices' ? 'Logging out...' : 'Logout from other devices'}
+                            {loadingAction === 'logoutDevices' ? t('logging-out') : t('logout-others')}
                         </span>
                     </button>
                 </div>
@@ -433,12 +444,12 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                         type="button"
                         className="btn px-0 controls text-center mb-3 btn-danger"
                         id="delete"
-                        aria-label={deleteConfirm ? 'Confirm account deletion' : 'Delete your account'}
+                        aria-label={deleteConfirm ? t('delete-confirm-aria') : t('delete-aria')}
                         onClick={() => deleteConfirm ? handleDelete() : setdeleteConfirm(true)}
                         disabled={isLoading}
                     >
                         <span className="d-flex text-center justify-content-center button-span">
-                            {loadingAction === 'delete' ? 'Deleting...' : (deleteConfirm ? 'Are you sure?' : 'Delete account')}
+                            {loadingAction === 'delete' ? t('deleting') : (deleteConfirm ? t('delete-confirm') : t('delete-button'))}
                         </span>
                     </button>
                 </div>

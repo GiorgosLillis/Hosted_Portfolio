@@ -1,6 +1,9 @@
 import { showToast } from '../common/toast.js';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
+import i18next, { apiMessage } from '../common/i18n.js';
+
+const t = (key, options) => i18next.t(key, options);
 
 loadRecaptchaScript();
 
@@ -16,7 +19,6 @@ form.addEventListener("submit", async function (e) {
     }
 
     const submitBtn = document.getElementById('Email-Submit');
-    const originalBtnText = submitBtn.innerHTML;
 
     try {
         const token = await getRecaptchaToken('submit');
@@ -30,13 +32,13 @@ form.addEventListener("submit", async function (e) {
         // Same rules the server enforces, catches obvious mistakes before making the request
         const errors = [];
         if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            errors.push('Please enter a valid email address');
+            errors.push(t('toast-invalid-email'));
         }
         if (!formData.subject || formData.subject.trim().length < 1 || formData.subject.length > 100) {
-            errors.push('Subject must be between 1-100 characters');
+            errors.push(t('subject-length'));
         }
         if (!formData.message ||formData.message.trim().length < 1 || formData.message.length > 1000) {
-            errors.push('Message must be between 1-1000 characters');
+            errors.push(t('message-length'));
         }
 
         if (errors.length > 0) {
@@ -44,7 +46,7 @@ form.addEventListener("submit", async function (e) {
             return;
         }
 
-        submitBtn.innerHTML = '<div class="status"><span class="spinner-border" role="status" aria-hidden="true"></span> Sending...</div>';
+        submitBtn.innerHTML = '<div class="status"><span class="spinner-border" role="status" aria-hidden="true"></span> ' + t('sending') + '</div>';
         submitBtn.disabled = true;
 
         const response = await fetchWithTimeout("/api/email", {
@@ -60,16 +62,16 @@ form.addEventListener("submit", async function (e) {
         const result = await response.json();
 
         if (response.ok) {
-            showToast(result.message || "Message sent successfully!", "success");
+            showToast(apiMessage(result, t('email-sent')), "success");
             form.reset();
         } else {
-            showToast(result.message || "Failed to send message.", "danger");
+            showToast(apiMessage(result, t('email-failed')), "danger");
         }
     } catch (err) {
         console.error(err);
-        showToast("An error occurred. Please try again later.", "danger");
+        showToast(t('error-try-later'), "danger");
     } finally {
-        submitBtn.innerHTML = originalBtnText;
+        submitBtn.textContent = t('send-email');
         submitBtn.disabled = false;
         form.classList.remove('was-validated');
     }

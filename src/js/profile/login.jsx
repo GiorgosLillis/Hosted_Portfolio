@@ -3,6 +3,8 @@ import { useAuth } from './auth.jsx';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { isValidEmail, isValidPassword } from '../common/validation.js';
 import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
+import { useTranslation } from 'react-i18next';
+import { apiMessage } from '../common/i18n.js';
 
 const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
     const [email, setEmail] = useState('');
@@ -10,6 +12,7 @@ const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth() || {};
     const headingRef = useRef(null);
+    const { t } = useTranslation();
 
     useEffect(() => {
         loadRecaptchaScript();
@@ -23,11 +26,11 @@ const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
         try {
             // Same format rules the server enforces
             if (!isValidEmail(email)) {
-                throw new Error('Please enter a valid email address');
+                throw new Error(t('toast-invalid-email'));
             }
 
             if (!isValidPassword(password)) {
-                throw new Error('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character');
+                throw new Error(t('toast-invalid-pass'));
             }
 
             const token = await getRecaptchaToken('login');
@@ -45,13 +48,14 @@ const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
             });
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.message || 'Something went wrong');
+                if (data.code === 'invalid-credentials') setPassword('');
+                throw new Error(apiMessage(data, t('toast-something-wrong')));
             }
 
             login(data.user);
             setPassword('');
             setEmail('');
-            showToast('Login successful!', 'success');
+            showToast(t('toast-login-success'), 'success');
 
         } catch (err) {
             showToast(err.message, 'danger');
@@ -62,19 +66,19 @@ const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
 
     return (
         <>
-            <h1 ref={headingRef} tabIndex={-1} className="p-0 my-3 text-center">Login</h1>
+            <h1 ref={headingRef} tabIndex={-1} className="p-0 my-3 text-center">{t('login')}</h1>
 
             <div className="row p-0 mb-4 w-100 d-flex justify-content-around align-items-center" id="list-form">
                 <div className="col-10 col-md-8 mb-4">
                     <label className="form-label mb-0" htmlFor="email">
-                        <span className="h2">Email</span>
+                        <span className="h2">{t('edit-email')}</span>
                     </label>
                     <input
                         type="email"
                         className="form-control"
                         id="email"
-                        placeholder="Write your email here"
-                        aria-label="Enter your email"
+                        placeholder={t('edit-email-placeholder')}
+                        aria-label={t('edit-email-aria')}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         disabled={isLoading}
@@ -82,14 +86,14 @@ const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
                 </div>
                 <div className="col-10 col-md-8 mb-4">
                     <label htmlFor="password" className="form-label mb-0">
-                        <span className="h2">Password</span>
+                        <span className="h2">{t('password')}</span>
                     </label>
                     <input
                         type="password"
                         className="form-control"
                         id="password"
                         placeholder="*********"
-                        aria-label="Write your password here"
+                        aria-label={t('password-aria')}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={isLoading}
@@ -103,40 +107,40 @@ const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
                         type="button"
                         className="btn btn-sm px-0 filter-btn text-center mb-3"
                         id="sign-in"
-                        aria-label="Sign in to your account"
+                        aria-label={t('sign-in-aria')}
                         onClick={handleLogin}
                         disabled={isLoading}
                     >
                         <span className="d-flex text-center justify-content-center button-span">
-                            {isLoading ? 'Signing in...' : 'Sign-in'}
+                            {isLoading ? t('signing-in') : t('sign-in')}
                         </span>
                     </button>
                 </div>
                 <div className="col-12 col-md-10 d-flex justify-content-center align-items-center">
-                    <p className="mb-0 profile-span">
-                        Forgot your password?{' '}
+                    <p className="mb-0 profile-span text-center">
+                        {t('forgot-prompt')}{' '}
                         <button
                             type="button"
                             className="p-0 m-0 align-baseline profile-btn"
-                            aria-label="Click here to reset password"
+                            aria-label={t('reset-link-aria')}
                             onClick={switchToForgot}
                             disabled={isLoading}
                         >
-                            Reset password
+                            {t('reset-password')}
                         </button>
                     </p>
                 </div>
                 <div className="col-12 col-md-10 d-flex justify-content-center align-items-center">
                     <p className="mb-0 profile-span">
-                        Don't have an account?{' '}
+                        {t('no-account')}{' '}
                         <button
                             type="button"
                             className="p-0 m-0 align-baseline profile-btn"
-                            aria-label="Click here to sign up"
+                            aria-label={t('sign-up-link-aria')}
                             onClick={switchToSignUp}
                             disabled={isLoading}
                         >
-                            Sign Up
+                            {t('sign-up')}
                         </button>
                     </p>
                 </div>

@@ -11,13 +11,25 @@
     />
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css"
+      integrity="sha384-Bk5cbLkZQ5raZ0+H2/+VbfYx3WpvxvQK4zqXZr7sYODuaX7bKXoSOnipQxkaS8sv"
+      crossorigin="anonymous"
     />
-    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.js"
+      integrity="sha384-wziAfh6b/qT+3LrqebF9WeK4+J5sehS6FA10J1t3a866kJ/fvU5UwofWnQyzLtwu"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.css"
+      integrity="sha384-/rJKQnzOkEo+daG0jMjU1IwwY9unxt1NBw3Ef2fmOJ3PW/TfAg2KXVoWwMZQZtw9"
+      crossorigin="anonymous"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -32,7 +44,8 @@
 
     <script type="module" src="src/js/common/effects.js"></script>
     <script type="module" src="src/js/common/appworker.js"></script>
-    <title>SHOPPING LIST</title>
+    <script type="module" src="src/js/common/i18n.js"></script>
+    <title data-i18n="shopping">SHOPPING LIST</title>
     <link
       rel="icon"
       href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/icons/list-check.svg"
@@ -66,7 +79,9 @@
   </head>
 
   <body class="theme-default mb-5 pb-4">
-    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <a href="#main-content" class="skip-link" data-i18n="skip"
+      >Skip to main content</a
+    >
     <header>
       <nav
         id="navbar"
@@ -80,6 +95,8 @@
             aria-controls="navbarColor"
             aria-expanded="false"
             aria-label="Toggle color themes"
+            data-i18n="colors"
+            data-i18n-attr="aria-label:colors-aria"
           >
             Colors ▼
           </button>
@@ -89,8 +106,10 @@
                 <button
                   type="button"
                   class="btn fs-1"
-                  onclick="setTheme('light')"
+                  data-theme="light"
                   aria-label="Light Mode"
+                  data-i18n="light-mode"
+                  data-i18n-attr="aria-label:light-mode-aria"
                 >
                   Light Mode
                 </button>
@@ -99,8 +118,10 @@
                 <button
                   type="button"
                   class="btn fs-1"
-                  onclick="setTheme('dark')"
+                  data-theme="dark"
                   aria-label="Dark Mode"
+                  data-i18n="dark-mode"
+                  data-i18n-attr="aria-label:dark-mode-aria"
                 >
                   Dark Mode
                 </button>
@@ -109,8 +130,10 @@
                 <button
                   type="button"
                   class="btn fs-1"
-                  onclick="setTheme('default')"
+                  data-theme="default"
                   aria-label="Default Mode"
+                  data-i18n="default-mode"
+                  data-i18n-attr="aria-label:default-mode-aria"
                 >
                   Default
                 </button>
@@ -124,6 +147,8 @@
             aria-controls="navbarNav"
             aria-expanded="false"
             aria-label="Toggle navigation"
+            data-i18n="pages"
+            data-i18n-attr="aria-label:nav-toggle-aria"
           >
             Pages ▼
           </button>
@@ -136,10 +161,12 @@
                 <a
                   class="nav-link fs-1"
                   href="./profile.html"
-                  aria-label="Go to profile"
+                  aria-label="Go to account"
                   target="_blank"
                   rel="noopener noreferrer"
-                  >Profile</a
+                  data-i18n="account"
+                  data-i18n-attr="aria-label:account-aria"
+                  >Account</a
                 >
               </li>
               <li class="nav-item navbar-brand">
@@ -147,6 +174,8 @@
                   class="nav-link fs-1"
                   href="./list.html"
                   aria-label="Go to list"
+                  data-i18n="list"
+                  data-i18n-attr="aria-label:list-aria"
                   >List</a
                 >
               </li>
@@ -154,8 +183,10 @@
                 <a
                   class="nav-link fs-1"
                   href="./weather.html"
-                  aria-label="Go to weather"
-                  >Weather</a
+                  aria-label="Go to forecast"
+                  data-i18n="weather"
+                  data-i18n-attr="aria-label:weather-aria"
+                  >Forecast</a
                 >
               </li>
             </ul>
@@ -174,38 +205,43 @@
       <form
         class="my-5 p-0 item-input container col-12 col-md-8 col-lg-6 d-flex flex-column justify-content-center align-items-center"
       >
-        <h1 class="p-0 mb-4 text-center">SHOPPING LIST</h1>
+        <h1 class="p-0 mb-4 text-center" data-i18n="shopping">SHOPPING LIST</h1>
         <div
           class="row p-0 mb-3 w-100 d-flex justify-content-around align-items-center"
           id="list-form"
         >
           <div class="col-6 mb-3">
             <label class="form-label mb-0" for="category"
-              ><span class="h2">Category</span></label
+              ><span class="h2" data-i18n="category">Category</span></label
             >
             <select
               class="form-select"
               id="category"
               aria-label="Select Category"
+              data-i18n-attr="aria-label:select-category-aria"
             >
-              <option value="">Select Category</option>
-              <option value="Produce">Produce</option>
-              <option value="Dairy">Dairy</option>
-              <option value="Meat">Meat</option>
-              <option value="Seafood">Seafood</option>
-              <option value="Bakery">Bakery</option>
-              <option value="Pantry">Pantry</option>
-              <option value="Frozen">Frozen</option>
-              <option value="Beverages">Beverages</option>
-              <option value="Snacks">Snacks</option>
-              <option value="Household">Household</option>
-              <option value="Personal Care">Personal Care</option>
-              <option value="Other">Other</option>
+              <option value="" data-i18n="select-category">
+                Select Category
+              </option>
+              <option value="Produce" data-i18n="produce">Produce</option>
+              <option value="Dairy" data-i18n="dairy">Dairy</option>
+              <option value="Meat" data-i18n="meat">Meat</option>
+              <option value="Seafood" data-i18n="seafood">Seafood</option>
+              <option value="Bakery" data-i18n="bakery">Bakery</option>
+              <option value="Pantry" data-i18n="pantry">Pantry</option>
+              <option value="Frozen" data-i18n="frozen">Frozen</option>
+              <option value="Beverages" data-i18n="beverages">Beverages</option>
+              <option value="Snacks" data-i18n="snacks">Snacks</option>
+              <option value="Household" data-i18n="household">Household</option>
+              <option value="Personal Care" data-i18n="personal">
+                Personal Care
+              </option>
+              <option value="Other" data-i18n="other">Other</option>
             </select>
           </div>
           <div class="col-6 mb-3">
             <label for="item" class="form-label mb-0"
-              ><span class="h2">Item on cart</span></label
+              ><span class="h2" data-i18n="cart">Item on cart</span></label
             >
             <input
               type="text"
@@ -213,11 +249,12 @@
               id="item"
               placeholder="Write your item here"
               aria-label="Select Item on cart"
+              data-i18n-attr="aria-label:cart-aria;placeholder:cart-placeholder"
             />
           </div>
           <div class="col-6 col-md-3 mb-3">
             <label for="quantity" class="form-label mb-0"
-              ><span class="h2">Quantity</span></label
+              ><span class="h2" data-i18n="quantity">Quantity</span></label
             >
             <input
               type="number"
@@ -227,27 +264,28 @@
               placeholder="e.g. 2.5"
               min="0"
               step="0.01"
+              data-i18n-attr="aria-label:quantity-aria;placeholder:quantity-placeholder"
             />
           </div>
           <div class="col-6 col-md-3 mb-3">
             <label for="unit" class="form-label mb-0"
-              ><span class="h2">Unit</span></label
+              ><span class="h2" data-i18n="unit">Unit</span></label
             >
-            <select class="form-select" id="unit" aria-label="Select Unit">
-              <option value="">Unit</option>
-              <option value="pcs">Pcs</option>
+            <select class="form-select" id="unit" aria-label="Select Unit" data-i18n-attr="aria-label:unit-aria">
+              <option value="" data-i18n="unit">Unit</option>
+              <option value="pcs" data-i18n="pcs">Pcs</option>
               <option value="kg">Kg</option>
               <option value="g">G</option>
               <option value="L">L</option>
               <option value="ml">Ml</option>
-              <option value="packs">Packs</option>
-              <option value="boxes">Boxes</option>
-              <option value="bottles">Bottles</option>
-              <option value="cans">Cans</option>
-              <option value="rolls">Rolls</option>
-              <option value="bags">Bags</option>
-              <option value="units">Units</option>
-              <option value="each">Each</option>
+              <option value="packs" data-i18n="packs">Packs</option>
+              <option value="boxes" data-i18n="boxes">Boxes</option>
+              <option value="bottles" data-i18n="bottles">Bottles</option>
+              <option value="cans" data-i18n="cans">Cans</option>
+              <option value="rolls" data-i18n="rolls">Rolls</option>
+              <option value="bags" data-i18n="bags">Bags</option>
+              <option value="units" data-i18n="units">Units</option>
+              <option value="each" data-i18n="each">Each</option>
             </select>
           </div>
         </div>
@@ -261,8 +299,12 @@
               id="filterCategory"
               aria-label="Filter list by product category"
               aria-pressed="false"
+              data-i18n-attr="aria-label:filter-category-aria"
             >
-              <p class="d-flex text-center justify-content-center mb-0">
+              <p
+                class="d-flex text-center justify-content-center mb-0"
+                data-i18n="filter-category"
+              >
                 Filter by category
               </p>
             </button>
@@ -274,8 +316,12 @@
               id="filterName"
               aria-label="Filter list by product name"
               aria-pressed="false"
+              data-i18n-attr="aria-label:filter-name-aria"
             >
-              <p class="d-flex text-center justify-content-center mb-0">
+              <p
+                class="d-flex text-center justify-content-center mb-0"
+                data-i18n="filter name"
+              >
                 Filter by name
               </p>
             </button>
@@ -287,8 +333,12 @@
               id="filterAll"
               aria-label="Filter list by product category and product name"
               aria-pressed="false"
+              data-i18n-attr="aria-label:filter-aria"
             >
-              <p class="d-flex text-center justify-content-center mb-0">
+              <p
+                class="d-flex text-center justify-content-center mb-0"
+                data-i18n="filter"
+              >
                 Filter by all
               </p>
             </button>
@@ -305,6 +355,8 @@
             class="btn btn-success my-3 border-3 list-btn text-center"
             id="submitBtn"
             aria-label="Add item to the list"
+            data-i18n="add"
+            data-i18n-attr="aria-label:add-aria"
           >
             Add
           </button>
@@ -315,6 +367,8 @@
             class="btn btn-primary my-3 border-3 list-btn text-center"
             id="resetBtn"
             aria-label="Reset the list"
+            data-i18n="reset"
+            data-i18n-attr="aria-label:reset-aria"
           >
             Reset
           </button>
@@ -325,6 +379,8 @@
             class="btn btn-danger my-3 border-3 list-btn text-center"
             id="downloadBtn"
             aria-label="Download the list"
+            data-i18n="download"
+            data-i18n-attr="aria-label:download-aria"
           >
             Download
           </button>
@@ -335,6 +391,8 @@
             class="btn btn-info my-3 border-3 list-btn text-center"
             id="uploadBtn"
             aria-label="Load a list"
+            data-i18n="load"
+            data-i18n-attr="aria-label:load-aria"
           >
             Load
           </button>
@@ -349,6 +407,8 @@
             class="btn btn-success my-3 border-3 list-btn text-center"
             id="saveBtn"
             aria-label="Save the item to your profile"
+            data-i18n="save"
+            data-i18n-attr="aria-label:save-aria"
           >
             Save
           </button>
@@ -359,6 +419,8 @@
             class="btn btn-danger my-3 border-3 list-btn text-center"
             id="deleteBtn"
             aria-label="Delete all items on your profile"
+            data-i18n="delete"
+            data-i18n-attr="aria-label:delete-list-aria"
           >
             Delete
           </button>
@@ -396,6 +458,23 @@
         ></ul>
       </section>
     </main>
+    <p class="recaptcha-attribution text-center mb-3">
+      This site is protected by reCAPTCHA and the Google
+      <a
+        href="https://policies.google.com/privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Privacy Policy</a
+      >
+      and
+      <a
+        href="https://policies.google.com/terms"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Terms of Service</a
+      >
+      apply.
+    </p>
     <div
       class="d-none d-lg-flex justify-content-left align-items-center fixed-bottom"
       id="time"

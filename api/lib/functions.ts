@@ -10,7 +10,7 @@ const redis = Redis.fromEnv();
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+;':",./?-])[A-Za-z\d@$!%*?&#^_+;':",./?-]{8,}$/;
-const nameRegex = /^[a-zA-Z'-]{1,50}$/;
+const nameRegex = /^[\p{L}\p{M}'-]{1,50}$/u;
 
 // Bounds a call to an upstream API so a hung third party can't hang function indefinitely
 export async function fetchWithTimeout(url: string, timeoutMs = 8000, options: RequestInit = {}): Promise<Response> {
@@ -37,7 +37,7 @@ export async function enforceRateLimit(res: VercelResponse, key: string, limit: 
     const { allowed, ttl } = await rateLimiter(key, limit, windowSeconds);
     if (!allowed) {
         res.setHeader('Retry-After', ttl);
-        res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
+        sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
     }
     return allowed;
 }
@@ -46,14 +46,16 @@ export async function enforceRateLimit(res: VercelResponse, key: string, limit: 
 export function handleApiError(res: VercelResponse, error: unknown, context: string) {
     const message = error instanceof Error ? error.message : String(error);
     if (message === 'Invalid or expired token.' || message === 'Not authenticated') {
-        return res.status(401).json({ success: false, message: 'Not authenticated' });
+        return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
     }
     console.error(context, error);
-    return res.status(500).json({
-        success: false,
-        message: 'An unexpected error occurred',
-        error: process.env.NODE_ENV === 'development' ? message : undefined
-    });
+    return sendStatus(res, 500, 'server-error', 'An unexpected error occurred', { error: process.env.NODE_ENV === 'development' ? message : undefined });
+}
+
+// Every API response with a status message goes through here: a stable `code` the client translates,
+// the English `message` as fallback, and any extra fields (e.g. ttl for rate limits) merged in flat
+export function sendStatus(res: VercelResponse, status: number, code: string, message: string, extra: Record<string, unknown> = {}) {
+    return res.status(status).json({ success: status < 400, code, message, ...extra });
 }
 
 export function setCorsHeaders(res: VercelResponse) {

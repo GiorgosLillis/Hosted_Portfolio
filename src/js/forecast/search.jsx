@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import Favorites from './favorite.jsx';
+import Recent from './recent.jsx';
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => ({
     value: hour,
@@ -71,7 +72,12 @@ const Header = ({
     isPushLoading,
     onTogglePush,
     notifyHour,
-    onChangeNotifyHour
+    onChangeNotifyHour,
+    isRecentOpen,
+    recent,
+    onSelectRecent,
+    onClearRecent,
+    onToggleRecent
 }) => {
 
     const handleSearchFromPanel = (city, country) => {
@@ -80,6 +86,7 @@ const Header = ({
 
     const searchToggleRef = useRef(null);
     const favoritesToggleRef = useRef(null);
+    const recentToggleRef = useRef(null);
 
     // Returns focus to the toggle button once its panel closes
     const wasSearchOpen = useRef(isSearchOpen);
@@ -98,26 +105,19 @@ const Header = ({
         wasFavoritesOpen.current = isFavoritesOpen;
     }, [isFavoritesOpen]);
 
+    const wasRecentOpen = useRef(isRecentOpen);
+    useEffect(() => {
+        if (wasRecentOpen.current && !isRecentOpen) {
+            recentToggleRef.current?.focus();
+        }
+        wasRecentOpen.current = isRecentOpen;
+    }, [isRecentOpen]);
+
     return (
         <header className="sticky-top">
             <nav id="navbar" className="navbar navbar-expand d-flex align-items-start">
                 <section className="container-fluid d-flex justify-content-end align-items-center px-0 py-2">
                     <ul className="navbar-nav d-flex align-items-center flex-row">
-                        <li className="nav-item mx-2 mx-md-3">
-                            <button onClick={onSaveFavorites} className="icon-button nav-button" aria-label="Save favorite locations">
-                                <i className="bi bi-cloud-upload-fill" aria-hidden="true"></i>
-                            </button>
-                        </li>
-                        <li className="nav-item mx-2 mx-md-3">
-                            <button ref={favoritesToggleRef} onClick={onToggleFavorites} className="icon-button nav-button" aria-label="Show favorite locations" aria-expanded={isFavoritesOpen} aria-controls="favorite-section">
-                                <i className="bi bi-star-fill" aria-hidden="true"></i>
-                            </button>
-                        </li>
-                        <li className="nav-item mx-2 mx-md-3">
-                            <button ref={searchToggleRef} onClick={onToggleSearch} className="icon-button nav-button" aria-label="Search for a location" aria-expanded={isSearchOpen} aria-controls="search-section">
-                                <i className="bi bi-search" aria-hidden="true"></i>
-                            </button>
-                        </li>
                         <li className={`nav-item ms-2 ms-md-3 ${isPushSubscribed ? 'me-1 me-md-2' : 'me-2 me-md-3'}`}>
                             <button
                                 onClick={onTogglePush}
@@ -144,6 +144,27 @@ const Header = ({
                                 </select>
                             </li>
                         )}
+                        <li className="nav-item mx-2 mx-md-3">
+                            <button ref={recentToggleRef} onClick={onToggleRecent} className="icon-button nav-button" aria-label="Recently searched cities" aria-expanded={isRecentOpen} aria-controls="recent-section">
+                                <i className="bi bi-clock-history" aria-hidden="true"></i>
+                            </button>
+                        </li>
+                        <li className="nav-item mx-2 mx-md-3">
+                            <button onClick={onSaveFavorites} className="icon-button nav-button" aria-label="Save favorite locations">
+                                <i className="bi bi-cloud-upload-fill" aria-hidden="true"></i>
+                            </button>
+                        </li>
+                        <li className="nav-item mx-2 mx-md-3">
+                            <button ref={favoritesToggleRef} onClick={onToggleFavorites} className="icon-button nav-button" aria-label="Show favorite locations" aria-expanded={isFavoritesOpen} aria-controls="favorite-section">
+                                <i className="bi bi-star-fill" aria-hidden="true"></i>
+                            </button>
+                        </li>
+                        <li className="nav-item mx-2 mx-md-3">
+                            <button ref={searchToggleRef} onClick={onToggleSearch} className="icon-button nav-button" aria-label="Search for a location" aria-expanded={isSearchOpen} aria-controls="search-section">
+                                <i className="bi bi-search" aria-hidden="true"></i>
+                            </button>
+                        </li>
+
                         <li className="nav-item mx-2 mx-md-3">
                             <a className="icon-button nav-button" href="./profile.html" aria-label="Go to profile" target="_blank" rel="noopener noreferrer">
                                 <i className="bi bi-person-fill" aria-hidden="true"></i>
@@ -172,6 +193,14 @@ const Header = ({
                     favorites={favorites}
                     onSelectFavorite={onSelectFavorite}
                     onClose={onToggleFavorites}
+                />
+            )}
+            {isRecentOpen && (
+                <Recent
+                    recent={recent}
+                    onSelectRecent={onSelectRecent}
+                    onClear={onClearRecent}
+                    onClose={onToggleRecent}
                 />
             )}
         </header>

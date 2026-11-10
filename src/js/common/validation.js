@@ -1,6 +1,6 @@
 export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+;':",./?-])[A-Za-z\d@$!%*?&#^_+;':",./?-]{8,}$/;
-export const nameRegex = /^[a-zA-Z'-]{1,50}$/;
+export const nameRegex = /^[\p{L}\p{M}'-]{1,50}$/u;
 
 export function isValidEmail(email) {
     return !!email && emailRegex.test(email);

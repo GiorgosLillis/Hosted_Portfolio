@@ -11,14 +11,25 @@
     />
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css"
+      integrity="sha384-Bk5cbLkZQ5raZ0+H2/+VbfYx3WpvxvQK4zqXZr7sYODuaX7bKXoSOnipQxkaS8sv"
+      crossorigin="anonymous"
     />
-    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.6/dist/purify.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.js"
+      integrity="sha384-wziAfh6b/qT+3LrqebF9WeK4+J5sehS6FA10J1t3a866kJ/fvU5UwofWnQyzLtwu"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.css"
+      integrity="sha384-/rJKQnzOkEo+daG0jMjU1IwwY9unxt1NBw3Ef2fmOJ3PW/TfAg2KXVoWwMZQZtw9"
+      crossorigin="anonymous"
     />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -31,7 +42,7 @@
     <link rel="stylesheet" href="src/css/styles.css" />
     <link rel="stylesheet" href="src/css/list.css" />
     <link rel="stylesheet" href="src/css/profile.css" />
-    <title>Reset password</title>
+    <title data-i18n="reset-password">Reset password</title>
     <link
       rel="icon"
       href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/icons/lock-fill.svg"
@@ -42,6 +53,7 @@
     <script type="module" src="src/js/common/toast.js"></script>
     <script type="module" src="src/js/profile/reset.js"></script>
     <script type="module" src="src/js/common/appworker.js"></script>
+    <script type="module" src="src/js/common/i18n.js"></script>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -49,7 +61,9 @@
   </head>
 
   <body class="theme-default mb-5 pb-4">
-    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <a href="#main-content" class="skip-link" data-i18n="skip"
+      >Skip to main content</a
+    >
     <header>
       <nav
         id="navbar"
@@ -62,7 +76,9 @@
             data-bs-target="#navbarColor"
             aria-controls="navbarColor"
             aria-expanded="false"
-            aria-label="Color Themes Toggle"
+            aria-label="Toggle color themes"
+            data-i18n="colors"
+            data-i18n-attr="aria-label:colors-aria"
           >
             Colors ▼
           </button>
@@ -72,8 +88,10 @@
                 <button
                   type="button"
                   class="btn fs-1"
-                  onclick="setTheme('light')"
+                  data-theme="light"
                   aria-label="Light Mode"
+                  data-i18n="light-mode"
+                  data-i18n-attr="aria-label:light-mode-aria"
                 >
                   Light Mode
                 </button>
@@ -82,8 +100,10 @@
                 <button
                   type="button"
                   class="btn fs-1"
-                  onclick="setTheme('dark')"
+                  data-theme="dark"
                   aria-label="Dark Mode"
+                  data-i18n="dark-mode"
+                  data-i18n-attr="aria-label:dark-mode-aria"
                 >
                   Dark Mode
                 </button>
@@ -92,8 +112,10 @@
                 <button
                   type="button"
                   class="btn fs-1"
-                  onclick="setTheme('default')"
+                  data-theme="default"
                   aria-label="Default Mode"
+                  data-i18n="default-mode"
+                  data-i18n-attr="aria-label:default-mode-aria"
                 >
                   Default
                 </button>
@@ -108,6 +130,8 @@
             aria-controls="navbarNav"
             aria-expanded="false"
             aria-label="Toggle navigation"
+            data-i18n="pages"
+            data-i18n-attr="aria-label:nav-toggle-aria"
           >
             Pages ▼
           </button>
@@ -123,6 +147,8 @@
                   aria-label="Go to home"
                   target="_blank"
                   rel="noopener noreferrer"
+                  data-i18n="home"
+                  data-i18n-attr="aria-label:home-aria"
                   >Home</a
                 >
               </li>
@@ -130,10 +156,12 @@
                 <a
                   class="nav-link fs-1"
                   href="./profile.html"
-                  aria-label="Go to profile"
+                  aria-label="Go to account"
                   target="_blank"
                   rel="noopener noreferrer"
-                  >Profile</a
+                  data-i18n="account"
+                  data-i18n-attr="aria-label:account-aria"
+                  >Account</a
                 >
               </li>
               <li class="nav-item navbar-brand">
@@ -141,6 +169,8 @@
                   class="nav-link fs-1"
                   href="./list.html"
                   aria-label="Go to list"
+                  data-i18n="list"
+                  data-i18n-attr="aria-label:list-aria"
                   >List</a
                 >
               </li>
@@ -148,8 +178,10 @@
                 <a
                   class="nav-link fs-1"
                   href="./weather.html"
-                  aria-label="Go to weather"
-                  >Weather</a
+                  aria-label="Go to forecast"
+                  data-i18n="weather"
+                  data-i18n-attr="aria-label:weather-aria"
+                  >Forecast</a
                 >
               </li>
             </ul>
@@ -165,7 +197,7 @@
         class="my-5 p-0 container item-input col-12 col-md-8 col-lg-6 d-flex flex-column justify-content-center align-items-center"
         id="resetForm"
       >
-        <h1 class="text-center">Reset password</h1>
+        <h1 class="text-center" data-i18n="reset-password">Reset password</h1>
         <div
           id="list-form"
           class="row p-0 mb-3 w-100 d-flex justify-content-around align-items-center"
@@ -178,8 +210,12 @@
               placeholder="New Password"
               aria-label="Type your new password"
               aria-describedby="new-pass-conditions"
+              data-i18n-attr="aria-label:new-pass-aria;placeholder:new-pass-placeholder"
             />
-            <span id="new-pass-conditions" class="d-flex text-start conditions"
+            <span
+              id="new-pass-conditions"
+              class="d-flex text-start conditions"
+              data-i18n="conditions"
               >At least 8 characters long with uppercase, lowercase, number, and
               special character</span
             >
@@ -191,6 +227,7 @@
               id="confirmPass"
               placeholder="Confirm Password"
               aria-label="Confirm your new password"
+              data-i18n-attr="aria-label:confirm-pass-aria;placeholder:confirm-pass-placeholder"
             />
           </div>
         </div>
@@ -200,12 +237,31 @@
             class="btn btn-sm px-0 filter-btn text-center mb-3"
             id="resetBtn"
             aria-label="Submit new password"
+            data-i18n="reset-button"
+            data-i18n-attr="aria-label:submit-pass-aria"
           >
             Reset Password
           </button>
         </div>
       </form>
     </main>
+    <p class="recaptcha-attribution text-center mb-3">
+      This site is protected by reCAPTCHA and the Google
+      <a
+        href="https://policies.google.com/privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Privacy Policy</a
+      >
+      and
+      <a
+        href="https://policies.google.com/terms"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Terms of Service</a
+      >
+      apply.
+    </p>
     <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
   </body>
 </html>

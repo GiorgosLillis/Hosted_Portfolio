@@ -56,7 +56,7 @@
 .hour-details {
     padding: 15px;
     font-size: 18px;
-    background-color: rgba(199, 197, 197, 0.3);
+    background-color: rgba(20, 30, 45, 0.55);
     backdrop-filter: blur(15px);
     transition: all 0.3s ease-in-out;
     color: white;

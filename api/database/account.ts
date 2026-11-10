@@ -2,7 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
 import sanitizeHTML from '../lib/sanitize.js';
-import { checkToken, isValidEmail, isValidPassword, isValidName, setAuthCookies, clearAuthCookies, setCorsHeaders, getClientIp, enforceRateLimit, handleApiError } from '../lib/functions.js';
+import { checkToken, isValidEmail, isValidPassword, isValidName, setAuthCookies, clearAuthCookies, setCorsHeaders, getClientIp, enforceRateLimit, handleApiError, sendStatus } from '../lib/functions.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
 import { Redis } from '@upstash/redis';
@@ -30,10 +30,7 @@ async function accountHandler(req: VercelRequest, res: VercelResponse) {
         return deleteAccount(req, res);
     }
 
-    return res.status(405).json({
-        success: false,
-        message: 'Only GET, PUT and DELETE requests are allowed'
-    });
+    return sendStatus(res, 405, 'method-not-allowed', 'Only GET, PUT and DELETE requests are allowed');
 }
 
 async function getAccount(req: VercelRequest, res: VercelResponse) {
@@ -52,7 +49,7 @@ async function getAccount(req: VercelRequest, res: VercelResponse) {
         };
         res.status(200).json({ success: true, user: userData });
     } catch (error) {
-        res.status(401).json({ success: false, message: 'Not authenticated' });
+        sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
     }
 }
 
@@ -60,7 +57,7 @@ async function editAccount(req: VercelRequest, res: VercelResponse) {
     try {
         const user = await checkToken(req);
         if (!user) {
-            return res.status(401).json({ success: false, message: 'Not authenticated' });
+            return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
         }
 
         const ip = getClientIp(req);
@@ -68,10 +65,7 @@ async function editAccount(req: VercelRequest, res: VercelResponse) {
         if (!(await enforceRateLimit(res, `edit_user_attempt:${user.id}`, 15, 60))) return; // 15 requests per minute
 
         if (!process.env.JWT_SECRET) {
-            return res.status(500).json({
-                success: false,
-                message: 'JWT secret is not configured on the server'
-            });
+            return sendStatus(res, 500, 'server-misconfigured', 'JWT secret is not configured on the server');
         }
 
         const { email, current_password, password, first_name, last_name } = req.body;
@@ -85,25 +79,16 @@ async function editAccount(req: VercelRequest, res: VercelResponse) {
 
         // current_password, email, first_name and last_name are required to make any change, new password is optional
         if (!isValidEmail(email) || !isValidName(first_name) || !isValidName(last_name) || !isValidPassword(current_password)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid input. Please ensure all fields are correctly filled.'
-            });
+            return sendStatus(res, 400, 'invalid-input', 'Invalid input. Please ensure all fields are correctly filled.');
         }
         if (password && !isValidPassword(password)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid input. Please ensure all fields are correctly filled.'
-            });
+            return sendStatus(res, 400, 'invalid-input', 'Invalid input. Please ensure all fields are correctly filled.');
         }
 
         // Confirm the current password
         const passwordMatch = await bcrypt.compare(current_password, user.passwordHash);
         if (!passwordMatch) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid password'
-            });
+            return sendStatus(res, 400, 'invalid-password', 'Invalid password');
         }
 
         if (email) updateData.email = email;
@@ -117,7 +102,7 @@ async function editAccount(req: VercelRequest, res: VercelResponse) {
         }
 
         if (Object.keys(updateData).length === 0) {
-            return res.status(400).json({ success: false, message: 'No data to update.' });
+            return sendStatus(res, 400, 'no-data', 'No data to update.');
         }
 
         const updatedUser = await prisma.user.update({
@@ -155,17 +140,13 @@ async function editAccount(req: VercelRequest, res: VercelResponse) {
             console.error('Failed to send edit confirmation email:', error);
         }
 
-        return res.status(200).json({
-            success: true,
-            message: 'User updated successfully',
-            user: {
+        return sendStatus(res, 200, 'user-updated', 'User updated successfully', { user: {
                 id: updatedUser.id,
                 email: updatedUser.email,
                 firstName: updatedUser.firstName,
                 lastName: updatedUser.lastName,
                 tokenVersion: updatedUser.tokenVersion
-            }
-        });
+            } });
 
     } catch (error) {
         return handleApiError(res, error, 'Server error on edit:');
@@ -176,7 +157,7 @@ async function deleteAccount(req: VercelRequest, res: VercelResponse) {
     try {
         const user = await checkToken(req);
         if (!user) {
-            return res.status(401).json({ success: false, message: 'Not authenticated' });
+            return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
         }
 
         const ip = getClientIp(req);
@@ -185,24 +166,15 @@ async function deleteAccount(req: VercelRequest, res: VercelResponse) {
 
         const { password } = req.body;
         if (!password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Password is required for account deletion.'
-            });
+            return sendStatus(res, 400, 'password-required', 'Password is required for account deletion.');
         }
 
         if (!isValidPassword(password)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid password.'
-            });
+            return sendStatus(res, 400, 'invalid-password', 'Invalid password.');
         }
         const passwordMatch = await bcrypt.compare(password, user.passwordHash);
         if (!passwordMatch) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid password.'
-            });
+            return sendStatus(res, 401, 'invalid-password', 'Invalid password.');
         }
 
         await prisma.user.delete({
@@ -213,17 +185,11 @@ async function deleteAccount(req: VercelRequest, res: VercelResponse) {
 
         clearAuthCookies(res);
 
-        return res.status(200).json({
-            success: true,
-            message: 'Account deleted successfully.'
-        });
+        return sendStatus(res, 200, 'account-deleted', 'Account deleted successfully.');
 
     } catch (error) {
         if ((error as { code?: string }).code === 'P2025') {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found.'
-            });
+            return sendStatus(res, 404, 'user-not-found', 'User not found.');
         }
         return handleApiError(res, error, 'Server error on delete:');
     }

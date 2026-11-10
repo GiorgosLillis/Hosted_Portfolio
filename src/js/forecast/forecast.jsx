@@ -7,6 +7,7 @@ import WeatherForecast from './daily-card.jsx';
 import ViewToggle from './view-toggle.jsx';
 import HourlyForecast from './hourly-card.jsx';
 import Header from './search.jsx';
+import { loadRecents, addRecents, clearRecents } from '../weather/recent.js';
 import { saveCityList, loadCityList } from './memory-handle.js';
 import { isPushSupported, getExistingSubscription, subscribeToWeatherAlerts, unsubscribeFromWeatherAlerts, getStoredNotifyHour } from '../weather/push-notifications.js';
 import { showToast } from '../common/toast.js';
@@ -29,12 +30,13 @@ function Forecast() {
     const [selectedDate, setSelectedDate] = useState(null);
     const [favorites, setFavorites] = useState([]);
     const [removedFavorites, setRemovedFavorites] = useState([]);
-    const [openPanel, setOpenPanel] = useState(null); // null, 'search', or 'favorites'
+    const [openPanel, setOpenPanel] = useState(null); // null, 'search', 'favorites' or 'recent'
     const [searchCity, setSearchCity] = useState('');
     const [searchCountry, setSearchCountry] = useState('');
     const [isPushSubscribed, setIsPushSubscribed] = useState(false);
     const [isPushLoading, setIsPushLoading] = useState(false);
     const [notifyHour, setNotifyHour] = useState(getStoredNotifyHour());
+    const [recent, setRecent] = useState(loadRecents);
 
 
     // Load saved favorite cities on first render (server if logged in, localStorage otherwise)
@@ -121,6 +123,7 @@ function Forecast() {
             setWeatherData(weatherData);
             setLastUpdate(new Date(weatherData.time));
             localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify({ ...location, timestamp: Date.now() }));
+            setRecent(addRecents(location));
 
             if (!country) {
                 setWarning("No country specified. Picked the most common result.");
@@ -229,6 +232,11 @@ function Forecast() {
         document.dispatchEvent(new CustomEvent('saveFavorites'));
     };
 
+    const handleSelectRecent = (rec) => {
+        setOpenPanel(null);
+        fetchWeatherDataForCity(rec);
+    };
+
     const togglePanel = (panel) => {
         setOpenPanel(prev => prev === panel ? null : panel);
     };
@@ -326,6 +334,11 @@ function Forecast() {
                 onTogglePush={handleTogglePush}
                 notifyHour={notifyHour}
                 onChangeNotifyHour={handleChangeNotifyHour}
+                recent={recent}
+                isRecentOpen={openPanel === 'recent'}
+                onToggleRecent={() => togglePanel('recent')}
+                onSelectRecent={handleSelectRecent}
+                onClearRecent={() => setRecent(clearRecents())}
             />
 
             <div id="main-content">
@@ -358,6 +371,8 @@ function Forecast() {
                             isToday={selectedDate ? new Date().toDateString() === selectedDate.toDateString() : true}
                             Unit={Unit}
                             dailyForecast={weatherData.daily}
+                            onDetailsOpen={() => setOpenPanel(prev => prev === 'recent' ? null : prev)}
+                            closeDetails={openPanel === 'recent'}
                         />
                     )}
                 </div>

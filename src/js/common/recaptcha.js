@@ -1,4 +1,5 @@
 import { showToast } from './toast.js';
+import i18next from './i18n.js';
 
 const RECAPTCHA_SITE_KEY = '6Lc560ErAAAAAP7bly7AL_F_5AxlDf8zW7xxbML6';
 
@@ -21,20 +22,20 @@ function loadRecaptchaScript() {
 // Gets a fresh token for the given action, needed before every gated form submit
 async function getRecaptchaToken(action) {
     if (typeof grecaptcha === 'undefined' || !grecaptcha.execute) {
-        showToast('reCAPTCHA not loaded, please try again later.', 'danger');
+        showToast(i18next.t('recaptcha-not-loaded'), 'danger');
         throw new Error('reCAPTCHA not loaded');
     }
 
     try {
         const token = await grecaptcha.execute(RECAPTCHA_SITE_KEY, { action });
         if (!token) {
-            showToast('Could not get reCAPTCHA token, please try again.', 'danger');
+            showToast(i18next.t('recaptcha-no-token'), 'danger');
             throw new Error('reCAPTCHA token missing');
         }
         return token;
     } catch (error) {
         console.error('reCAPTCHA execution error:', error);
-        showToast('An error occurred during reCAPTCHA verification.', 'danger');
+        showToast(i18next.t('recaptcha-exec-error'), 'danger');
         throw error;
     }
 }

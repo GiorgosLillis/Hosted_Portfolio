@@ -89,7 +89,7 @@ const HourlyForecastCard = memo(({ hour, onClick, Unit, isVisible }) => {
     );
 });
 
-export function HourlyForecast({ hourlyForecast, Unit, dailyForecast }) {
+export function HourlyForecast({ hourlyForecast, Unit, dailyForecast, onDetailsOpen, closeDetails }) {
     if (!hourlyForecast || hourlyForecast.length === 0) {
         return <div className="p-4">No hourly forecast available.</div>;
     }
@@ -101,7 +101,15 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast }) {
     const handleHourClick = (hour, event) => {
         lastClickedCardRef.current = event.currentTarget;
         setSelectedHour(hour);
+        onDetailsOpen?.();
     };
+
+    // The parent asks for the details to close when another side panel opens
+    useEffect(() => {
+        if (closeDetails) {
+            setSelectedHour(null);
+        }
+    }, [closeDetails]);
 
     const handleCloseDetails = () => {
         setSelectedHour(null);

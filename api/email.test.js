@@ -68,6 +68,14 @@ describe('email handler (contact form)', () => {
         expect(sendMail).not.toHaveBeenCalled();
     });
 
+    it('rejects an email address containing HTML characters with 400', async () => {
+        const req = createMockReq({ body: { ...validBody, email: '<b>x</b>@example.com' } });
+        const res = createMockRes();
+        await emailHandler(req, res);
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(sendMail).not.toHaveBeenCalled();
+    });
+
     it('rejects a subject over 100 characters with 400', async () => {
         const req = createMockReq({ body: { ...validBody, subject: 'a'.repeat(101) } });
         const res = createMockRes();

@@ -11,13 +11,25 @@
     />
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.css"
+      integrity="sha384-Bk5cbLkZQ5raZ0+H2/+VbfYx3WpvxvQK4zqXZr7sYODuaX7bKXoSOnipQxkaS8sv"
+      crossorigin="anonymous"
     />
-    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.js"
+      integrity="sha384-wziAfh6b/qT+3LrqebF9WeK4+J5sehS6FA10J1t3a866kJ/fvU5UwofWnQyzLtwu"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.css"
+      integrity="sha384-/rJKQnzOkEo+daG0jMjU1IwwY9unxt1NBw3Ef2fmOJ3PW/TfAg2KXVoWwMZQZtw9"
+      crossorigin="anonymous"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -31,7 +43,8 @@
     <link rel="stylesheet" href="src/css/profile.css" />
     <script type="module" src="src/js/common/effects.js"></script>
     <script type="module" src="src/js/common/appworker.js"></script>
-    <title>Profile</title>
+    <script type="module" src="src/js/common/i18n.js"></script>
+    <title data-i18n="profile">Profile</title>
     <link
       rel="icon"
       href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/icons/person-fill.svg"
@@ -63,7 +76,9 @@
   <body
     class="theme-default d-flex flex-column justify-content-center min-vh-100"
   >
-    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <a href="#main-content" class="skip-link" data-i18n="skip"
+      >Skip to main content</a
+    >
     <nav
       id="navbar"
       class="navbar navbar-expand-lg fixed-top d-flex align-items-end"
@@ -75,7 +90,9 @@
           data-bs-target="#navbarColor"
           aria-controls="navbarColor"
           aria-expanded="false"
-          aria-label="Color Themes Toggle"
+          aria-label="Toggle color themes"
+          data-i18n="colors"
+          data-i18n-attr="aria-label:colors-aria"
         >
           Colors ▼
         </button>
@@ -85,8 +102,10 @@
               <button
                 type="button"
                 class="btn fs-1"
-                onclick="setTheme('light')"
+                data-theme="light"
                 aria-label="Light Mode"
+                data-i18n="light-mode"
+                data-i18n-attr="aria-label:light-mode-aria"
               >
                 Light Mode
               </button>
@@ -95,8 +114,10 @@
               <button
                 type="button"
                 class="btn fs-1"
-                onclick="setTheme('dark')"
+                data-theme="dark"
                 aria-label="Dark Mode"
+                data-i18n="dark-mode"
+                data-i18n-attr="aria-label:dark-mode-aria"
               >
                 Dark Mode
               </button>
@@ -105,8 +126,10 @@
               <button
                 type="button"
                 class="btn fs-1"
-                onclick="setTheme('default')"
+                data-theme="default"
                 aria-label="Default Mode"
+                data-i18n="default-mode"
+                data-i18n-attr="aria-label:default-mode-aria"
               >
                 Default
               </button>
@@ -120,8 +143,10 @@
           aria-controls="navbarNav"
           aria-expanded="false"
           aria-label="Toggle navigation"
+          data-i18n="pages"
+          data-i18n-attr="aria-label:nav-toggle-aria"
         >
-          Content ▼
+          Pages ▼
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto">
@@ -130,6 +155,8 @@
                 class="nav-link fs-1"
                 href="./index.html"
                 aria-label="Go to home"
+                data-i18n="home"
+                data-i18n-attr="aria-label:home-aria"
                 >Home</a
               >
             </li>
@@ -138,6 +165,8 @@
                 class="nav-link fs-1"
                 href="./list.html"
                 aria-label="Go to list"
+                data-i18n="list"
+                data-i18n-attr="aria-label:list-aria"
                 >List</a
               >
             </li>
@@ -145,8 +174,10 @@
               <a
                 class="nav-link fs-1"
                 href="./weather.html"
-                aria-label="Go to weather"
-                >Weather</a
+                aria-label="Go to forecast"
+                data-i18n="weather"
+                data-i18n-attr="aria-label:weather-aria"
+                >Forecast</a
               >
             </li>
           </ul>
@@ -164,8 +195,26 @@
         class="my-5 p-0 item-input container col-11 col-md-9 col-lg-7 d-flex flex-column justify-content-center align-items-center"
         id="profile-form"
         aria-label="Profile form"
+        data-i18n-attr="aria-label:profile-form-aria"
       ></form>
     </main>
+    <p class="recaptcha-attribution text-center mb-3">
+      This site is protected by reCAPTCHA and the Google
+      <a
+        href="https://policies.google.com/privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Privacy Policy</a
+      >
+      and
+      <a
+        href="https://policies.google.com/terms"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Terms of Service</a
+      >
+      apply.
+    </p>
     <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
     <script type="module" src="src/js/profile/profile.jsx"></script>
   </body>

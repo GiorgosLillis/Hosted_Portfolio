@@ -1,3 +1,4 @@
+import i18next from '../common/i18n.js';
 import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 
 const LOCATION_CACHE_KEY = 'LocationInfo';
@@ -37,7 +38,6 @@ export async function getCityLocation(city, country) {
 
 }
 
-
 // Two modes in one function: pass a city name for forward geocoding, or nothing for
 // browser-geolocation + reverse geocoding
 async function callLocationAPI(city, country) {
@@ -52,14 +52,14 @@ async function callLocationAPI(city, country) {
       });
       if (!res.ok) {
         if (res.status === 404) {
-          throw new Error('City not found. Please check the spelling or try a different city.');
+          throw new Error(i18next.t('city-not-found-search'));
         }
-        throw new Error(`Server returned an HTTP error: ${res.status}`);
+        throw new Error(i18next.t('http-error', { status: res.status }));
       }
 
       const cityData = await res.json();
       if (!cityData) {
-        throw new Error('City not found. Please check the spelling or try a different city.');
+        throw new Error(i18next.t('city-not-found-search'));
       }
 
       const cityInfo = {
@@ -88,12 +88,12 @@ async function callLocationAPI(city, country) {
     });
 
     if (!res.ok) {
-      throw new Error(`Server returned an HTTP error: ${res.status}`);
+      throw new Error(i18next.t('http-error', { status: res.status }));
     }
 
     const locationData = await res.json();
     if (!locationData || !locationData.country || !locationData.city) {
-      throw new Error('Failed to retrieve location information. Please try again later.');
+      throw new Error(i18next.t('location-failed'));
     }
 
     const locationInfo = {
@@ -115,16 +115,16 @@ async function callLocationAPI(city, country) {
       let message;
       switch (err.code) {
         case err.PERMISSION_DENIED:
-          message = "User denied the request for Geolocation. Please enable location services in your browser settings.";
+          message = i18next.t('geo-denied');
           break;
         case err.POSITION_UNAVAILABLE:
-          message = "Location information is unavailable. Please check your network connection.";
+          message = i18next.t('geo-unavailable');
           break;
         case err.TIMEOUT:
-          message = "The request to get user location timed out.";
+          message = i18next.t('geo-timeout');
           break;
         default:
-          message = "An unknown geolocation error occurred.";
+          message = i18next.t('geo-unknown');
       }
       console.error(message);
       throw new Error(message);
@@ -158,7 +158,7 @@ export async function fetchWeather(locationInfo) {
     });
 
     if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
+      throw new Error(i18next.t('http-error', { status: res.status }));
     }
 
     const weatherData = await res.json();
@@ -174,11 +174,12 @@ export async function fetchWeather(locationInfo) {
       city: locationInfo.city,
       country: locationInfo.country,
     };
+
     localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(weatherInfo));
     console.log("Weather data saved to localStorage");
     return weatherInfo;
   } catch (err) {
-    throw new Error("Error fetching weather:", err);
+    throw new Error(i18next.t('weather-fetch-error'));
   }
 }
 

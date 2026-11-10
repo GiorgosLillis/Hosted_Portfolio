@@ -47,6 +47,23 @@ body{
     user-select: none;
 }
 
+/* Text takes the free space and wraps, the controls keep their size on the right (up is rightmost, as with the old floats) */
+.list-group-item:has(.item-text) {
+    display: flex;
+    align-items: center;
+}
+
+.list-group-item .item-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.list-group-item > .form-check-input { order: 1; flex: none; }
+.list-group-item > .btn-danger { order: 2; flex: none; }
+.list-group-item > [data-move="down"] { order: 3; flex: none; }
+.list-group-item > [data-move="up"] { order: 4; flex: none; }
+
 
 #list-form .form-control, #list-form .form-select{
     font-size: 16px;

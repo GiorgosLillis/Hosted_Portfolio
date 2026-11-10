@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { checkToken, setCorsHeaders, getClientIp } from '../lib/functions.js';
+import { checkToken, setCorsHeaders, getClientIp, sendStatus } from '../lib/functions.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -16,7 +16,7 @@ async function listHandler(req: VercelRequest, res: VercelResponse) {
     // Check user token validation
     const user = await checkToken(req);
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Not authenticated' });
+      return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
     }
 
     const ip = getClientIp(req);
@@ -27,19 +27,19 @@ async function listHandler(req: VercelRequest, res: VercelResponse) {
       const ipCheck = await rateLimiter(`list_get_attempt_ip:${ip}`, 120, 60); // 120 requests per minute per IP
       if (!ipCheck.allowed) {
         res.setHeader('Retry-After', ipCheck.ttl);
-        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ipCheck.ttl} seconds.` });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ipCheck.ttl} seconds.`, { ttl: ipCheck.ttl });
       }
       const { allowed, ttl } = await rateLimiter(`list_get_attempt:${user.id}`, 60, 60); // 60 requests per minute
       if (!allowed) {
         res.setHeader('Retry-After', ttl);
-        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
       }
       await GET(res, user);
     } else if (req.method === 'POST') {
       const ipCheck = await rateLimiter(`list_post_attempt_ip:${ip}`, 40, 60); // 40 requests per minute per IP
       if (!ipCheck.allowed) {
         res.setHeader('Retry-After', ipCheck.ttl);
-        return res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ipCheck.ttl} seconds.` });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ipCheck.ttl} seconds.`, { ttl: ipCheck.ttl });
       }
       // Rate limiting keyed on user id
       const userKey = `list_post_attempt:${user.id}`;
@@ -47,22 +47,19 @@ async function listHandler(req: VercelRequest, res: VercelResponse) {
 
       if (!allowed) {
         res.setHeader('Retry-After', ttl);
-        return res.status(429).json({
-          success: false,
-          message: `Too many requests. Please try again in ${ttl} seconds.`
-        });
+        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
       }
       await POST(req, res, user);
     } else if (req.method === 'DELETE') {
       const ipCheck = await rateLimiter(`list_delete_attempt_ip:${ip}`, 15, 3600); // 15 requests per hour per IP
       if (!ipCheck.allowed) {
         res.setHeader('Retry-After', ipCheck.ttl);
-        return res.status(429).json({ success: false, message: `Too many delete requests. Please try again in ${ipCheck.ttl} seconds.` });
+        return sendStatus(res, 429, 'rate-limited', `Too many delete requests. Please try again in ${ipCheck.ttl} seconds.`, { ttl: ipCheck.ttl });
       }
       const { allowed, ttl } = await rateLimiter(`list_delete_attempt:${user.id}`, 5, 3600); // 5 requests per hour
       if (!allowed) {
         res.setHeader('Retry-After', ttl);
-        return res.status(429).json({ success: false, message: `Too many delete requests. Please try again in ${ttl} seconds.` });
+        return sendStatus(res, 429, 'rate-limited', `Too many delete requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
       }
       await DELETE(res, user);
     } else {
@@ -71,14 +68,10 @@ async function listHandler(req: VercelRequest, res: VercelResponse) {
     }
   } catch (error) {
     if ((error as { message?: string }).message === 'Invalid or expired token.' || (error as { message?: string }).message === 'Not authenticated') {
-      return res.status(401).json({ success: false, message: 'Not authenticated' });
+      return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
     }
     console.error('Server error in list API:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'An unexpected error occurred',
-      error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
-    });
+    return sendStatus(res, 500, 'server-error', 'An unexpected error occurred', { error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined });
   }
 }
 
@@ -111,18 +104,11 @@ async function GET(res: VercelResponse, user: any) {
       }
     });
 
-    return res.status(200).json({
-      success: true,
-      message: 'Shopping list fetched successfully',
-      list: shoppingList
-    });
+    return sendStatus(res, 200, 'list-fetched', 'Shopping list fetched successfully', { list: shoppingList });
 
   } catch (error) {
     console.error('Failed to retrieve list:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch shopping list'
-    });
+    return sendStatus(res, 500, 'list-fetch-failed', 'Failed to fetch shopping list');
   }
 }
 
@@ -131,19 +117,13 @@ async function POST(req: VercelRequest, res: VercelResponse, user: any) {
   // Check if the list exists and if the fields are in valid format
   const list = req.body.list;
   if (!list || !Array.isArray(list)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid request body. Expected an array of items.'
-    });
+    return sendStatus(res, 400, 'invalid-body-array', 'Invalid request body. Expected an array of items.');
   }
 
   // Only delete items the client explicitly removed
   const removed = req.body.removed || [];
   if (!Array.isArray(removed)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid request body. "removed" must be an array.'
-    });
+    return sendStatus(res, 400, 'invalid-removed', 'Invalid request body. "removed" must be an array.');
   }
 
   try {
@@ -188,18 +168,11 @@ async function POST(req: VercelRequest, res: VercelResponse, user: any) {
 
     await Promise.all(upsertPromises);
 
-    return res.status(200).json({
-      success: true,
-      message: 'List updated successfully.'
-    });
+    return sendStatus(res, 200, 'list-updated', 'List updated successfully.');
 
   } catch (error) {
     console.error('Batch Update Transaction Failed:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to update shopping list.',
-      error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
-    });
+    return sendStatus(res, 500, 'list-update-failed', 'Failed to update shopping list.', { error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined });
   }
 }
 
@@ -212,17 +185,10 @@ async function DELETE(res: VercelResponse, user: any) {
       },
     });
 
-    return res.status(200).json({
-      success: true,
-      message: 'Shopping list deleted successfully.'
-    });
+    return sendStatus(res, 200, 'list-deleted', 'Shopping list deleted successfully.');
 
   } catch (error) {
     console.error('DELETE operation failed:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to delete shopping list.',
-      error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined
-    });
+    return sendStatus(res, 500, 'list-delete-failed', 'Failed to delete shopping list.', { error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : undefined });
   }
 }

@@ -1,4 +1,4 @@
-import { setCorsHeaders, getClientIp, enforceRateLimit, fetchWithTimeout } from '../lib/functions.js';
+import { setCorsHeaders, getClientIp, enforceRateLimit, fetchWithTimeout, sendStatus } from '../lib/functions.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Nominatim's usage policy requires a descriptive User-Agent
@@ -36,12 +36,12 @@ async function reverseLocation(req: VercelRequest, res: VercelResponse) {
 
   const parsedLat = parseFloat(lat);
   if (isNaN(parsedLat) || parsedLat < -90 || parsedLat > 90) {
-    return res.status(400).json({ success: false, message: "Invalid latitude. Must be a number between -90 and 90." });
+    return sendStatus(res, 400, 'invalid-latitude', "Invalid latitude. Must be a number between -90 and 90.");
   }
 
   const parsedLon = parseFloat(lon);
   if (isNaN(parsedLon) || parsedLon < -180 || parsedLon > 180) {
-    return res.status(400).json({ success: false, message: "Invalid longitude. Must be a number between -180 and 180." });
+    return sendStatus(res, 400, 'invalid-longitude', "Invalid longitude. Must be a number between -180 and 180.");
   }
 
   try {
@@ -50,14 +50,14 @@ async function reverseLocation(req: VercelRequest, res: VercelResponse) {
 
     if (!response.ok || data.error) {
       console.error("OpenStreetMap Reverse Geocoding API error:", data.error || response.statusText);
-      return res.status(response.status).json({ success: false, message: data.error || 'Failed to reverse geocode coordinates.' });
+      return sendStatus(res, response.status, 'geocode-failed', data.error || 'Failed to reverse geocode coordinates.');
     }
 
     res.status(200).json(extractLocation(data.address));
 
   } catch (err) {
     console.error("Reverse Geocoding proxy error:", err);
-    res.status(500).json({ success: false, message: "Server error during reverse geocoding." });
+    sendStatus(res, 500, 'geocode-error', "Server error during reverse geocoding.");
   }
 }
 
@@ -68,18 +68,18 @@ async function forwardLocation(req: VercelRequest, res: VercelResponse) {
   const { city, country } = req.method === 'GET' ? req.query : req.body;
 
   if (typeof city !== 'string' || city.trim() === '') {
-    return res.status(400).json({ success: false, message: "City name is required and must be a non-empty string." });
+    return sendStatus(res, 400, 'city-name-required', "City name is required and must be a non-empty string.");
   }
   if (city.length > 100) {
-    return res.status(400).json({ success: false, message: "City name is too long." });
+    return sendStatus(res, 400, 'city-name-long', "City name is too long.");
   }
 
   if (country) {
     if (typeof country !== 'string' || country.trim() === '') {
-      return res.status(400).json({ success: false, message: "Country must be a non-empty string if provided." });
+      return sendStatus(res, 400, 'country-invalid', "Country must be a non-empty string if provided.");
     }
     if (country.length > 100) {
-      return res.status(400).json({ success: false, message: "Country name is too long." });
+      return sendStatus(res, 400, 'country-long', "Country name is too long.");
     }
   }
 
@@ -89,11 +89,11 @@ async function forwardLocation(req: VercelRequest, res: VercelResponse) {
 
     if (!response.ok || data.error) {
       console.error("OpenStreetMap Forward Geocoding API error:", data);
-      return res.status(response.status).json({ success: false, message: data.error || 'Failed to forward geocode coordinates.' });
+      return sendStatus(res, response.status, 'geocode-failed', data.error || 'Failed to forward geocode coordinates.');
     }
 
     if (data === undefined || data.length === 0) {
-      return res.status(404).json({ success: false, message: "City not found." });
+      return sendStatus(res, 404, 'city-not-found', "City not found.");
     }
 
     const result = data[0];
@@ -105,7 +105,7 @@ async function forwardLocation(req: VercelRequest, res: VercelResponse) {
 
   } catch (err) {
     console.error("Forward Geocoding proxy error:", err);
-    res.status(500).json({ success: false, message: "Server error during forward geocoding." });
+    sendStatus(res, 500, 'geocode-error', "Server error during forward geocoding.");
   }
 }
 
@@ -124,5 +124,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return forwardLocation(req, res);
   }
 
-  return res.status(400).json({ success: false, message: "Unknown or missing geolocation action." });
+  return sendStatus(res, 400, 'unknown-action', "Unknown or missing geolocation action.");
 }

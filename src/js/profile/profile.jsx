@@ -6,14 +6,17 @@ import SignUpForm from './sign-up.jsx';
 import EditForm from './edit.jsx';
 import ForgotForm from './forgot.jsx';
 import { showToast } from '../common/toast.js';
+import { useTranslation } from 'react-i18next';
+import '../common/i18n.js';
 
 // Switches between the login/signup/edit views based on auth state, no routing library involved
 const AuthManager = () => {
     const { isAuthenticated, user, logout, isLoading } = useAuth();
     const [view, setView] = useState('initial'); // 'initial', 'login', 'signup'
+    const { t } = useTranslation();
 
     if (isLoading) {
-        return <h1 className="p-0 my-3 text-center">Loading...</h1>;
+        return <h1 className="p-0 my-3 text-center">{t('loading')}</h1>;
     }
 
     // Logged-in users always see the edit form, regardless of which view was selected before
@@ -23,7 +26,7 @@ const AuthManager = () => {
 
     const renderInitialView = () => (
         <>
-            <h1 className="p-0 my-3 text-center">Profile</h1>
+            <h1 className="p-0 my-3 text-center">{t('profile')}</h1>
             <div className="row w-100 d-flex justify-content-around align-items-center mb-3">
                 <div className="col-10 col-md-8 col-lg-5 col-xl-4 d-flex justify-content-center align-items-center mb-3 mb-lg-0">
                     <button
@@ -31,7 +34,7 @@ const AuthManager = () => {
                         className="btn btn-sm px-0 filter-btn text-center"
                         onClick={() => setView('login')}
                     >
-                        <span className="d-flex text-center justify-content-center button-span">Login</span>
+                        <span className="d-flex text-center justify-content-center button-span">{t('login')}</span>
                     </button>
                 </div>
                 <div className="col-10 col-md-8 col-lg-5 col-xl-4 d-flex justify-content-center align-items-center mb-3 mb-lg-0">
@@ -40,7 +43,7 @@ const AuthManager = () => {
                         className="btn btn-sm px-0 filter-btn text-center"
                         onClick={() => setView('signup')}
                     >
-                        <span className="d-flex text-center justify-content-center button-span">Sign-Up</span>
+                        <span className="d-flex text-center justify-content-center button-span">{t('sign-up')}</span>
                     </button>
                 </div>
             </div>

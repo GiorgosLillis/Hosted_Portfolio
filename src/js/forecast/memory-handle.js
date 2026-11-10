@@ -13,7 +13,7 @@ export async function saveCityList(cityList, removedCities = []) {
     try {
         const user = await checkAuth();
         if (!user) {
-            // Not authenticated (or offline, checkAuth can't tell the difference) - local-only,
+            // Not authenticated 
             localStorage.setItem(LOCAL_FAVORITES_KEY, JSON.stringify(cityList));
             showToast('Saved on this device only. Log in or register to save your favorites to your account and access them everywhere.', 'success');
             return { success: true };
@@ -48,7 +48,7 @@ export async function loadCityList() {
     try {
         const user = await checkAuth();
         if (!user) {
-            // Not authenticated (or offline) - only ever read the local-only store
+            // Not authenticated 
             showToast('Showing favorites saved on this device. Log in or register to sync your favorites everywhere.', 'info');
             const localList = localStorage.getItem(LOCAL_FAVORITES_KEY);
             return JSON.parse(localList) || [];

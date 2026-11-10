@@ -1,7 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
-import { isValidEmail, isValidPassword, setAuthCookies, setCorsHeaders, getClientIp } from '../lib/functions.js';
+import { isValidEmail, isValidPassword, setAuthCookies, setCorsHeaders, getClientIp, sendStatus } from '../lib/functions.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
@@ -19,10 +19,7 @@ const loginHandler = async (req: VercelRequest, res: VercelResponse) => {
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({
-            success: false,
-            message: 'Only POST requests are allowed'
-        });
+        return sendStatus(res, 405, 'method-not-allowed', 'Only POST requests are allowed');
     }
 
     try {
@@ -62,24 +59,15 @@ const loginHandler = async (req: VercelRequest, res: VercelResponse) => {
             }
 
             res.setHeader('Retry-After', ttl);
-            return res.status(429).json({
-                success: false,
-                message: `Too many login attempts. Please try again in ${ttl} seconds.`
-            });
+            return sendStatus(res, 429, 'rate-limited', `Too many login attempts. Please try again in ${ttl} seconds.`, { ttl: ttl });
         }
 
         if (!process.env.JWT_SECRET) {
-            return res.status(500).json({
-                success: false,
-                message: 'JWT secret is not configured on the server'
-            });
+            return sendStatus(res, 500, 'server-misconfigured', 'JWT secret is not configured on the server');
         }
 
         if (!isValidEmail(email) || !isValidPassword(password)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid input. Please ensure all fields are correctly filled.'
-            });
+            return sendStatus(res, 400, 'invalid-input', 'Invalid input. Please ensure all fields are correctly filled.');
         }
 
 
@@ -92,10 +80,7 @@ const loginHandler = async (req: VercelRequest, res: VercelResponse) => {
 
         // Same generic message whether the email or the password was wrong
         if (!user || !passwordMatch) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid credentials.'
-            });
+            return sendStatus(res, 400, 'invalid-credentials', 'Invalid credentials.');
         }
 
         // Track last login time
@@ -113,17 +98,13 @@ const loginHandler = async (req: VercelRequest, res: VercelResponse) => {
 
         setAuthCookies(res, token);
 
-        const userData = { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName };
+        const userData = { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, createdAt: user.createdAt };
         return res.status(200).json({ success: true, user: userData });
     }
     catch (error) {
 
         console.error('Error during login:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'An unexpected error occurred',
-            error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : null
-        });
+        return sendStatus(res, 500, 'server-error', 'An unexpected error occurred', { error: process.env.NODE_ENV === 'development' ? (error as { message?: string }).message : null });
 
 
     }

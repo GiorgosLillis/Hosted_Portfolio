@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
-import { checkToken, setCorsHeaders, getClientIp, handleApiError } from '../lib/functions.js';
+import { checkToken, setCorsHeaders, getClientIp, handleApiError, sendStatus } from '../lib/functions.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const ExportHandler = async (req: VercelRequest, res: VercelResponse) => {
@@ -12,27 +12,21 @@ const ExportHandler = async (req: VercelRequest, res: VercelResponse) => {
     }
 
     if (req.method !== 'GET') {
-        return res.status(405).json({
-            success: false,
-            message: 'Only GET requests are allowed'
-        });
+        return sendStatus(res, 405, 'method-not-allowed', 'Only GET requests are allowed');
     }
 
     try {
         // Check user token validation
         const user = await checkToken(req);
         if (!user) {
-            return res.status(401).json({ success: false, message: 'Not authenticated' });
+            return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
         }
 
         const ip = getClientIp(req);
         const ipCheck = await rateLimiter(`export_attempt_ip:${ip}`, 20, 60); // 20 requests per minute per IP
         if (!ipCheck.allowed) {
             res.setHeader('Retry-After', ipCheck.ttl);
-            return res.status(429).json({
-                success: false,
-                message: `Too many requests. Please try again in ${ipCheck.ttl} seconds.`
-            });
+            return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ipCheck.ttl} seconds.`, { ttl: ipCheck.ttl });
         }
 
         const userKey = `export_attempt:${user.id}`;
@@ -40,10 +34,7 @@ const ExportHandler = async (req: VercelRequest, res: VercelResponse) => {
 
         if (!allowed) {
             res.setHeader('Retry-After', ttl);
-            return res.status(429).json({
-                success: false,
-                message: `Too many requests. Please try again in ${ttl} seconds.`
-            });
+            return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
         }
 
         // Wait for all the search queries to complete and return one cities and one shopping list
