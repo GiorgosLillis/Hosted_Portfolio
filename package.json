@@ -9,7 +9,7 @@
     "@upstash/redis": "^1.36.2",
     "axios": "^1.18.1",
     "bcryptjs": "^2.4.3",
-    "cookie": "^1.1.1",
+    "cookie": "^2.0.2",
     "disposable-email-domains-js": "2.4.0",
     "dotenv": "^17.3.1",
     "i18next": "^26.5.11",
