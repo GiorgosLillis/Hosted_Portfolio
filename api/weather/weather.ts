@@ -1,5 +1,5 @@
-import { setCorsHeaders, getClientIp, handleApiError, fetchWithTimeout, sendStatus } from '../lib/functions.js';
-import { rateLimiter } from '../lib/rateLimiter.js';
+import { setCorsHeaders, getClientIp, handleApiError, fetchWithTimeout, sendStatus, enforceRateLimits } from '../lib/http.js';
+import { buildNotificationText, pickNotificationLang, isAllowedPushEndpoint, isValidCronAuthorization } from '../lib/push.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { prisma } from '../lib/prisma.js';
 import { Redis } from '@upstash/redis';
@@ -30,7 +30,7 @@ const weatherCodeMapping: Record<number, WeatherCondition> = {
     45: { condition: 'Fog', dayIcon: PathtoIcons + 'fog.svg', nightIcon: PathtoIcons + 'fog.svg', dayImg: PathtoImg + 'fog.jpg', nightImg: PathtoImg + 'fog.jpg' },
     48: { condition: 'Depositing rime fog', dayIcon: PathtoIcons + 'fog.svg', nightIcon: PathtoIcons + 'fog.svg', dayImg: PathtoImg + 'fog.jpg', nightImg: PathtoImg + 'fog.jpg' },
     51: { condition: 'Drizzle: Light', dayIcon: PathtoIcons + 'showers-day.svg', nightIcon: PathtoIcons + 'showers-night.svg', dayImg: PathtoImg + 'drizzle-day.jpg', nightImg: PathtoImg + 'drizzle-night.jpg' },
-    53: { condition: 'Drizzle: Moderate', dayIcon: PathtoIcons + 'howers-day.svg', nightIcon: PathtoIcons + 'showers-night.svg', dayImg: PathtoImg + 'drizzle-day.jpg', nightImg: PathtoImg + 'drizzle-night.jpg' },
+    53: { condition: 'Drizzle: Moderate', dayIcon: PathtoIcons + 'showers-day.svg', nightIcon: PathtoIcons + 'showers-night.svg', dayImg: PathtoImg + 'drizzle-day.jpg', nightImg: PathtoImg + 'drizzle-night.jpg' },
     55: { condition: 'Drizzle: Dense', dayIcon: PathtoIcons + 'rain.svg', nightIcon: PathtoIcons + 'rain.svg', dayImg: PathtoImg + 'drizzle-day.jpg', nightImg: PathtoImg + 'drizzle-night.jpg' },
     56: { condition: 'Freezing Drizzle: Light', dayIcon: PathtoIcons + 'sleet.svg', nightIcon: PathtoIcons + 'sleet-night.svg', dayImg: PathtoImg + 'sleet-day.jpg', nightImg: PathtoImg + 'sleet-day.jpg' },
     57: { condition: 'Freezing Drizzle: Dense', dayIcon: PathtoIcons + 'sleet.svg', nightIcon: PathtoIcons + 'sleet-night.svg', dayImg: PathtoImg + 'sleet-night.jpg', nightImg: PathtoImg + 'sleet-night.jpg' },
@@ -55,7 +55,7 @@ const weatherCodeMapping: Record<number, WeatherCondition> = {
 
 
 
-function getNoonInfo(currentDate: Date, hourlyTimes: string[], hourlyWeatherCodes: number[]): WeatherCondition | null {
+function getNoonInfo(currentDate: Date, hourlyTimes: string[], hourlyWeatherCodes: number[]): (WeatherCondition & { code: number }) | null {
     const noonIndex = hourlyTimes.findIndex(hourlyTime => {
         const hourlyDate = new Date(hourlyTime);
         return hourlyDate.getDate() === currentDate.getDate() && hourlyDate.getHours() === 12;
@@ -64,7 +64,7 @@ function getNoonInfo(currentDate: Date, hourlyTimes: string[], hourlyWeatherCode
     if (noonIndex !== -1) {
         const noonWeatherCode = hourlyWeatherCodes[noonIndex];
         const dayInfo = weatherCodeMapping[noonWeatherCode];
-        return dayInfo || null;
+        return dayInfo ? { ...dayInfo, code: noonWeatherCode } : null;
     }
     return null;
 
@@ -81,12 +81,8 @@ async function weatherInfo(req: VercelRequest, res: VercelResponse) {
     // Cache for 1 hour (3600s) at the Edge
     res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=600');
 
-    // IP tracking for rate limiting
-    const ip = getClientIp(req);
-    const { allowed, ttl } = await rateLimiter(ip, 20, 60);
-    if (!allowed) {
-        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
-    }
+    // Its own key: a bare IP was shared with the contact form
+    if (!(await enforceRateLimits(res, [`weather_attempt_ip:${getClientIp(req)}`, 20, 60]))) return;
 
     const { lat, lon } = req.method === 'GET' ? req.query : req.body;
 
@@ -102,8 +98,12 @@ async function weatherInfo(req: VercelRequest, res: VercelResponse) {
 
 
 
+    // About 1 km precision: nearby requests share one cache entry, and a flood of unique coordinates can't fill Redis or the upstream quota
+    const roundedLat = Math.round(parsedLat * 100) / 100;
+    const roundedLon = Math.round(parsedLon * 100) / 100;
+
     // Redis is the real 1-hour cache, if it's down just fetch fresh instead of failing
-    const cacheKey = `weather_data:${parsedLat}:${parsedLon}`;
+    const cacheKey = `weather_data:${roundedLat}:${roundedLon}`;
     try {
         const cachedData = await redis.get(cacheKey);
         if (cachedData) {
@@ -113,8 +113,8 @@ async function weatherInfo(req: VercelRequest, res: VercelResponse) {
         console.error('Redis read failed for weather cache, fetching fresh:', error);
     }
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${parsedLat}&longitude=${parsedLon}&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,uv_index,apparent_temperature,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&forecast_days=7&timezone=auto`;
-    const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${parsedLat}&longitude=${parsedLon}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,sulphur_dioxide&timezone=auto`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${roundedLat}&longitude=${roundedLon}&hourly=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,uv_index,apparent_temperature,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&forecast_days=7&timezone=auto`;
+    const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${roundedLat}&longitude=${roundedLon}&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,sulphur_dioxide&timezone=auto`;
 
     try {
         const [res1, res2] = await Promise.all([
@@ -129,10 +129,11 @@ async function weatherInfo(req: VercelRequest, res: VercelResponse) {
             throw new Error(`Failed to fetch air quality data: ${res2.status}`);
         }
 
+        // Open-Meteo responses aren't modelled, response.json() is typed unknown
         const [weatherData, airQualityData] = await Promise.all([
             res1.json(),
             res2.json()
-        ]);
+        ]) as [any, any];
         if (!weatherData || !weatherData.hourly || !weatherData.daily) {
             throw new Error('Incomplete weather data received from API');
         }
@@ -168,6 +169,7 @@ async function weatherInfo(req: VercelRequest, res: VercelResponse) {
                 uvIndex: weatherData.hourly.uv_index[index],
                 isDay: isDay,
                 condition: condition.condition,
+                code,
                 airQuality: hasAirQualityData ? {
                     pm10: airQualityData.hourly.pm10[index],
                     pm2_5: airQualityData.hourly.pm2_5[index],
@@ -190,6 +192,7 @@ async function weatherInfo(req: VercelRequest, res: VercelResponse) {
                 index,
                 date,
                 condition: noonCondition,
+                code: noonInfo ? noonInfo.code : null,
                 icon: noonIcon,
                 tempMax: weatherData.daily.temperature_2m_max[index],
                 tempMin: weatherData.daily.temperature_2m_min[index],
@@ -216,6 +219,7 @@ async function weatherInfo(req: VercelRequest, res: VercelResponse) {
                 temperature: weatherData.hourly.temperature_2m[closestIndex],
                 apparentTemperature: weatherData.hourly.apparent_temperature[closestIndex],
                 condition: currentCondition.condition,
+                code: currentCode,
                 timestamp: weatherData.hourly.time[closestIndex],
                 icon: isDayCurrent ? currentCondition.dayIcon : currentCondition.nightIcon,
                 img: isDayCurrent ? currentCondition.dayImg : currentCondition.nightImg,
@@ -248,16 +252,11 @@ const isValidLongitude = (lon: number) => !isNaN(lon) && lon >= -180 && lon <= 1
 // The VAPID public key isn't secret (it's embedded in every subscriber's browser by design),
 // but it's served from here rather than duplicated into a separate frontend-build env var
 async function getVapidKey(req: VercelRequest, res: VercelResponse) {
-    const ip = getClientIp(req);
-    const { allowed, ttl } = await rateLimiter(`vapid_key_attempt_ip:${ip}`, 30, 60);
-    if (!allowed) {
-        res.setHeader('Retry-After', ttl);
-        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
-    }
+    if (!(await enforceRateLimits(res, [`vapid_key_attempt_ip:${getClientIp(req)}`, 30, 60]))) return;
 
     if (!process.env.VAPID_PUBLIC_KEY) {
         console.error('VAPID_PUBLIC_KEY is not configured on the server');
-        return sendStatus(res, 500, 'push-not-configured', 'Push notifications are not configured on the server.');
+        return sendStatus(res, 500, 'push-not-configured', 'Push notifications are not available right now.');
     }
 
     return res.status(200).json({ success: true, publicKey: process.env.VAPID_PUBLIC_KEY });
@@ -269,16 +268,11 @@ async function subscribe(req: VercelRequest, res: VercelResponse) {
         return sendStatus(res, 405, 'method-not-allowed', 'Only POST requests are allowed');
     }
 
-    const ip = getClientIp(req);
-    const { allowed, ttl } = await rateLimiter(`push_subscribe_attempt_ip:${ip}`, 10, 3600); // 10 per hour per IP
-    if (!allowed) {
-        res.setHeader('Retry-After', ttl);
-        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
-    }
+    if (!(await enforceRateLimits(res, [`push_subscribe_attempt_ip:${getClientIp(req)}`, 10, 3600]))) return; // 10 per hour per IP
 
-    const { subscription, latitude, longitude, city, country, notifyHour } = req.body;
+    const { subscription, latitude, longitude, city, country, notifyHour, lang } = req.body;
 
-    if (!subscription || typeof subscription.endpoint !== 'string' || !subscription.endpoint.startsWith('https://')) {
+    if (!subscription || !isAllowedPushEndpoint(subscription.endpoint)) {
         return sendStatus(res, 400, 'subscription-invalid', 'A valid push subscription is required.');
     }
     if (!subscription.keys || typeof subscription.keys.p256dh !== 'string' || typeof subscription.keys.auth !== 'string') {
@@ -292,6 +286,14 @@ async function subscribe(req: VercelRequest, res: VercelResponse) {
     }
     if (!isValidLongitude(lon)) {
         return sendStatus(res, 400, 'invalid-longitude', 'Invalid longitude. Must be a number between -180 and 180.');
+    }
+
+    // The city label ends up in the notification title, so keep it short and a plain string
+    if (city !== undefined && city !== null && (typeof city !== 'string' || city.length > 100)) {
+        return sendStatus(res, 400, 'city-name-long', 'City name is too long.');
+    }
+    if (country !== undefined && country !== null && (typeof country !== 'string' || country.length > 100)) {
+        return sendStatus(res, 400, 'country-long', 'Country name is too long.');
     }
 
     const hour = notifyHour === undefined ? 6 : parseInt(notifyHour, 10);
@@ -309,7 +311,8 @@ async function subscribe(req: VercelRequest, res: VercelResponse) {
                 longitude: lon,
                 city: city || null,
                 country: country || null,
-                notifyHour: hour
+                notifyHour: hour,
+                lang: pickNotificationLang(lang)
             },
             create: {
                 endpoint: subscription.endpoint,
@@ -319,7 +322,8 @@ async function subscribe(req: VercelRequest, res: VercelResponse) {
                 longitude: lon,
                 city: city || null,
                 country: country || null,
-                notifyHour: hour
+                notifyHour: hour,
+                lang: pickNotificationLang(lang)
             }
         });
 
@@ -335,12 +339,7 @@ async function unsubscribe(req: VercelRequest, res: VercelResponse) {
         return sendStatus(res, 405, 'method-not-allowed', 'Only POST requests are allowed');
     }
 
-    const ip = getClientIp(req);
-    const { allowed, ttl } = await rateLimiter(`push_unsubscribe_attempt_ip:${ip}`, 20, 3600);
-    if (!allowed) {
-        res.setHeader('Retry-After', ttl);
-        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
-    }
+    if (!(await enforceRateLimits(res, [`push_unsubscribe_attempt_ip:${getClientIp(req)}`, 20, 3600]))) return;
 
     const { endpoint } = req.body;
     if (typeof endpoint !== 'string' || !endpoint) {
@@ -355,15 +354,48 @@ async function unsubscribe(req: VercelRequest, res: VercelResponse) {
     }
 }
 
-// Cron-only: Vercel sends "Authorization: Bearer <CRON_SECRET>" on cron-triggered requests, nobody else knows the secret.
-// One of 24 cron entries in vercel.json hits this every hour, each passing its own UTC hour so only that hour's subscribers get sent to.
+// Changes only the language (and optionally the city label) of an existing subscription, found by its push endpoint.
+// Language changes are frequent and need no location, so unlike subscribe there is no reCAPTCHA here.
+async function updateSubscriptionLanguage(req: VercelRequest, res: VercelResponse) {
+    if (req.method !== 'POST') {
+        return sendStatus(res, 405, 'method-not-allowed', 'Only POST requests are allowed');
+    }
+
+    if (!(await enforceRateLimits(res, [`push_language_attempt_ip:${getClientIp(req)}`, 30, 3600]))) return;
+
+    const { endpoint, lang, city } = req.body;
+    if (typeof endpoint !== 'string' || !endpoint) {
+        return sendStatus(res, 400, 'endpoint-required', 'An endpoint is required.');
+    }
+    if (typeof lang !== 'string' || pickNotificationLang(lang) !== lang) {
+        return sendStatus(res, 400, 'lang-invalid', 'The language is not supported.');
+    }
+    if (city !== undefined && (typeof city !== 'string' || city.length > 100)) {
+        return sendStatus(res, 400, 'city-name-long', 'City name must be a string of at most 100 characters.');
+    }
+
+    try {
+        const { count } = await prisma.pushSubscription.updateMany({
+            where: { endpoint },
+            data: city ? { lang, city } : { lang },
+        });
+        if (count === 0) {
+            return sendStatus(res, 404, 'subscription-not-found', 'No subscription found for this browser.');
+        }
+        return sendStatus(res, 200, 'language-updated', 'Alert language updated.');
+    } catch (error) {
+        return handleApiError(res, error, 'Server error in weather language update:');
+    }
+}
+
+// Cron-only: Vercel sends "Authorization: Bearer <CRON_SECRET>" on cron-triggered requests
 async function notify(req: VercelRequest, res: VercelResponse) {
-    if (!process.env.CRON_SECRET || req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!isValidCronAuthorization(req.headers['authorization'], process.env.CRON_SECRET)) {
         return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
     }
 
     // hour=all is a manual-testing escape hatch (still gated by CRON_SECRET) so you don't have to match
-    // a real subscription's stored notifyHour to trigger a send - no cron ever passes this value.
+    // a real subscription's stored notifyHour to trigger a send
     const hourParam = req.query.hour as string;
     const sendToAll = hourParam === 'all';
     let hour: number | undefined;
@@ -378,32 +410,45 @@ async function notify(req: VercelRequest, res: VercelResponse) {
         const subscriptions = await prisma.pushSubscription.findMany(sendToAll ? undefined : { where: { notifyHour: hour } });
 
         const results = await Promise.allSettled(subscriptions.map(async (sub) => {
+            if (!isAllowedPushEndpoint(sub.endpoint)) {
+                await prisma.pushSubscription.delete({ where: { id: sub.id } });
+                return;
+            }
+
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${sub.latitude}&longitude=${sub.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=2&timezone=auto`;
             const response = await fetchWithTimeout(url);
             if (!response.ok) {
                 throw new Error(`Failed to fetch forecast: ${response.status}`);
             }
-            const data = await response.json();
+            const data = await response.json() as any;
 
             const tomorrowCode = data.daily.weather_code[1];
             const tomorrowMax = data.daily.temperature_2m_max[1];
             const tomorrowMin = data.daily.temperature_2m_min[1];
             const tomorrowWeather = weatherCodeMapping[tomorrowCode];
-            const condition = tomorrowWeather?.condition || 'Unknown conditions';
-            const cityName = sub.city || 'your area';
+            const text = buildNotificationText(pickNotificationLang(sub.lang), {
+                city: sub.city,
+                code: tomorrowCode,
+                englishCondition: tomorrowWeather?.condition,
+                tempMin: Math.round(tomorrowMin),
+                tempMax: Math.round(tomorrowMax),
+            });
 
-            // The push service (and eventually the notification popup) needs absolute paths, and only .png works as a notification icon
             const formatPath = (path?: string) => (path ? (path.startsWith('/') ? path : `/${path}`) : '');
             const iconUrl = formatPath(tomorrowWeather?.dayIcon).replace('.svg', '.png');
             const imgUrl = formatPath(tomorrowWeather?.dayImg);
 
+            // title/body/actions are ready-made in the subscription's language, the rest stays for service workers that predate them
             const payload = JSON.stringify({
-                cityName,
-                condition,
+                cityName: text.cityName,
+                condition: text.condition,
                 tempMin: Math.round(tomorrowMin),
                 tempMax: Math.round(tomorrowMax),
                 icon: iconUrl,
                 img: imgUrl,
+                title: text.title,
+                body: text.body,
+                actions: text.actions,
             });
 
             try {
@@ -444,6 +489,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return recaptchaMiddleware(req, res, () => subscribe(req, res));
     } else if (action === 'unsubscribe') {
         return unsubscribe(req, res);
+    } else if (action === 'update-language') {
+        return updateSubscriptionLanguage(req, res);
     } else if (action === 'notify') {
         return notify(req, res);
     } else {

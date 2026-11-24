@@ -10,13 +10,14 @@ const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    // Set when the server says the account exists but its email isn't confirmed yet, shows the resend option
+    const [needsConfirmation, setNeedsConfirmation] = useState(false);
     const { login } = useAuth() || {};
     const headingRef = useRef(null);
     const { t } = useTranslation();
 
     useEffect(() => {
         loadRecaptchaScript();
-        // Move focus to this view's heading 
         headingRef.current?.focus();
     }, []);
 
@@ -24,7 +25,6 @@ const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
         setIsLoading(true);
 
         try {
-            // Same format rules the server enforces
             if (!isValidEmail(email)) {
                 throw new Error(t('toast-invalid-email'));
             }
@@ -49,6 +49,7 @@ const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
             const data = await response.json();
             if (!response.ok) {
                 if (data.code === 'invalid-credentials') setPassword('');
+                setNeedsConfirmation(data.code === 'email-not-verified' || data.code === 'email-not-verified-sent');
                 throw new Error(apiMessage(data, t('toast-something-wrong')));
             }
 
@@ -57,6 +58,27 @@ const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
             setEmail('');
             showToast(t('toast-login-success'), 'success');
 
+        } catch (err) {
+            showToast(err.message, 'danger');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleResendConfirmation = async () => {
+        setIsLoading(true);
+        try {
+            const token = await getRecaptchaToken('resend_verification');
+            const response = await fetchWithTimeout('/api/resend-verification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'g-recaptcha-response': token
+                },
+                body: JSON.stringify({ email }),
+            });
+            const data = await response.json();
+            showToast(apiMessage(data, t('toast-something-wrong')), response.ok ? 'success' : 'danger');
         } catch (err) {
             showToast(err.message, 'danger');
         } finally {
@@ -116,6 +138,21 @@ const Login = ({ switchToSignUp, switchToForgot, showToast }) => {
                         </span>
                     </button>
                 </div>
+                {needsConfirmation && (
+                    <div className="col-12 col-md-10 d-flex justify-content-center align-items-center mb-2">
+                        <p className="mb-0 profile-span text-center">
+                            {t('confirm-prompt')}{' '}
+                            <button
+                                type="button"
+                                className="p-0 m-0 align-baseline profile-btn"
+                                onClick={handleResendConfirmation}
+                                disabled={isLoading}
+                            >
+                                {t('resend-confirmation')}
+                            </button>
+                        </p>
+                    </div>
+                )}
                 <div className="col-12 col-md-10 d-flex justify-content-center align-items-center">
                     <p className="mb-0 profile-span text-center">
                         {t('forgot-prompt')}{' '}

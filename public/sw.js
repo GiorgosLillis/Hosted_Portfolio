@@ -47,17 +47,22 @@ self.addEventListener('push', (event) => {
     let iconUrl = rawIconPath ? rawIconPath.replace('.svg', '.png') : '';
     let imageUrl = formatPath(data.img);
 
+    // The server sends the title, body and button labels already in the subscriber's language, English is the fallback for older payloads
+    const title = data.title || `Tomorrow's weather in ${data.cityName}`;
+    const body = data.body || `${data.condition}, ${data.tempMin}° - ${data.tempMax}°`;
+    const actions = data.actions || [
+        { action: 'view-forecast', title: 'Open Forecast' },
+        { action: 'dismiss', title: 'Dismiss' }
+    ];
+
     event.waitUntil(
-        self.registration.showNotification(`Tomorrow's weather in ${data.cityName}`, {
-            body: `${data.condition}, ${data.tempMin}° - ${data.tempMax}°`,
+        self.registration.showNotification(title, {
+            body,
             tag: 'weather-daily-alert',
             icon: iconUrl,
             image: imageUrl,
             vibrate: [200, 100, 200],
-            actions: [
-                { action: 'view-forecast', title: 'Open Forecast' },
-                { action: 'dismiss', title: 'Dismiss' }
-            ]
+            actions
         })
     );
 });

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useAuth } from './auth.jsx';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { isValidEmail, isValidPassword, isValidName } from '../common/validation.js';
 import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
@@ -12,7 +11,6 @@ const SignUp = ({ switchToLogin, showToast }) => {
     const [first_name, setFirstName] = useState('');
     const [last_name, setLastName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { login } = useAuth() || {};
     const headingRef = useRef(null);
     const { t } = useTranslation();
 
@@ -67,12 +65,17 @@ const SignUp = ({ switchToLogin, showToast }) => {
                 return;
             }
 
-            login(data.user);
+            // Nobody is logged in yet: the account only works once the emailed link is clicked
             setPassword('');
             setEmail('');
             setFirstName('');
             setLastName('');
-            showToast(t('toast-signup-success'), 'success');
+            if (data.code === 'verification-send-failed') {
+                showToast(apiMessage(data), 'warning');
+            } else {
+                showToast(t('toast-verify-sent', { email: data.email }), 'success');
+            }
+            switchToLogin();
 
         } catch (err) {
             showToast(err.message, 'danger');

@@ -24,12 +24,13 @@ header{
 
 .search-section-visible{
     display: flex;
-    flex-direction: row; 
+    flex-direction: column;
+    row-gap: 0.5rem;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
     background-color: rgba(20, 30, 45, 0.55);
     backdrop-filter: blur(20px);
-    padding: 1.5rem 0;
+    padding: 3.25rem 0 1.5rem;
     border: 0;
 }
 
@@ -37,7 +38,7 @@ header{
     margin: 0 10px;
 }
 
-#country-input{
+#state-input, #country-input{
     margin: 0 10px;
 }
 
@@ -76,16 +77,18 @@ h1, h2, h3, .nav-link, i{
     box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.9);
 }
 
-#city-input, #country-input {
+#city-input, #state-input, #country-input {
+    width: auto;
+    min-width: 0;
+    max-width: 420px;
     transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
-    background-color: rgba(255, 255, 255, 0.3); 
+    background-color: rgba(255, 255, 255, 0.3);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.7);
-    transform-origin: right center; 
-    max-width: 250px;
+    transform-origin: right center;
 }
 
-#city-input::placeholder, #country-input::placeholder{
+#city-input::placeholder, #state-input::placeholder, #country-input::placeholder{
     color: rgba(255, 255, 255, 0.85);
 }
 
@@ -104,12 +107,26 @@ h1, h2, h3, .nav-link, i{
     padding: .375rem .75rem;
 }
 
+.lang-switcher {
+    z-index: 1030;
+    background-color: rgba(20, 30, 45, 0.55);
+    border-color: rgba(240, 248, 255, 0.6);
+}
+
+.lang-switcher button {
+    color: aliceblue;
+}
+
+.lang-switcher button[aria-pressed="true"] {
+    background-color: rgba(240, 248, 255, 0.25);
+}
+
 .icon-button:hover{
     transform: scale(1.1);
 }
 
 .icon-button {
-  font-size: 2.5rem;
+  font-size: 2rem;
   background: none;
   margin: 0;
   padding: 0;
@@ -128,7 +145,6 @@ h1, h2, h3, .nav-link, i{
 }
 
 .hour-dropdown{
-  font-size: 2rem;
   background: none;
   margin: 0;
   padding: 0;
@@ -141,6 +157,11 @@ h1, h2, h3, .nav-link, i{
   transform: scale(1.1);
 }
 
+.hour-dropdown:disabled{
+  background: none;
+  color: aliceblue;
+}
+
 .hour-dropdown:focus{
   background: none;
   box-shadow: none;
@@ -148,23 +169,42 @@ h1, h2, h3, .nav-link, i{
   color: aliceblue;
 }
 
-/* The dropdown's open option list is rendered by the browser outside the page, so backdrop-filter/transparency
-   can't reach it - this is the closest approximation, and only Chromium browsers honor it fully. */
 .hour-dropdown option {
-  background-color: rgba(20, 30, 45, 0.95);
+  background-color: #141e2d;
   color: aliceblue;
 }
 
 .hour-dropdown option:checked,
 .hour-dropdown option:hover {
-  background-color: rgba(255, 255, 255, 0.3);
+  background: #4a5c7a linear-gradient(#4a5c7a, #4a5c7a);
+  color: #fff;
+}
+
+#navbar .hour-dropdown {
+    width: auto;
+    font-size: 1.5rem;
+    margin-top: 0.15rem;
+    padding: 0;
+    text-align: center;
+    text-align-last: center;
 }
 
 .favButton:hover{
     cursor: pointer;
 }
 
-/* The page background is a photo, so the footer note sits in a dark box to stay readable on any image */
+#locationInfo, #conditionInfo, #lastUpdateInfo{
+    backdrop-filter: blur(10px);
+    background-color: rgba(20, 30, 45, 0.1);
+    padding: 0 5px;
+    border-radius: 5px;
+}
+
+/* A block heading would stretch the backdrop over the whole row */
+#lastUpdateInfo{
+    display: inline-block;
+}
+
 .recaptcha-attribution {
     position: relative;
     z-index: 1;
@@ -197,17 +237,6 @@ h1, h2, h3, .nav-link, i{
 }
 
 
-@media screen and (max-width: 480px){
-
-    #navbar .icon-button{
-        font-size: 2rem;
-    }
-
-    #navbar .hour-dropdown{
-        font-size: 1.2rem;
-    }
-}
-
 @media screen and (min-width: 375px){
 
     .search-input-visible{
@@ -216,13 +245,38 @@ h1, h2, h3, .nav-link, i{
 
 }
 
+@media screen and (min-width: 481px){
+
+    .icon-button{
+        font-size: 2.5rem;
+    }
+
+    #navbar .hour-dropdown{
+        font-size: 1.2rem;
+    }
+
+}
+
 @media screen and (min-width: 768px){
 
-    .search-section-visible{
-         justify-content: end;
-    }
- 
     .search-input-visible{
+        max-width: 250px;
+    }
+
+}
+
+@media screen and (min-width: 992px){
+
+    /* One row once the three inputs fit side by side with their full placeholders, stacked below that */
+    .search-section-visible{
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: end;
+        align-items: center;
+    }
+
+    #city-input, #state-input, #country-input{
+        flex: 1 1 140px;
         max-width: 250px;
     }
 

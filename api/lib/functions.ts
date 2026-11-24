@@ -2,72 +2,17 @@ import { prisma } from './prisma.js';
 import jwt from 'jsonwebtoken';
 import { parse, serialize } from 'cookie';
 import { Redis } from '@upstash/redis';
-import { rateLimiter } from './rateLimiter.js';
+import { getClientIp, sendStatus, enforceRateLimits, handleApiError, setCorsHeaders, fetchWithTimeout } from './http.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { User } from '@prisma/client';
 
+// Re-exported so handlers keep importing everything from one place
+export { getClientIp, sendStatus, enforceRateLimits, handleApiError, setCorsHeaders, fetchWithTimeout };
+
 const redis = Redis.fromEnv();
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^_+;':",./?-])[A-Za-z\d@$!%*?&#^_+;':",./?-]{8,}$/;
-const nameRegex = /^[\p{L}\p{M}'-]{1,50}$/u;
-
-// Bounds a call to an upstream API so a hung third party can't hang function indefinitely
-export async function fetchWithTimeout(url: string, timeoutMs = 8000, options: RequestInit = {}): Promise<Response> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-        return await fetch(url, { ...options, signal: controller.signal });
-    } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-            throw new Error('Upstream service timed out.');
-        }
-        throw error;
-    } finally {
-        clearTimeout(timeoutId);
-    }
-}
-
-export function getClientIp(req: VercelRequest): string {
-    return (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '';
-}
-
-// Runs a rate-limit check and sends the 429 itself if exceeded. Returns whether the caller should continue.
-export async function enforceRateLimit(res: VercelResponse, key: string, limit: number, windowSeconds: number): Promise<boolean> {
-    const { allowed, ttl } = await rateLimiter(key, limit, windowSeconds);
-    if (!allowed) {
-        res.setHeader('Retry-After', ttl);
-        sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
-    }
-    return allowed;
-}
-
-// Standard catch-all for handler try/catch blocks: auth errors become 401, everything else a generic 500
-export function handleApiError(res: VercelResponse, error: unknown, context: string) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (message === 'Invalid or expired token.' || message === 'Not authenticated') {
-        return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
-    }
-    console.error(context, error);
-    return sendStatus(res, 500, 'server-error', 'An unexpected error occurred', { error: process.env.NODE_ENV === 'development' ? message : undefined });
-}
-
-// Every API response with a status message goes through here: a stable `code` the client translates,
-// the English `message` as fallback, and any extra fields (e.g. ttl for rate limits) merged in flat
-export function sendStatus(res: VercelResponse, status: number, code: string, message: string, extra: Record<string, unknown> = {}) {
-    return res.status(status).json({ success: status < 400, code, message, ...extra });
-}
-
-export function setCorsHeaders(res: VercelResponse) {
-    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-}
+// The logged-in user as handlers and the Redis session cache see it: never with the password hash
+export type SessionUser = Omit<User, 'passwordHash'>;
 
 interface DecodedToken {
     userId: number;
@@ -76,7 +21,7 @@ interface DecodedToken {
 }
 
 // Reads the auth cookie, verifies the JWT and returns the logged-in user
-export async function checkToken(req: VercelRequest): Promise<User> {
+export async function checkToken(req: VercelRequest): Promise<SessionUser> {
     if (!process.env.JWT_SECRET) {
         throw new Error('JWT_SECRET is not configured on the server');
     }
@@ -90,7 +35,7 @@ export async function checkToken(req: VercelRequest): Promise<User> {
 
     let decoded: DecodedToken;
     try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET) as DecodedToken;
+        decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] }) as DecodedToken;
     } catch {
         throw new Error('Invalid or expired token.');
     }
@@ -98,14 +43,15 @@ export async function checkToken(req: VercelRequest): Promise<User> {
     const cacheKey = `user_session:${decoded.userId}`;
 
     // Try the cached user first to avoid a DB round trip
-    let cachedUser: User | null = null;
+    let cachedUser: SessionUser | null = null;
     try {
-        cachedUser = await redis.get<User>(cacheKey);
+        cachedUser = await redis.get<SessionUser>(cacheKey);
     } catch (error) {
         console.error('Redis read failed in checkToken, falling back to DB:', error);
     }
+    // A session from before email verification existed stops working until that account confirms its address
     if (cachedUser) {
-        if (decoded.tokenVersion !== cachedUser.tokenVersion) {
+        if (decoded.tokenVersion !== cachedUser.tokenVersion || !cachedUser.emailVerifiedAt) {
             throw new Error('Invalid or expired token.');
         }
         return cachedUser;
@@ -116,33 +62,23 @@ export async function checkToken(req: VercelRequest): Promise<User> {
     });
 
     if (!user) {
-        throw new Error('User specified in token not found');
-    }
-
-    if (decoded.tokenVersion !== user.tokenVersion) {
         throw new Error('Invalid or expired token.');
     }
 
+    if (decoded.tokenVersion !== user.tokenVersion || !user.emailVerifiedAt) {
+        throw new Error('Invalid or expired token.');
+    }
+
+    // Keep the password hash out of the cache and out of every handler, the two that need it read it from the database
+    const { passwordHash, ...sessionUser } = user;
+
     try {
-        await redis.set(cacheKey, user, { ex: 300 });
+        await redis.set(cacheKey, sessionUser, { ex: 300 });
     } catch (error) {
         console.error('Redis write failed in checkToken, continuing without cache:', error);
     }
 
-    return user;
-}
-
-// Format checks
-export function isValidEmail(email?: string | null): boolean {
-    return !!email && emailRegex.test(email);
-}
-
-export function isValidPassword(password?: string | null): boolean {
-    return !!password && passwordRegex.test(password);
-}
-
-export function isValidName(name?: string | null): boolean {
-    return !!name && nameRegex.test(name);
+    return sessionUser;
 }
 
 const COOKIE_OPTIONS = {

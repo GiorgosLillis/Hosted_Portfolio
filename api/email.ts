@@ -1,7 +1,6 @@
 import sanitizeHTML from './lib/sanitize.js';
-import { rateLimiter } from './lib/rateLimiter.js';
 import { recaptchaMiddleware } from './lib/recaptcha.js';
-import { getClientIp, sendStatus } from './lib/functions.js';
+import { getClientIp, sendStatus, enforceRateLimits } from './lib/http.js';
 import { transporter } from './lib/mailer.js';
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -18,8 +17,8 @@ function validateInputs(email: string, subject: string, message: string) {
     errors.push('Subject must be 100 characters or less');
   }
 
-  if (!message || message.length > 1000) {
-    errors.push('Message must be 1000 characters or less');
+  if (!message || message.length > 2000) {
+    errors.push('Message must be 2000 characters or less');
   }
 
   const safe_subject = sanitizeHTML(subject);
@@ -37,11 +36,8 @@ const emailHandler = async (req: VercelRequest, res: VercelResponse) => {
   try {
 
     // IP tracking for rate limiting
-    const ip = getClientIp(req);
-    const { allowed, ttl } = await rateLimiter(ip, 5, 60);
-    if (!allowed) {
-      return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
-    }
+    // Its own key: a bare IP was shared with the weather endpoint, so loading weather used up the contact form's limit
+    if (!(await enforceRateLimits(res, [`contact_attempt_ip:${getClientIp(req)}`, 5, 60]))) return;
 
     const { email, subject, message } = req.body;
 
@@ -56,8 +52,8 @@ const emailHandler = async (req: VercelRequest, res: VercelResponse) => {
     }
 
     const mailOptions = {
-      from: `"Contact Form" <${process.env.EMAIL_ID}>`,
-      to: process.env.EMAIL_ID,
+      from: `"Contact Form" <${process.env.MAIL_FROM}>`,
+      to: process.env.CONTACT_TO,
       subject: `[Contact Form] ${safe_subject}`,
       text: `From: ${email}\n\n${safe_message}`,
       html: `<p><strong>From:</strong> ${email}</p><p>${safe_message.replace(/\n/g, '<br>')}</p>`,

@@ -20,7 +20,12 @@ model User {
   firstName     String?  @map("first_name")
   lastName      String?  @map("last_name")
   tokenVersion  Int      @default(0)
-  
+
+  // Empty until the emailed link is clicked; login is refused until then
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  // Set only at sign-up: an account still unconfirmed after it is deleted. Accounts from before verification have none.
+  verifyDeadline  DateTime? @map("verify_deadline")
+
   // Timestamps (Recommended)
   createdAt     DateTime @default(now()) @map("created_at")
   lastLoginAt   DateTime? @map("last_login_at")
@@ -39,6 +44,7 @@ model City {
   id            Int      @id @default(autoincrement())
   name          String
   country       String
+  region        String? // State or region (English), tells same-named places apart
   latitude      Decimal // Stores the coordinate value
   longitude     Decimal // Stores the coordinate value
 
@@ -46,8 +52,8 @@ model City {
   userId        Int
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Ensures we don't duplicate the same city for the same user
-  @@unique([name, country, userId])
+  // A saved place is identified by its coordinates, so two different places with the same name can both be saved
+  @@unique([userId, latitude, longitude])
   
   @@map("cities")
 }
@@ -89,5 +95,6 @@ model PushSubscription {
   city       String?
   country    String?
   notifyHour Int      @default(6) // UTC hour (0-23) the daily alert cron should send to this subscription
+  lang       String   @default("en") // language of the notification text, follows the site language
   createdAt  DateTime @default(now())
 }

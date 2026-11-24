@@ -1,10 +1,12 @@
 import { prisma } from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
-import { isValidEmail, isValidPassword, setAuthCookies, setCorsHeaders, getClientIp, sendStatus } from '../lib/functions.js';
+import { setAuthCookies, setCorsHeaders, getClientIp, sendStatus } from '../lib/functions.js';
 import { rateLimiter } from '../lib/rateLimiter.js';
+import { normalizeEmail, isValidEmail, isValidPassword } from '../lib/sanitize.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
+import { createEmailToken, sendVerificationEmail } from '../lib/emailVerification.js';
 import { Redis } from '@upstash/redis';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -23,7 +25,8 @@ const loginHandler = async (req: VercelRequest, res: VercelResponse) => {
     }
 
     try {
-        const { email, password } = req.body;
+        const { password } = req.body;
+        const email = normalizeEmail(req.body.email);
         // IP tracking and per-username tracking for rate limiting
         const ip = getClientIp(req);
         const ipKey = `login_attempt_ip:${ip}`;
@@ -46,7 +49,7 @@ const loginHandler = async (req: VercelRequest, res: VercelResponse) => {
                     if (isFirstLockoutThisWindow) {
                         const user = await prisma.user.findUnique({ where: { email }, select: { email: true } });
                         if (user) {
-                            const from = `"Account Security" <${process.env.EMAIL_ID}>`;
+                            const from = `"Account Security" <${process.env.MAIL_FROM}>`;
                             const to = user.email;
                             const subject = 'Multiple failed login attempts';
                             const message = `<p>We noticed multiple failed login attempts on your account. If this wasn't you, consider changing your password.</p>`;
@@ -63,7 +66,8 @@ const loginHandler = async (req: VercelRequest, res: VercelResponse) => {
         }
 
         if (!process.env.JWT_SECRET) {
-            return sendStatus(res, 500, 'server-misconfigured', 'JWT secret is not configured on the server');
+            console.error('JWT_SECRET is not configured on the server');
+            return sendStatus(res, 500, 'server-misconfigured', 'The server is not configured correctly');
         }
 
         if (!isValidEmail(email) || !isValidPassword(password)) {
@@ -81,6 +85,24 @@ const loginHandler = async (req: VercelRequest, res: VercelResponse) => {
         // Same generic message whether the email or the password was wrong
         if (!user || !passwordMatch) {
             return sendStatus(res, 400, 'invalid-credentials', 'Invalid credentials.');
+        }
+
+        // Only reached with the right password, so this can't be used to flood a stranger's inbox. At most one automatic
+        // link per account every 10 minutes, the "resend" button covers anything more.
+        if (!user.emailVerifiedAt) {
+            let linkSent = false;
+            try {
+                if (await redis.set(`verification_auto_sent:${user.id}`, '1', { ex: 600, nx: true }) === 'OK') {
+                    const rawToken = await createEmailToken('verify', user.id, user.email);
+                    await sendVerificationEmail(user.email, rawToken, 'verify');
+                    linkSent = true;
+                }
+            } catch (error) {
+                console.error('Failed to send the confirmation email on login:', error);
+            }
+            return linkSent
+                ? sendStatus(res, 403, 'email-not-verified-sent', 'Confirm your email address before logging in. We just sent you a new link.')
+                : sendStatus(res, 403, 'email-not-verified', 'Confirm your email address before logging in.');
         }
 
         // Track last login time

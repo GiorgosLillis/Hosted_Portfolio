@@ -6,10 +6,11 @@ import SignUpForm from './sign-up.jsx';
 import EditForm from './edit.jsx';
 import ForgotForm from './forgot.jsx';
 import { showToast } from '../common/toast.js';
+import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 import { useTranslation } from 'react-i18next';
-import '../common/i18n.js';
+import i18next, { apiMessage } from '../common/i18n.js';
 
-// Switches between the login/signup/edit views based on auth state, no routing library involved
+// Switches between the login/signup/edit views based on auth state
 const AuthManager = () => {
     const { isAuthenticated, user, logout, isLoading } = useAuth();
     const [view, setView] = useState('initial'); // 'initial', 'login', 'signup'
@@ -63,7 +64,34 @@ const AuthManager = () => {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+// A link from a confirmation email opens profile.html?verify=<token>. The token is taken out of the address bar first,
+// so a reload or StrictMode's second run can't send the single-use token again.
+async function confirmEmailFromLink() {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get('verify');
+    if (!token) {
+        return;
+    }
+    url.searchParams.delete('verify');
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+
+    try {
+        const response = await fetchWithTimeout('/api/verify-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token }),
+        });
+        const data = await response.json();
+        showToast(apiMessage(data, i18next.t('toast-something-wrong')), response.ok ? 'success' : 'danger', 8000);
+    } catch (err) {
+        showToast(err.message || i18next.t('toast-something-wrong'), 'danger');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Done before rendering: confirming an email change logs every session out, so the login state is only read afterwards
+    await confirmEmailFromLink();
+
     // profile.html may not have the mount point yet, create it if it's missing
     let container = document.getElementById('profile-form');
     if (!container) {

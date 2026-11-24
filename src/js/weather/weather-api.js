@@ -1,5 +1,6 @@
 import i18next from '../common/i18n.js';
 import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
+import { isSameLocation } from './location-match.js';
 
 const LOCATION_CACHE_KEY = 'LocationInfo';
 export const WEATHER_CACHE_KEY = 'WeatherInfo';
@@ -21,18 +22,18 @@ export async function getLocation() {
   }
 }
 
-// Manual city/country search -> coordinates, same 24 hour cache as getLocation
-export async function getCityLocation(city, country) {
+// Manual city/state/country search -> coordinates, same 24 hour cache as getLocation. 
+export async function getCityLocation(city, country, state = '') {
 
   const cachedCity = JSON.parse(localStorage.getItem(CITY_CACHE_KEY));
   const currentTime = new Date().getTime();
-  if (cachedCity && currentTime - cachedCity.timestamp < 24 * 60 * 60 * 1000 && cachedCity.city === city && cachedCity.country === country) {
+  if (cachedCity && currentTime - cachedCity.timestamp < 24 * 60 * 60 * 1000 && cachedCity.city === city && cachedCity.country === country && (cachedCity.searchState || '') === state) {
     console.log("City info is fresh and viable, using from localStorage");
     return cachedCity;
   }
   else {
     console.log("City info is older than 24 hours or not found, fetching new data");
-    let cityInfo = await callLocationAPI(city, country);
+    let cityInfo = await callLocationAPI(city, country, state);
     return cityInfo;
   }
 
@@ -40,7 +41,7 @@ export async function getCityLocation(city, country) {
 
 // Two modes in one function: pass a city name for forward geocoding, or nothing for
 // browser-geolocation + reverse geocoding
-async function callLocationAPI(city, country) {
+async function callLocationAPI(city, country, state = '') {
   try {
     if (city) {
       const res = await fetchWithTimeout('/api/Forward_Location', {
@@ -48,7 +49,7 @@ async function callLocationAPI(city, country) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ city, country }),
+        body: JSON.stringify({ city, country, state }),
       });
       if (!res.ok) {
         if (res.status === 404) {
@@ -68,6 +69,8 @@ async function callLocationAPI(city, country) {
         country: cityData.country_name,
         countryCode: cityData.country,
         city: cityData.city,
+        region: cityData.state || '',
+        searchState: state,
         timestamp: new Date().getTime(),
       };
       localStorage.setItem(CITY_CACHE_KEY, JSON.stringify(cityInfo));
@@ -102,6 +105,7 @@ async function callLocationAPI(city, country) {
       country: locationData.country_name,
       countryCode: locationData.country,
       city: locationData.city,
+      region: locationData.state || '',
       timestamp: new Date().getTime(),
     };
 
@@ -173,6 +177,8 @@ export async function fetchWeather(locationInfo) {
       time: Date.now(),
       city: locationInfo.city,
       country: locationInfo.country,
+      latitude: locationInfo.latitude,
+      longitude: locationInfo.longitude,
     };
 
     localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(weatherInfo));
@@ -187,7 +193,7 @@ export async function fetchWeather(locationInfo) {
 export function getCachedWeather(currentLocationInfo) {
   if (isWeatherDataFresh()) {
     const weather_temp = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));
-    if (currentLocationInfo && weather_temp.city === currentLocationInfo.city && weather_temp.country === currentLocationInfo.country) {
+    if (currentLocationInfo && isSameLocation(weather_temp, currentLocationInfo)) {
       console.log('Using cached weather for current location info');
       return weather_temp;
     }

@@ -2,13 +2,16 @@ import React, { memo } from 'react';
 import '../../css/card.css'
 import { formatters, useScrollEffect } from './functions';
 import { useIntersectionObserver } from './useIntersectionObserver';
+import { useTranslation } from 'react-i18next';
+import { conditionLabel } from '../common/i18n.js';
 
 // Individual daily forecast card component
 const DailyForecastCard = memo(({ day, onClick, Unit, isVisible }) => {
     const [ref, isIntersecting] = useIntersectionObserver({ threshold: 0.1 });
+    const { t } = useTranslation();
 
     if (!day || !day.date || !day.tempMax || !day.tempMin) {
-        return <div className="p-4">No daily weather available.</div>;
+        return <div className="p-4">{t('fc-no-daily')}</div>;
     }
     // Format the date as "DD//MM"
     const date = new Date(day.date);
@@ -18,13 +21,13 @@ const DailyForecastCard = memo(({ day, onClick, Unit, isVisible }) => {
 
     return (
         // Off-screen cards must be untabbable
-        <button type="button" ref={ref} tabIndex={isVisible ? 0 : -1} aria-hidden={!isVisible} className={`card-button-reset d-flex justify-content-center align-items-center card-fade-in ${isIntersecting ? 'is-visible' : ''}`} onClick={onClick} aria-label='Press for more daily weather details'>
+        <button type="button" ref={ref} tabIndex={isVisible ? 0 : -1} aria-hidden={!isVisible} className={`card-button-reset d-flex justify-content-center align-items-center card-fade-in ${isIntersecting ? 'is-visible' : ''}`} onClick={onClick} aria-label={t('fc-daily-aria')}>
             <div className="card text-white card-daily mb-3 daily-card col-12 rounded-3">
                 <div className="card-body text-center py-2 px-0 d-flex flex-column justify-content-center align-items-center">
                     <h4 className="card-title mb-1">{formattedDate}</h4>
                     <img
                         src={day.icon}
-                        alt={day.condition}
+                        alt={conditionLabel(day.code, day.condition)}
                         className="weather-icon my-2"
                     />
                     <div className='d-flex flex-column flex-md-row justify-content-around align-items-center mt-1 w-100'>
@@ -40,8 +43,9 @@ const DailyForecastCard = memo(({ day, onClick, Unit, isVisible }) => {
 
 // Horizontally scrollable 4-day-at-a-time carousel, navigable by arrow buttons, swipe, or scroll
 export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
+    const { t } = useTranslation();
     if (!dailyForecast || dailyForecast.length === 0) {
-        return <div className="p-4">No daily forecast available.</div>;
+        return <div className="p-4">{t('fc-no-daily-forecast')}</div>;
     }
 
     const scrollRef = useScrollEffect();
@@ -83,7 +87,7 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
                         className="btn btn-link p-0 text-white col-4 nav-button"
                         disabled={startIndex == 0}
                         onClick={() => setStartIndex(startIndex - 1)}
-                        aria-label="Previous hours">
+                        aria-label={t('fc-prev-hours')}>
                         <i className="bi bi-caret-left-fill" aria-hidden="true"
                             style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                         </i>
@@ -120,7 +124,7 @@ export function WeatherForecast({ dailyForecast, onDayClick, Unit }) {
                         className="btn btn-link p-0 text-white col-4 nav-button"
                         disabled={startIndex + visibleCards >= dailyForecast.length}
                         onClick={() => setStartIndex(startIndex + 1)}
-                        aria-label="Next hours">
+                        aria-label={t('fc-next-hours')}>
                         <i className="bi bi-caret-right-fill" aria-hidden="true"
                             style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                         </i>

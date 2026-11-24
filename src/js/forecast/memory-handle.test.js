@@ -58,18 +58,26 @@ describe('saveCityList', () => {
         expect(localStorage.getItem('accountFavoriteLocations')).toBeNull();
     });
 
-    it('posts the list and removed identifiers, and syncs the account cache on success', async () => {
+    it('posts the whole list, which replaces the stored one, and syncs the account cache on success', async () => {
         checkAuth.mockResolvedValue(fakeUser);
         global.fetch.mockResolvedValue({ ok: true });
 
-        const removed = [{ name: 'Paris', country: 'FR' }];
-        const result = await saveCityList(cityList, removed);
+        const result = await saveCityList(cityList);
 
         expect(result).toEqual({ success: true });
         expect(global.fetch).toHaveBeenCalledWith('/api/cities', expect.objectContaining({
             method: 'POST',
-            body: JSON.stringify({ list: cityList, removed }),
+            body: JSON.stringify({ list: cityList }),
         }));
+        expect(JSON.parse(localStorage.getItem('accountFavoriteLocations'))).toEqual(cityList);
+    });
+
+    it('can save an empty list, which removes every favorite on the account', async () => {
+        checkAuth.mockResolvedValue(fakeUser);
+        global.fetch.mockResolvedValue({ ok: true });
+
+        expect(await saveCityList([])).toEqual({ success: true });
+        expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({ list: [] });
     });
 
     it('does not touch the account cache when the server rejects the save', async () => {

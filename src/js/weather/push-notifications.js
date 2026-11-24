@@ -1,22 +1,23 @@
 import i18next, { apiMessage } from '../common/i18n.js';
 import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
+import { localName, translateNow } from './place-names.js';
 
 loadRecaptchaScript();
 
 const SUBSCRIPTION_ENDPOINT_KEY = 'weatherPushEndpoint';
 const NOTIFY_HOUR_KEY = 'weatherPushNotifyHour';
+const SUBSCRIPTION_LOCATION_KEY = 'weatherPushLocation'; // the place the alert was created for, so a language change doesn't move it
 const DEFAULT_LOCAL_HOUR = 8;
 
 // The user picks a local hour, but subscriptions are stored/matched in UTC to line up with the cron schedule.
-// This is a one-time conversion at subscribe time, so it won't self-correct across a DST change afterwards.
 function localHourToUtcHour(localHour) {
     const date = new Date();
     date.setHours(localHour, 0, 0, 0);
     return date.getUTCHours();
 }
 
-// Last hour the user picked in this browser, purely for pre-filling the dropdown (the server only stores the UTC hour)
+// Last hour the user picked in this browser
 export function getStoredNotifyHour() {
     const stored = parseInt(localStorage.getItem(NOTIFY_HOUR_KEY), 10);
     return isNaN(stored) ? DEFAULT_LOCAL_HOUR : stored;
@@ -76,6 +77,9 @@ export async function subscribeToWeatherAlerts(locationInfo, localHour = DEFAULT
         });
     }
 
+    // The notification is written in the site's language, including the city name when its translation is known
+    await translateNow(locationInfo);
+    const place = localName(locationInfo);
     const token = await getRecaptchaToken('subscribe_weather_alerts');
 
     const response = await fetchWithTimeout('/api/subscribe', {
@@ -88,9 +92,10 @@ export async function subscribeToWeatherAlerts(locationInfo, localHour = DEFAULT
             subscription: subscription.toJSON(),
             latitude: locationInfo.latitude,
             longitude: locationInfo.longitude,
-            city: locationInfo.city,
-            country: locationInfo.country,
+            city: place.city,
+            country: place.country,
             notifyHour: localHourToUtcHour(localHour),
+            lang: i18next.language,
         }),
     });
 
@@ -101,6 +106,12 @@ export async function subscribeToWeatherAlerts(locationInfo, localHour = DEFAULT
 
     localStorage.setItem(SUBSCRIPTION_ENDPOINT_KEY, subscription.endpoint);
     localStorage.setItem(NOTIFY_HOUR_KEY, String(localHour));
+    localStorage.setItem(SUBSCRIPTION_LOCATION_KEY, JSON.stringify({
+        latitude: locationInfo.latitude,
+        longitude: locationInfo.longitude,
+        city: locationInfo.city,
+        country: locationInfo.country,
+    }));
 }
 
 export async function unsubscribeFromWeatherAlerts() {
@@ -117,4 +128,34 @@ export async function unsubscribeFromWeatherAlerts() {
     }
     localStorage.removeItem(SUBSCRIPTION_ENDPOINT_KEY);
     localStorage.removeItem(NOTIFY_HOUR_KEY);
+    localStorage.removeItem(SUBSCRIPTION_LOCATION_KEY);
+}
+
+// The notification text follows the site language, so a subscribed browser tells the server when the language changes.
+// Only the language (and the city label, when the alert's place is remembered) is sent, the alert itself is not recreated.
+export async function updateAlertLanguage() {
+    const subscription = await getExistingSubscription();
+    if (!subscription) {
+        return;
+    }
+
+    let city;
+    try {
+        const saved = JSON.parse(localStorage.getItem(SUBSCRIPTION_LOCATION_KEY));
+        if (saved) {
+            await translateNow(saved);
+            city = localName(saved).city;
+        }
+    } catch {
+    }
+
+    const response = await fetchWithTimeout('/api/update-language', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: subscription.endpoint, lang: i18next.language, city }),
+    });
+    if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(apiMessage(data, i18next.t('push-enable-failed')));
+    }
 }

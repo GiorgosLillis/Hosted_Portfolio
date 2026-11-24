@@ -1,15 +1,15 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma.js';
-import { isValidEmail, isValidPassword, setCorsHeaders, getClientIp, handleApiError, sendStatus } from '../lib/functions.js';
-import { rateLimiter } from '../lib/rateLimiter.js';
+import { setCorsHeaders, getClientIp, handleApiError, sendStatus } from '../lib/functions.js';
+import { enforceRateLimits } from '../lib/http.js';
+import { normalizeEmail, isValidEmail, isValidPassword } from '../lib/sanitize.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
 import { Redis } from '@upstash/redis';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const redis = Redis.fromEnv();
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // POST requests a reset link, PUT redeems one and sets the new password
 async function passwordRecoveryHandler(req: VercelRequest, res: VercelResponse) {
@@ -32,24 +32,14 @@ async function passwordRecoveryHandler(req: VercelRequest, res: VercelResponse) 
 
 async function requestReset(req: VercelRequest, res: VercelResponse) {
     try {
-        const { email } = req.body;
-        // Rate limiting using IP and email
+        const email = normalizeEmail(req.body.email);
         const ip = getClientIp(req);
-        const ipKey = `forget_attempt_ip:${ip}`;
-        const emailKey = `forget_password_attempt_email:${email}`;
+        if (!(await enforceRateLimits(res,
+            [`forget_attempt_ip:${ip}`, 3, 600],                // 3 attempts per 10 minutes per IP
+            [`forget_password_attempt_email:${email}`, 3, 1800] // 3 attempts per 30 minutes per email
+        ))) return;
 
-        const [ipResult, emailResult] = await Promise.all([
-            rateLimiter(ipKey, 3, 600), // 3 attempts per 10 mminutes for IP
-            rateLimiter(emailKey, 3, 1800) // 3 attempts per 30 mminutes for email
-        ]);
-
-        if (!ipResult.allowed || !emailResult.allowed) {
-            const ttl = Math.max(ipResult.ttl, emailResult.ttl);
-            res.setHeader('Retry-After', ttl);
-            return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
-        }
-
-        if (!email || !emailRegex.test(email)) {
+        if (!isValidEmail(email)) {
             return sendStatus(res, 400, 'invalid-input', 'Invalid input.');
         }
 
@@ -63,7 +53,7 @@ async function requestReset(req: VercelRequest, res: VercelResponse) {
 
             const resetUrl = `${process.env.FRONTEND_URL}/reset.html?token=${rawToken}&email=${encodeURIComponent(email)}`;
 
-            const from = `"Account Security" <${process.env.EMAIL_ID}>`;
+            const from = `"Account Security" <${process.env.MAIL_FROM}>`;
             const to = email;
             const subject = 'Reset your password';
             const message = `<p>Click the link below to reset your password. This link expires in 30 minutes.</p><p><a href="${resetUrl}">${resetUrl}</a></p>`;
@@ -79,22 +69,13 @@ async function requestReset(req: VercelRequest, res: VercelResponse) {
 
 async function redeemReset(req: VercelRequest, res: VercelResponse) {
     try {
-        const { email, token, new_password } = req.body;
-        // Rate limiting using IP and email
+        const { token, new_password } = req.body;
+        const email = normalizeEmail(req.body.email);
         const ip = getClientIp(req);
-        const ipKey = `reset_attempt_ip:${ip}`;
-        const emailKey = `reset_password_attempt_email:${email}`;
-
-        const [ipResult, emailResult] = await Promise.all([
-            rateLimiter(ipKey, 3, 600), // 3 attempts per 10 mminutes for IP
-            rateLimiter(emailKey, 3, 1800) // 3 attempts per 30 mminutes for email
-        ]);
-
-        if (!ipResult.allowed || !emailResult.allowed) {
-            const ttl = Math.max(ipResult.ttl, emailResult.ttl);
-            res.setHeader('Retry-After', ttl);
-            return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
-        }
+        if (!(await enforceRateLimits(res,
+            [`reset_attempt_ip:${ip}`, 3, 600],                // 3 attempts per 10 minutes per IP
+            [`reset_password_attempt_email:${email}`, 3, 1800] // 3 attempts per 30 minutes per email
+        ))) return;
 
         if (!token || !isValidEmail(email) || !isValidPassword(new_password)) {
             return sendStatus(res, 400, 'invalid-input', 'Invalid input. Please ensure all fields are correctly filled.');
@@ -122,9 +103,10 @@ async function redeemReset(req: VercelRequest, res: VercelResponse) {
         }
 
         const passwordHash = await bcrypt.hash(new_password, 10);
+        // The reset link reached this inbox, which proves the address too, so an unconfirmed account counts as confirmed now
         await prisma.user.update({
             where: { id: userId },
-            data: { passwordHash, tokenVersion: { increment: 1 } }
+            data: { passwordHash, tokenVersion: { increment: 1 }, ...(user.emailVerifiedAt ? {} : { emailVerifiedAt: new Date(), verifyDeadline: null }) }
         });
 
         // Single-use, gets deleted the moment it's been redeemed
@@ -138,7 +120,7 @@ async function redeemReset(req: VercelRequest, res: VercelResponse) {
         }
 
         try {
-            const from = `"Account Security" <${process.env.EMAIL_ID}>`;
+            const from = `"Account Security" <${process.env.MAIL_FROM}>`;
             const to = user.email;
             const subject = 'Password reset successful';
             const message = `<p>Your password reset request has been completed successfully!</p>`;

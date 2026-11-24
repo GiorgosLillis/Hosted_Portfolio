@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-import { rateLimiter } from '../lib/rateLimiter.js';
+import { enforceRateLimits } from '../lib/http.js';
 import { checkToken, setCorsHeaders, getClientIp, handleApiError, sendStatus } from '../lib/functions.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -18,24 +18,12 @@ const ExportHandler = async (req: VercelRequest, res: VercelResponse) => {
     try {
         // Check user token validation
         const user = await checkToken(req);
-        if (!user) {
-            return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
-        }
 
         const ip = getClientIp(req);
-        const ipCheck = await rateLimiter(`export_attempt_ip:${ip}`, 20, 60); // 20 requests per minute per IP
-        if (!ipCheck.allowed) {
-            res.setHeader('Retry-After', ipCheck.ttl);
-            return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ipCheck.ttl} seconds.`, { ttl: ipCheck.ttl });
-        }
-
-        const userKey = `export_attempt:${user.id}`;
-        const { allowed, ttl } = await rateLimiter(userKey, 10, 60); // 10 requests per minute
-
-        if (!allowed) {
-            res.setHeader('Retry-After', ttl);
-            return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
-        }
+        if (!(await enforceRateLimits(res,
+            [`export_attempt_ip:${ip}`, 20, 60],   // 20 requests per minute per IP
+            [`export_attempt:${user.id}`, 10, 60]  // 10 requests per minute per user
+        ))) return;
 
         // Wait for all the search queries to complete and return one cities and one shopping list
         const [favoriteCities, shoppingList] = await Promise.all([

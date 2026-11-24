@@ -2,6 +2,9 @@ import { checkAuth } from "../common/getcookie.js";
 import { loadRecaptchaScript, getRecaptchaToken } from '../common/recaptcha.js';
 import { showToast } from '../common/toast.js';
 import { fetchWithTimeout } from '../common/fetchWithTimeout.js';
+import i18next from '../common/i18n.js';
+
+const t = (key, options) => i18next.t(key, options);
 
 loadRecaptchaScript();
 
@@ -9,17 +12,18 @@ loadRecaptchaScript();
 const LOCAL_FAVORITES_KEY = 'localFavoriteLocations';
 const ACCOUNT_FAVORITES_KEY = 'accountFavoriteLocations';
 
-export async function saveCityList(cityList, removedCities = []) {
+// The server replaces the stored favorites with this list, so a city missing from it is deleted there too
+export async function saveCityList(cityList) {
     try {
         const user = await checkAuth();
         if (!user) {
             // Not authenticated 
             localStorage.setItem(LOCAL_FAVORITES_KEY, JSON.stringify(cityList));
-            showToast('Saved on this device only. Log in or register to save your favorites to your account and access them everywhere.', 'success');
+            showToast(t('fc-favs-saved-local'), 'success');
             return { success: true };
         }
 
-        showToast('Saving favorites to server...', 'info');
+        showToast(t('fc-favs-saving'), 'info');
         const token = await getRecaptchaToken('save_city_list');
         const response = await fetchWithTimeout('/api/cities', {
             method: 'POST',
@@ -27,19 +31,19 @@ export async function saveCityList(cityList, removedCities = []) {
                 'Content-Type': 'application/json',
                 'g-recaptcha-response': token
             },
-            body: JSON.stringify({ list: cityList, removed: removedCities })
+            body: JSON.stringify({ list: cityList })
         });
 
         if (!response.ok) {
-            showToast('Failed to sync favorites with server.', 'danger');
+            showToast(t('fc-favs-sync-failed'), 'danger');
             return { success: false };
         }
 
         localStorage.setItem(ACCOUNT_FAVORITES_KEY, JSON.stringify(cityList));
-        showToast('Favorites saved and synced with server.', 'success');
+        showToast(t('fc-favs-saved'), 'success');
         return { success: true };
     } catch (error) {
-        showToast('Error syncing favorites.', 'danger');
+        showToast(t('fc-favs-sync-error'), 'danger');
         return { success: false };
     }
 }
@@ -49,15 +53,15 @@ export async function loadCityList() {
         const user = await checkAuth();
         if (!user) {
             // Not authenticated 
-            showToast('Showing favorites saved on this device. Log in or register to sync your favorites everywhere.', 'info');
+            showToast(t('fc-favs-showing-local'), 'info');
             const localList = localStorage.getItem(LOCAL_FAVORITES_KEY);
             return JSON.parse(localList) || [];
         }
 
-        showToast('Loading favorites from server...', 'info');
+        showToast(t('fc-favs-loading'), 'info');
         const response = await fetchWithTimeout(`/api/cities`);
         if (!response.ok) {
-            showToast('Could not fetch favorites from server.', 'danger');
+            showToast(t('fc-favs-fetch-failed'), 'danger');
             // Still authenticated, fall back to the last-known account cache
             const cachedAccountList = localStorage.getItem(ACCOUNT_FAVORITES_KEY);
             return JSON.parse(cachedAccountList) || [];
@@ -66,10 +70,10 @@ export async function loadCityList() {
         const data = await response.json();
         const list = data.list || [];
         localStorage.setItem(ACCOUNT_FAVORITES_KEY, JSON.stringify(list));
-        showToast('Favorites loaded from server.', 'success');
+        showToast(t('fc-favs-loaded'), 'success');
         return list;
     } catch (error) {
-        showToast('Error loading favorites.', 'danger');
+        showToast(t('fc-favs-load-error'), 'danger');
         return [];
     }
 }

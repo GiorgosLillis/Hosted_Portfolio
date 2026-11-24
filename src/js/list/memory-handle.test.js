@@ -50,7 +50,7 @@ document.body.innerHTML = `
     <button id="confirmDeleteBtn"></button>
 `;
 
-const { saveShoppingList, deleteList, loadShoppingList, trackRemovedItem } = await import('./memory-handle.js');
+const { saveShoppingList, deleteList, loadShoppingList } = await import('./memory-handle.js');
 
 const fakeUser = { id: 1, firstName: 'John', lastName: 'Doe' };
 
@@ -96,73 +96,43 @@ describe('saveShoppingList', () => {
         expect(localStorage.getItem('accountShoppingList')).toBeNull();
     });
 
-    it('posts the list and any tracked removals, and syncs the account cache on success', async () => {
+    it('posts just the whole list, which replaces the stored one, and syncs the account cache on success', async () => {
         checkAuth.mockResolvedValue(fakeUser);
         global.fetch.mockResolvedValue({ ok: true });
-        basicControls.list_items.push(makeListItem({ item: 'Milk' }));
-        trackRemovedItem('Eggs');
+        basicControls.list_items.push(makeListItem({ item: 'Milk' }), makeListItem({ item: 'Eggs', quantity: '12', unit: 'pcs' }));
 
         await saveShoppingList();
 
         expect(global.fetch).toHaveBeenCalledWith('/api/list', expect.objectContaining({ method: 'POST' }));
         const body = JSON.parse(global.fetch.mock.calls[0][1].body);
-        expect(body.removed).toEqual(['Eggs']);
-        expect(JSON.parse(localStorage.getItem('accountShoppingList'))[0].name).toBe('Milk');
+        expect(Object.keys(body)).toEqual(['list']);
+        expect(body.list.map((item) => item.item)).toEqual(['Milk', 'Eggs']);
+        expect(JSON.parse(localStorage.getItem('accountShoppingList')).map((item) => item.name)).toEqual(['Milk', 'Eggs']);
     });
 
-    it('clears tracked removals only after a successful save, not before', async () => {
-        checkAuth.mockResolvedValue(fakeUser);
-        global.fetch.mockResolvedValue({ ok: true });
-        basicControls.list_items.push(makeListItem({ item: 'Milk' }));
-        trackRemovedItem('Eggs');
-
-        await saveShoppingList();
-        await saveShoppingList();
-
-        const secondBody = JSON.parse(global.fetch.mock.calls[1][1].body);
-        expect(secondBody.removed).toEqual([]);
-    });
-
-    it('keeps tracked removals for a retry when the save fails', async () => {
+    it('leaves the account cache alone and shows the server message when the save fails', async () => {
         checkAuth.mockResolvedValue(fakeUser);
         global.fetch.mockResolvedValue({ ok: false, json: async () => ({ message: 'Server error' }) });
         basicControls.list_items.push(makeListItem({ item: 'Milk' }));
-        trackRemovedItem('Eggs');
 
         await saveShoppingList();
 
         expect(basicControls.errorMessage.textContent).toBe('Server error');
         expect(localStorage.getItem('accountShoppingList')).toBeNull();
-
-        // Retry, this time succeeding - the earlier removal must still be sent
-        global.fetch.mockResolvedValue({ ok: true });
-        await saveShoppingList();
-
-        const secondBody = JSON.parse(global.fetch.mock.calls[1][1].body);
-        expect(secondBody.removed).toEqual(['Eggs']);
     });
 });
 
 describe('deleteList', () => {
-    it('clears the account cache and tracked removals on success', async () => {
+    it('clears the account cache and the list on success', async () => {
         checkAuth.mockResolvedValue(fakeUser);
         global.fetch.mockResolvedValue({ ok: true });
         localStorage.setItem('accountShoppingList', JSON.stringify([{ name: 'Milk' }]));
-        trackRemovedItem('Eggs');
 
         await deleteList();
 
         expect(global.fetch).toHaveBeenCalledWith('/api/list', expect.objectContaining({ method: 'DELETE' }));
         expect(localStorage.getItem('accountShoppingList')).toBeNull();
         expect(basicControls.resetList).toHaveBeenCalled();
-
-        // Removals tracked before the delete must not leak into a later save
-        checkAuth.mockResolvedValue(fakeUser);
-        global.fetch.mockResolvedValue({ ok: true });
-        basicControls.list_items.push(makeListItem({ item: 'Milk' }));
-        await saveShoppingList();
-        const body = JSON.parse(global.fetch.mock.calls[1][1].body);
-        expect(body.removed).toEqual([]);
     });
 
     it('refuses to delete without ever calling the server when not authenticated', async () => {

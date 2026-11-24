@@ -1,4 +1,25 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import i18next from '../common/i18n.js';
+import { isSameLocation } from '../weather/location-match.js';
+import { PLACE_NAMES_EVENT, localName } from '../weather/place-names.js';
+
+// "City, Region, Country" in the active language, the region is left out when it is unknown or just repeats the city or the country
+export const formatPlace = (place) => {
+    const { city, region, country } = localName(place);
+    const showRegion = region && region !== city && region !== country;
+    return [city, showRegion && region, country].filter(Boolean).join(', ');
+};
+
+// Re-renders the component whenever a translated place name arrives
+export const usePlaceNames = () => {
+    const [, setVersion] = useState(0);
+
+    useEffect(() => {
+        const refresh = () => setVersion((version) => version + 1);
+        window.addEventListener(PLACE_NAMES_EVENT, refresh);
+        return () => window.removeEventListener(PLACE_NAMES_EVENT, refresh);
+    }, []);
+};
 
 // Parallax-style effect, shifts an element horizontally as the page scrolls
 export const useScrollEffect = (disabled) => {
@@ -34,7 +55,7 @@ export const formatters = {
         const fahrenheit = (temp * 9 / 5) + 32;
         return `${fahrenheit.toFixed(1)}°F`;
     },
-    time: (timestamp) => new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    time: (timestamp) => new Date(timestamp).toLocaleTimeString(i18next.language, { hour: '2-digit', minute: '2-digit' }),
 };
 
 export const setBackgroundImage = (imageUrl) => {
@@ -44,11 +65,11 @@ export const setBackgroundImage = (imageUrl) => {
 
 
 export const LoadingIndicator = () => (
-    <div className="d-flex flex-column justify-content-center align-items-center vh-100 p-5" aria-label="Loading weather data">
+    <div className="d-flex flex-column justify-content-center align-items-center vh-100 p-5" aria-label={i18next.t('fc-loading')}>
         <div className="spinner-border text-warning" role="status">
-            <span className="visually-hidden text-warning">Loading...</span>
+            <span className="visually-hidden text-warning">{i18next.t('loading')}</span>
         </div>
-        <p className="mt-3 text-warning fs-3">Loading weather data...</p>
+        <p className="mt-3 text-warning fs-3">{i18next.t('fc-loading')}</p>
     </div>
 );
 
@@ -82,52 +103,55 @@ export function getThermometer(temp) {
 }
 
 export function getWindDirection(degrees) {
+    let direction;
     if (degrees >= 337.5 || degrees < 22.5) {
-        return 'N';
+        direction = 'n';
     } else if (degrees >= 22.5 && degrees < 67.5) {
-        return 'NE';
+        direction = 'ne';
     } else if (degrees >= 67.5 && degrees < 112.5) {
-        return 'E';
+        direction = 'e';
     } else if (degrees >= 112.5 && degrees < 157.5) {
-        return 'SE';
+        direction = 'se';
     } else if (degrees >= 157.5 && degrees < 202.5) {
-        return 'S';
+        direction = 's';
     } else if (degrees >= 202.5 && degrees < 247.5) {
-        return 'SW';
+        direction = 'sw';
     } else if (degrees >= 247.5 && degrees < 292.5) {
-        return 'W';
+        direction = 'w';
     } else {
-        return 'NW';
+        direction = 'nw';
     }
+    return i18next.t(`fc-wind-${direction}`);
 };
 
 
-const warningIcon = <i className="bi bi-exclamation-triangle-fill text-warning mx-1 mx-lg-2" role="img" aria-label="Warning: elevated level"></i>;
-const dangerIcon = <i className="bi bi-exclamation-triangle-fill text-danger mx-1 mx-lg-2" role="img" aria-label="Danger: hazardous level"></i>;
+// Built per call (not module constants) so the aria-label follows the current language
+const warningIcon = () => <i className="bi bi-exclamation-triangle-fill text-warning mx-1 mx-lg-2" role="img" aria-label={i18next.t('fc-level-warning')}></i>;
+const dangerIcon = () => <i className="bi bi-exclamation-triangle-fill text-danger mx-1 mx-lg-2" role="img" aria-label={i18next.t('fc-level-danger')}></i>;
 
 // One threshold-check function per metric
 export function getHumidityWaring(humidity) {
     if (humidity >= 60) {
-        return warningIcon;
+        return warningIcon();
     }
 }
 
 export function getWindSpeedWarning(windspeed) {
-    if (windspeed > 48) {
-        return warningIcon;
+    if (windspeed > 48 && windspeed < 88) {
+        return warningIcon();
     }
     else if (windspeed > 88) {
-        return dangerIcon;
+        return dangerIcon();
     }
     return null;
 }
 
 export function getUvIndexWarning(uvIndex) {
     if (uvIndex >= 6 && uvIndex <= 7) {
-        return warningIcon;
+        return warningIcon();
     }
     else if (uvIndex >= 8) {
-        return dangerIcon;
+        return dangerIcon();
     }
 
     return null;
@@ -135,47 +159,47 @@ export function getUvIndexWarning(uvIndex) {
 
 export function getPM10Warning(PM10) {
     if (PM10 >= 101 && PM10 <= 150) {
-        return warningIcon;
+        return warningIcon();
     }
     else if (PM10 > 150) {
-        return dangerIcon;
+        return dangerIcon();
     }
     return null;
 }
 
 export function getPM2_5Warning(PM2_5) {
     if (PM2_5 >= 56 && PM2_5 <= 150) {
-        return warningIcon;
+        return warningIcon();
     }
     else if (PM2_5 > 150) {
-        return dangerIcon;
+        return dangerIcon();
     }
     return null;
 }
 
 export function getCarbonMonoxideWarning(C0) {
     if (C0 >= 35 && C0 <= 200) {
-        return warningIcon;
+        return warningIcon();
     }
     else if (C0 > 200) {
-        return dangerIcon;
+        return dangerIcon();
     }
     return null;
 }
 
 export function getNitrogenDioxideWarning(N02) {
     if (N02 >= 200) {
-        return dangerIcon;
+        return dangerIcon();
     }
     return null;
 }
 
 export function getOzoneWarning(O3) {
     if (O3 >= 101 && O3 <= 150) {
-        return warningIcon;
+        return warningIcon();
     }
     else if (O3 > 150) {
-        return dangerIcon;
+        return dangerIcon();
     }
 
     return null;
@@ -183,20 +207,16 @@ export function getOzoneWarning(O3) {
 
 export function getSulphurDioxideWarning(SO2) {
     if (SO2 >= 1 && SO2 <= 5) {
-        return warningIcon;
+        return warningIcon();
     }
     else if (SO2 > 20) {
-        return dangerIcon;
+        return dangerIcon();
     }
     return null;
 }
 
-// Case-insensitive check for whether a city/country pair is already in the favorites list
-export function isFavorite(city, country, favorites) {
-    if (!city || !country || !favorites) return false;
-    return favorites.some(fav =>
-        fav && fav.name && fav.country &&
-        fav.name.toLowerCase() === city.toLowerCase() &&
-        fav.country.toLowerCase() === country.toLowerCase()
-    );
+// Whether the location is already in the favorites list, matched by coordinates so a language change doesn't break it
+export function isFavorite(location, favorites) {
+    if (!location || !favorites) return false;
+    return favorites.some(fav => isSameLocation(fav, location));
 };

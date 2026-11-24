@@ -15,8 +15,6 @@ vi.mock('../lib/functions.js', () => ({
     sendStatus: (res, status, code, message, extra = {}) => res.status(status).json({ success: status < 400, code, message, ...extra }),
     setCorsHeaders: vi.fn(),
     getClientIp: vi.fn((req) => req.headers['x-forwarded-for'] || req.socket.remoteAddress),
-    isValidEmail: vi.fn(() => true),
-    isValidPassword: vi.fn(() => true),
     handleApiError: vi.fn((res, error) => {
         console.error(error);
         return res.status(500).json({
@@ -25,6 +23,13 @@ vi.mock('../lib/functions.js', () => ({
             error: undefined
         });
     }),
+}));
+
+// Real email normalizing, only the format checks are controlled by the tests
+vi.mock('../lib/sanitize.js', async (importOriginal) => ({
+    ...(await importOriginal()),
+    isValidEmail: vi.fn(() => true),
+    isValidPassword: vi.fn(() => true),
 }));
 
 vi.mock('../lib/prisma.js', () => ({
@@ -56,7 +61,7 @@ vi.mock('nodemailer', () => ({
 
 const { prisma } = await import('../lib/prisma.js');
 const { rateLimiter } = await import('../lib/rateLimiter.js');
-const { isValidEmail, isValidPassword } = await import('../lib/functions.js');
+const { isValidEmail, isValidPassword } = await import('../lib/sanitize.js');
 const { Redis } = await import('@upstash/redis');
 const nodemailer = (await import('nodemailer')).default;
 const passwordRecoveryHandler = (await import('./passwordRecovery.js')).default;
@@ -102,6 +107,7 @@ describe('passwordRecovery handler', () => {
         });
 
         it('rejects an invalid email format with 400', async () => {
+            isValidEmail.mockReturnValueOnce(false);
             const req = createMockReq({ method: 'POST', body: { email: 'not-an-email' } });
             const res = createMockRes();
             await passwordRecoveryHandler(req, res);
@@ -123,6 +129,15 @@ describe('passwordRecovery handler', () => {
                     message: 'If an account with that email exists, a reset link has been sent.',
                 })
             );
+        });
+
+        it('looks the account up by the lowercase email and rate-limits on that form', async () => {
+            prisma.user.findUnique.mockResolvedValue(null);
+            const req = createMockReq({ method: 'POST', body: { email: ' User@Example.com ' } });
+            await passwordRecoveryHandler(req, createMockRes());
+
+            expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'user@example.com' } });
+            expect(rateLimiter).toHaveBeenCalledWith('forget_password_attempt_email:user@example.com', 3, 1800);
         });
 
         it('generates a token, stores its hash in Redis, and emails a link for a known email', async () => {
@@ -242,6 +257,17 @@ describe('passwordRecovery handler', () => {
                 expect.objectContaining({ message: 'New password must be different from your current password.' })
             );
             expect(prisma.user.update).not.toHaveBeenCalled();
+        });
+
+        it('counts a successful reset as email confirmation for an unconfirmed account, and leaves a confirmed one alone', async () => {
+            await passwordRecoveryHandler(createMockReq({ method: 'PUT', body: validBody }), createMockRes());
+            expect(prisma.user.update.mock.calls[0][0].data).toEqual(expect.objectContaining({ emailVerifiedAt: expect.any(Date), verifyDeadline: null }));
+
+            prisma.user.update.mockClear();
+            const confirmedAt = new Date('2026-01-01');
+            prisma.user.findUnique.mockResolvedValue({ ...fakeResetUser, emailVerifiedAt: confirmedAt });
+            await passwordRecoveryHandler(createMockReq({ method: 'PUT', body: validBody }), createMockRes());
+            expect(prisma.user.update.mock.calls[0][0].data).not.toHaveProperty('emailVerifiedAt');
         });
 
         it('looks up the token by its hash, not the raw value', async () => {

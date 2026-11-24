@@ -3,7 +3,7 @@ import jsonwebtoken from 'jsonwebtoken';
 import { Redis } from '@upstash/redis';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
-import { checkToken, clearAuthCookies, setAuthCookies, setCorsHeaders, getClientIp, enforceRateLimit, handleApiError, sendStatus } from '../lib/functions.js';
+import { checkToken, clearAuthCookies, setAuthCookies, setCorsHeaders, getClientIp, enforceRateLimits, handleApiError, sendStatus } from '../lib/functions.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const redis = Redis.fromEnv();
@@ -11,7 +11,6 @@ const redis = Redis.fromEnv();
 // GET logs out the current device, POST logs out every other device
 async function sessionHandler(req: VercelRequest, res: VercelResponse) {
     setCorsHeaders(res);
-    // Never let the browser/CDN cache this - a cached logout response would keep replaying stale cookies
     res.setHeader('Cache-Control', 'no-store');
 
     if (req.method === 'OPTIONS') {
@@ -29,13 +28,12 @@ async function sessionHandler(req: VercelRequest, res: VercelResponse) {
 
     try {
         const user = await checkToken(req);
-        if (!user) {
-            return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
-        }
 
         const ip = getClientIp(req);
-        if (!(await enforceRateLimit(res, `logout_devices_attempt_ip:${ip}`, 30, 60))) return; // 30 requests per minute per IP
-        if (!(await enforceRateLimit(res, `logout_devices_attempt:${user.id}`, 15, 60))) return; // 15 requests per minute
+        if (!(await enforceRateLimits(res,
+            [`logout_devices_attempt_ip:${ip}`, 30, 60],  // 30 requests per minute per IP
+            [`logout_devices_attempt:${user.id}`, 15, 60] // 15 requests per minute per user
+        ))) return;
 
         const updatedUser = await prisma.user.update({ where: { id: user.id }, data: { tokenVersion: { increment: 1 } } });
 
@@ -59,7 +57,7 @@ async function sessionHandler(req: VercelRequest, res: VercelResponse) {
         setAuthCookies(res, token);
 
         try {
-            const from = `"Account Security" <${process.env.EMAIL_ID}>`;
+            const from = `"Account Security" <${process.env.MAIL_FROM}>`;
             const to = user.email;
             const subject = 'Devices logout';
             const message = `<p>You have logged out all devices connected to your account.</p>`;

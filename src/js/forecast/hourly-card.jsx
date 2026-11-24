@@ -5,10 +5,13 @@ import {
     getCarbonMonoxideWarning, getNitrogenDioxideWarning, getOzoneWarning, getSulphurDioxideWarning, useScrollEffect
 } from './functions';
 import { useIntersectionObserver } from './useIntersectionObserver';
+import { useTranslation } from 'react-i18next';
+import { conditionLabel } from '../common/i18n.js';
 
 // Full detail panel shown when an hourly card is clicked, weather + air quality with warning icons where relevant
 const HourDetails = ({ hour, onClose, Unit }) => {
     const closeButtonRef = useRef(null);
+    const { t } = useTranslation();
 
     // This component stays mounted the whole time (it just renders null when there's no
     // selected hour), so focus-on-open has to key off `hour` itself, not run once on mount
@@ -33,22 +36,22 @@ const HourDetails = ({ hour, onClose, Unit }) => {
     return (
         <>
             <div className='h-100 hour-details ' onKeyDown={handleKeyDown}>
-                <button ref={closeButtonRef} onClick={onClose} className="btn-close btn-close-white" aria-label="Close"></button>
+                <button ref={closeButtonRef} onClick={onClose} className="btn-close btn-close-white" aria-label={t('close')}></button>
                 <h3 className="mt-3 mb-4 mb-xl-5">{formatters.time(hour.timestamp)}</h3>
-                <h4 className="my-3 ">Weather</h4>
+                <h4 className="my-3 ">{t('fc-details-weather')}</h4>
                 <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start mb-2 mb-lg-3 mb-xl-4">
-                    <li className={ItemPropWeather}><p className={ItemMargin}>Temperature: {formatters.temperature(hour.temp, Unit)}</p></li>
-                    <li className={ItemPropWeather}><p className={ItemMargin}>Feels Like: {formatters.temperature(hour.apparentTemperature, Unit)}</p></li>
-                    <li className={ItemPropWeather}><p className={ItemMargin}>Condition: {hour.condition}</p></li>
-                    <li className={ItemPropWeather}><p className={ItemMargin}>Humidity: {hour.humidity}%</p>{getHumidityWaring(hour.humidity)}</li>
-                    <li className={ItemPropWeather}><p className={ItemMargin}>Wind Direction: {getWindDirection(hour.windDirection)}</p></li>
-                    <li className={ItemPropWeather}><p className={ItemMargin}>Wind Speed: {hour.windSpeed} km/h</p>{getWindSpeedWarning(hour.windSpeed)}</li>
-                    <li className={ItemPropWeather}><p className={ItemMargin}>UV Index: {hour.uvIndex}</p>{getUvIndexWarning(hour.uvIndex)}</li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>{t('fc-temperature', { value: formatters.temperature(hour.temp, Unit) })}</p></li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>{t('fc-feels-like', { value: formatters.temperature(hour.apparentTemperature, Unit) })}</p></li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>{t('fc-condition', { value: conditionLabel(hour.code, hour.condition) })}</p></li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>{t('fc-humidity', { value: hour.humidity })}</p>{getHumidityWaring(hour.humidity)}</li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>{t('fc-wind-direction', { value: getWindDirection(hour.windDirection) })}</p></li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>{t('fc-wind-speed', { value: hour.windSpeed })}</p>{getWindSpeedWarning(hour.windSpeed)}</li>
+                    <li className={ItemPropWeather}><p className={ItemMargin}>{t('fc-uv', { value: hour.uvIndex })}</p>{getUvIndexWarning(hour.uvIndex)}</li>
                 </ul>
-                <h4 className="my-3">Air Quality</h4>
+                <h4 className="my-3">{t('fc-details-air')}</h4>
                 <ul className="list-unstyled d-flex flex-row flex-wrap justify-content-start align-items-start">
                     {!hour?.airQuality ? (
-                        <li className={ItemPropWeather}><p className={ItemMargin}>No air quality data available.</p></li>
+                        <li className={ItemPropWeather}><p className={ItemMargin}>{t('fc-no-air')}</p></li>
                     ) : (
                         <>
                             <li className={ItemPropAQI}><p className={ItemMargin}>PM10: {hour.airQuality.pm10}</p>{getPM10Warning(hour.airQuality.pm10)}</li>
@@ -67,19 +70,20 @@ const HourDetails = ({ hour, onClose, Unit }) => {
 
 // Individual hourly forecast card component
 const HourlyForecastCard = memo(({ hour, onClick, Unit, isVisible }) => {
+    const { t } = useTranslation();
     if (!hour || !hour.time || !hour.temp || !hour.icon) {
-        return <div className="p-4">No hourly weather available.</div>;
+        return <div className="p-4">{t('fc-no-hourly')}</div>;
     }
     const [ref, isIntersecting] = useIntersectionObserver({ threshold: 0.1 });
 
     return (
-        <button type="button" ref={ref} tabIndex={isVisible ? 0 : -1} aria-hidden={!isVisible} className={`card-button-reset d-flex justify-content-center align-items-center card-fade-in ${isIntersecting ? 'is-visible' : ''}`} onClick={onClick} aria-label='Press for more hourly weather details'>
+        <button type="button" ref={ref} tabIndex={isVisible ? 0 : -1} aria-hidden={!isVisible} className={`card-button-reset d-flex justify-content-center align-items-center card-fade-in ${isIntersecting ? 'is-visible' : ''}`} onClick={onClick} aria-label={t('fc-hourly-aria')}>
             <div className="card text-white card-daily mb-3 daily-card col-12 rounded-3">
                 <div className="card-body text-center py-2 px-0 d-flex flex-column justify-content-center align-items-center">
                     <h4 className="card-title mb-1">{formatters.time(hour.timestamp)}</h4>
                     <img
                         src={hour.icon}
-                        alt={hour.condition}
+                        alt={conditionLabel(hour.code, hour.condition)}
                         className="weather-icon my-2"
                     />
                     <p className="card-text mb-0">{formatters.temperature(hour.temp, Unit)}</p>
@@ -90,8 +94,9 @@ const HourlyForecastCard = memo(({ hour, onClick, Unit, isVisible }) => {
 });
 
 export function HourlyForecast({ hourlyForecast, Unit, dailyForecast, onDetailsOpen, closeDetails }) {
+    const { t } = useTranslation();
     if (!hourlyForecast || hourlyForecast.length === 0) {
-        return <div className="p-4">No hourly forecast available.</div>;
+        return <div className="p-4">{t('fc-no-hourly-forecast')}</div>;
     }
 
     const [selectedHour, setSelectedHour] = useState(null);
@@ -172,7 +177,7 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast, onDetailsO
 
     const visibleHours = hourlyForecast.slice(startIndex, startIndex + visibleCards);
     if (visibleHours.length === 0) {
-        return <div className="p-4">No more hourly forecast for today.</div>;
+        return <div className="p-4">{t('fc-no-more-hourly')}</div>;
     }
 
     const currentDayTimestamp = visibleHours[0].timestamp;
@@ -199,7 +204,7 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast, onDetailsO
         <>
             <h2 className='mx-auto mb-2'>{formattedDate}</h2>
             {sunrise && sunset && (
-                <h3 className='mx-auto mb-2' id='day-duration'>Sunrise: {sunrise} - Sunset: {sunset}</h3>
+                <h3 className='mx-auto mb-2' id='day-duration'>{t('fc-sun', { sunrise, sunset })}</h3>
             )}
             <section ref={scrollRef} className="row d-flex flex-row justify-content-center align-items-center daily-row my-3 mx-0">
                 <div className='col-1 col-lg-2 d-none d-md-flex justify-content-end'>
@@ -207,7 +212,7 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast, onDetailsO
                         className="btn btn-link p-0 text-white col-4 nav-button"
                         disabled={startIndex === 0}
                         onClick={handlePreviousHours}
-                        aria-label="Previous hours">
+                        aria-label={t('fc-prev-hours')}>
                         <i className="bi bi-caret-left-fill" aria-hidden="true"
                             style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                         </i>
@@ -244,7 +249,7 @@ export function HourlyForecast({ hourlyForecast, Unit, dailyForecast, onDetailsO
                         className="btn btn-link p-0 text-white col-4 nav-button"
                         disabled={startIndex + visibleCards >= hourlyForecast.length}
                         onClick={handleNextHours}
-                        aria-label="Next hours">
+                        aria-label={t('fc-next-hours')}>
                         <i className="bi bi-caret-right-fill" aria-hidden="true"
                             style={{ fontSize: '30px', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                         </i>

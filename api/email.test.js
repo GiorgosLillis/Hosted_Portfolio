@@ -50,6 +50,13 @@ describe('email handler (contact form)', () => {
         const res = createMockRes();
         await emailHandler(req, res);
         expect(res.status).toHaveBeenCalledWith(429);
+        expect(res.setHeader).toHaveBeenCalledWith('Retry-After', 30);
+    });
+
+    it('rate-limits on its own key, not one shared with the weather endpoint', async () => {
+        const req = createMockReq({ body: validBody, headers: { 'x-forwarded-for': '9.9.9.9' } });
+        await emailHandler(req, createMockRes());
+        expect(rateLimiter).toHaveBeenCalledWith('contact_attempt_ip:9.9.9.9', 5, 60);
     });
 
     it('rejects when required fields are missing with 400', async () => {
@@ -83,11 +90,18 @@ describe('email handler (contact form)', () => {
         expect(res.status).toHaveBeenCalledWith(400);
     });
 
-    it('rejects a message over 1000 characters with 400', async () => {
-        const req = createMockReq({ body: { ...validBody, message: 'a'.repeat(1001) } });
+    it('rejects a message over 2000 characters with 400', async () => {
+        const req = createMockReq({ body: { ...validBody, message: 'a'.repeat(2001) } });
         const res = createMockRes();
         await emailHandler(req, res);
         expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it('accepts a message of exactly 2000 characters', async () => {
+        const req = createMockReq({ body: { ...validBody, message: 'a'.repeat(2000) } });
+        const res = createMockRes();
+        await emailHandler(req, res);
+        expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it('sends the email and returns 200 on success', async () => {
@@ -97,7 +111,7 @@ describe('email handler (contact form)', () => {
 
         expect(sendMail).toHaveBeenCalledWith(
             expect.objectContaining({
-                to: process.env.EMAIL_ID,
+                to: process.env.CONTACT_TO,
                 replyTo: validBody.email,
                 subject: expect.stringContaining(validBody.subject),
             })

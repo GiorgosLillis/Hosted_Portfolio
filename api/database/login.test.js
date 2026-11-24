@@ -39,7 +39,13 @@ vi.mock('../lib/mailer.js', () => ({
     sendEmail: vi.fn().mockResolvedValue({ messageId: 'test-id' }),
 }));
 
+vi.mock('../lib/emailVerification.js', () => ({
+    createEmailToken: vi.fn(),
+    sendVerificationEmail: vi.fn(),
+}));
+
 const { prisma } = await import('../lib/prisma.js');
+const { createEmailToken, sendVerificationEmail } = await import('../lib/emailVerification.js');
 const { rateLimiter } = await import('../lib/rateLimiter.js');
 const { Redis } = await import('@upstash/redis');
 const { sendEmail } = await import('../lib/mailer.js');
@@ -60,6 +66,8 @@ beforeEach(async () => {
     prisma.user.update.mockResolvedValue({});
     redis.set.mockResolvedValue('OK');
     sendEmail.mockResolvedValue({ messageId: 'test-id' });
+    createEmailToken.mockResolvedValue('e'.repeat(64));
+    sendVerificationEmail.mockResolvedValue(undefined);
 });
 
 describe('login handler', () => {
@@ -172,6 +180,61 @@ describe('login handler', () => {
         expect(res.status).toHaveBeenCalledWith(400);
     });
 
+    it('looks the account up by the trimmed, lowercase email and rate-limits on that form too', async () => {
+        prisma.user.findUnique.mockResolvedValue({ id: 1, email: credentials.email, passwordHash: storedHash, tokenVersion: 0, emailVerifiedAt: new Date() });
+        const req = createMockReq({ body: { email: '  User@Example.COM ', password: credentials.password } });
+        const res = createMockRes();
+        await loginHandler(req, res);
+
+        expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'user@example.com' } });
+        expect(rateLimiter).toHaveBeenCalledWith('login_attempt_username:user@example.com', 5, 900);
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('refuses an unconfirmed account with 403, no cookie, and emails it a new confirmation link', async () => {
+        prisma.user.findUnique.mockResolvedValue({ id: 1, email: credentials.email, passwordHash: storedHash, tokenVersion: 0, emailVerifiedAt: null });
+        const res = createMockRes();
+        await loginHandler(createMockReq({ body: credentials }), res);
+
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.setHeader).not.toHaveBeenCalledWith('Set-Cookie', expect.anything());
+        expect(redis.set).toHaveBeenCalledWith('verification_auto_sent:1', '1', { ex: 600, nx: true });
+        expect(createEmailToken).toHaveBeenCalledWith('verify', 1, credentials.email);
+        expect(sendVerificationEmail).toHaveBeenCalledWith(credentials.email, 'e'.repeat(64), 'verify');
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'email-not-verified-sent' }));
+    });
+
+    it('sends at most one automatic link per 10 minutes, after that only the resend button sends', async () => {
+        prisma.user.findUnique.mockResolvedValue({ id: 1, email: credentials.email, passwordHash: storedHash, tokenVersion: 0, emailVerifiedAt: null });
+        redis.set.mockResolvedValue(null); // NX: a link already went out in this window
+        const res = createMockRes();
+        await loginHandler(createMockReq({ body: credentials }), res);
+
+        expect(sendVerificationEmail).not.toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'email-not-verified' }));
+    });
+
+    it('still answers 403 (without the "sent" wording) when the link fails to send', async () => {
+        prisma.user.findUnique.mockResolvedValue({ id: 1, email: credentials.email, passwordHash: storedHash, tokenVersion: 0, emailVerifiedAt: null });
+        sendVerificationEmail.mockRejectedValueOnce(new Error('SMTP is down'));
+        const res = createMockRes();
+        await loginHandler(createMockReq({ body: credentials }), res);
+
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'email-not-verified' }));
+    });
+
+    it('does not reveal that an unconfirmed account exists to someone with the wrong password', async () => {
+        prisma.user.findUnique.mockResolvedValue({ id: 1, email: credentials.email, passwordHash: storedHash, emailVerifiedAt: null });
+        const res = createMockRes();
+        await loginHandler(createMockReq({ body: { ...credentials, password: 'WrongPass1!' } }), res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'invalid-credentials' }));
+        expect(sendVerificationEmail).not.toHaveBeenCalled();
+    });
+
     it('logs in successfully and sets an auth cookie', async () => {
         prisma.user.findUnique.mockResolvedValue({
             id: 1,
@@ -180,6 +243,7 @@ describe('login handler', () => {
             firstName: 'John',
             lastName: 'Doe',
             tokenVersion: 5,
+            emailVerifiedAt: new Date(),
         });
 
         const req = createMockReq({ body: credentials });
@@ -201,6 +265,7 @@ describe('login handler', () => {
             firstName: 'John',
             lastName: 'Doe',
             tokenVersion: 5,
+            emailVerifiedAt: new Date(),
         });
 
         const req = createMockReq({ body: credentials });

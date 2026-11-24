@@ -1,8 +1,20 @@
 import { prisma } from '../lib/prisma.js';
 import { checkToken, setCorsHeaders, getClientIp, sendStatus } from '../lib/functions.js';
-import { rateLimiter } from '../lib/rateLimiter.js';
+import { enforceRateLimits } from '../lib/http.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+// Limits the browser already respects, enforced here too because anyone can call the API directly
+const MAX_CITIES = 100;
+const MAX_TEXT_LENGTH = 100;
+
+// Accepts numbers and numeric strings only, so null, an empty string or a boolean can't turn into 0
+function toCoordinate(value: unknown): number {
+  return typeof value === 'number' || (typeof value === 'string' && value.trim() !== '') ? Number(value) : NaN;
+}
+
+const isValidLatitude = (value: number) => Number.isFinite(value) && value >= -90 && value <= 90;
+const isValidLongitude = (value: number) => Number.isFinite(value) && value >= -180 && value <= 180;
 
 // GET to get cities list, POST to create said list
 async function citiesHandler(req: VercelRequest, res: VercelResponse) {
@@ -14,42 +26,20 @@ async function citiesHandler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const user = await checkToken(req);
-    if (!user) {
-      return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
-    }
 
     const ip = getClientIp(req);
 
     if (req.method === 'GET') {
-      const ipCheck = await rateLimiter(`cities_get_attempt_ip:${ip}`, 120, 60); // 120 requests per minute per IP   
-      const userKey = `cities_get_attempt:${user.id}`;
-      const { allowed, ttl } = await rateLimiter(userKey, 60, 60); // 60 requests per minute per user
-
-      if (!ipCheck.allowed) {
-        res.setHeader('Retry-After', ipCheck.ttl);
-        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ipCheck.ttl} seconds.`, { ttl: ipCheck.ttl });
-      }
-      if (!allowed) {
-        res.setHeader('Retry-After', ttl);
-        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
-      }
-
+      if (!(await enforceRateLimits(res,
+        [`cities_get_attempt_ip:${ip}`, 120, 60], // 120 requests per minute per IP
+        [`cities_get_attempt:${user.id}`, 60, 60] // 60 requests per minute per user
+      ))) return;
       await GET(res, user);
     } else if (req.method === 'POST') {
-
-      const ipCheck = await rateLimiter(`cities_post_attempt_ip:${ip}`, 40, 60); // 40 requests per minute per IP
-      if (!ipCheck.allowed) {
-        res.setHeader('Retry-After', ipCheck.ttl);
-        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ipCheck.ttl} seconds.`, { ttl: ipCheck.ttl });
-      }
-      // Rate limiting keyed on user id
-      const userKey = `cities_post_attempt:${user.id}`;
-      const { allowed, ttl } = await rateLimiter(userKey, 20, 60); // 20 requests per minute
-
-      if (!allowed) {
-        res.setHeader('Retry-After', ttl);
-        return sendStatus(res, 429, 'rate-limited', `Too many requests. Please try again in ${ttl} seconds.`, { ttl: ttl });
-      }
+      if (!(await enforceRateLimits(res,
+        [`cities_post_attempt_ip:${ip}`, 40, 60],  // 40 requests per minute per IP
+        [`cities_post_attempt:${user.id}`, 20, 60] // 20 requests per minute per user
+      ))) return;
       await POST(req, res, user);
     } else {
       res.setHeader('Allow', ['GET', 'POST', 'OPTIONS']);
@@ -84,6 +74,7 @@ async function GET(res: VercelResponse, user: any) {
         id: true,
         name: true,
         country: true,
+        region: true,
         latitude: true,
         longitude: true
       }
@@ -97,19 +88,19 @@ async function GET(res: VercelResponse, user: any) {
   }
 }
 
+// The saved list replaces the stored one: whatever is in it is added or updated, every other city of the user is deleted
 async function POST(req: VercelRequest, res: VercelResponse, user: any) {
 
   const list = req.body.list;
-  const removed = req.body.removed || [];
-  // Check if the list exists and if the fields are in valid format
   if (!list || !Array.isArray(list)) {
     return sendStatus(res, 400, 'invalid-body-array', 'Invalid request body. Expected an array of items.');
   }
-
-  if (!Array.isArray(removed)) {
-    return sendStatus(res, 400, 'invalid-removed', 'Invalid request body. Expected an array of removed items.');
+  if (list.length > MAX_CITIES) {
+    return sendStatus(res, 400, 'list-too-large', 'The list is too large.');
   }
 
+  // The validated, parsed values are what gets stored, never the raw client strings
+  const validCities: { name: string; country: string; region: string | null; latitude: number; longitude: number }[] = [];
   for (const city of list) {
     if (typeof city !== 'object' || city === null) {
       return sendStatus(res, 400, 'city-invalid', 'Each item in the list must be a valid city object.');
@@ -117,64 +108,65 @@ async function POST(req: VercelRequest, res: VercelResponse, user: any) {
     if (typeof city.name !== 'string' || city.name.trim() === '') {
       return sendStatus(res, 400, 'city-name-required', 'City name is required and must be a non-empty string.');
     }
+    if (city.name.length > MAX_TEXT_LENGTH) {
+      return sendStatus(res, 400, 'city-name-long', 'City name is too long.');
+    }
     if (typeof city.country !== 'string' || city.country.trim() === '') {
       return sendStatus(res, 400, 'city-country-required', 'City country is required and must be a non-empty string.');
     }
-    const latitude = parseFloat(city.latitude);
-    const longitude = parseFloat(city.longitude);
-    if (typeof latitude !== 'number' || latitude < -90 || latitude > 90) {
+    if (city.country.length > MAX_TEXT_LENGTH) {
+      return sendStatus(res, 400, 'country-long', 'Country name is too long.');
+    }
+    // Optional, an empty one is stored as none
+    const hasRegion = city.region !== undefined && city.region !== null && city.region !== '';
+    if (hasRegion && (typeof city.region !== 'string' || city.region.length > MAX_TEXT_LENGTH)) {
+      return sendStatus(res, 400, 'region-invalid', 'City region must be a string of at most 100 characters.');
+    }
+    const latitude = toCoordinate(city.latitude);
+    const longitude = toCoordinate(city.longitude);
+    if (!isValidLatitude(latitude)) {
       return sendStatus(res, 400, 'invalid-latitude', 'City latitude is required and must be a number between -90 and 90.');
     }
-    if (typeof longitude !== 'number' || longitude < -180 || longitude > 180) {
+    if (!isValidLongitude(longitude)) {
       return sendStatus(res, 400, 'invalid-longitude', 'City longitude is required and must be a number between -180 and 180.');
     }
+    validCities.push({ name: city.name, country: city.country, region: hasRegion ? city.region : null, latitude, longitude });
   }
 
-  for (const city of removed) {
-    if (typeof city !== 'object' || city === null || typeof city.name !== 'string' || typeof city.country !== 'string') {
-      return sendStatus(res, 400, 'removed-invalid', 'Each removed entry must include a name and country.');
-    }
+  // A place is identified by its coordinates, and one statement can't insert the same (user, coordinates) twice
+  const coordinateKeys = new Set(validCities.map((city) => `${city.latitude},${city.longitude}`));
+  if (coordinateKeys.size !== validCities.length) {
+    return sendStatus(res, 400, 'city-duplicate', 'The list contains the same place twice.');
   }
 
   try {
-    // Delete cities the client explicitly removed
-    if (removed.length > 0) {
-      await prisma.city.deleteMany({
-        where: {
-          userId: user.id,
-          OR: removed.map(city => ({
-            name: city.name,
-            country: city.country
-          }))
-        },
-      });
+    // Postgres over Neon's HTTP mode has no transactions, so this is two statements instead of one per city.
+    // Upsert first: if the delete then fails, the user has a few extra old cities rather than missing ones.
+    if (validCities.length > 0) {
+      await prisma.$executeRaw`
+        INSERT INTO "cities" ("userId", "name", "country", "region", "latitude", "longitude")
+        SELECT ${user.id}::int, name, country, region, latitude, longitude
+        FROM unnest(
+          ${validCities.map((city) => city.name)}::text[],
+          ${validCities.map((city) => city.country)}::text[],
+          ${validCities.map((city) => city.region)}::text[],
+          ${validCities.map((city) => city.latitude)}::numeric[],
+          ${validCities.map((city) => city.longitude)}::numeric[]
+        ) WITH ORDINALITY AS incoming(name, country, region, latitude, longitude, position)
+        ORDER BY position
+        ON CONFLICT ("userId", "latitude", "longitude") DO UPDATE SET
+          "name" = EXCLUDED."name",
+          "country" = EXCLUDED."country",
+          -- A save from a client that doesn't know the region must not erase the one already stored
+          "region" = COALESCE(EXCLUDED."region", "cities"."region")`;
     }
 
-    // Store the cities
-    const upsertPromises = list.map(city => {
-      return prisma.city.upsert({
-        where: {
-          name_country_userId: {
-            name: city.name,
-            country: city.country,
-            userId: user.id
-          }
-        },
-        update: {
-          latitude: city.latitude,
-          longitude: city.longitude
-        },
-        create: {
-          userId: user.id,
-          name: city.name,
-          country: city.country,
-          latitude: city.latitude,
-          longitude: city.longitude
-        },
-      });
+    await prisma.city.deleteMany({
+      where: {
+        userId: user.id,
+        NOT: validCities.map((city) => ({ latitude: city.latitude, longitude: city.longitude })),
+      },
     });
-
-    await Promise.all(upsertPromises);
 
     return sendStatus(res, 200, 'cities-updated', 'City list updated successfully.');
 

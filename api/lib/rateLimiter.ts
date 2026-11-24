@@ -7,16 +7,21 @@ export interface RateLimitResult {
     ttl: number;
 }
 
+// Counts and sets the expiry in one atomic step. A key that somehow has no expiry (TTL < 0) gets one, so it can't block forever.
+const COUNT_SCRIPT = `
+local count = redis.call('INCR', KEYS[1])
+if redis.call('TTL', KEYS[1]) < 0 then
+  redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return count
+`;
+
 // Fixed-window counter in Redis, one key per identifier (IP, email, user id, etc.)
 export async function rateLimiter(key: string, limit: number, windowInSeconds: number): Promise<RateLimitResult> {
     const redisKey = `rate_limit:${key}`;
 
     try {
-        const currentCount = await redis.incr(redisKey);
-
-        if (currentCount === 1) {
-            await redis.expire(redisKey, windowInSeconds);
-        }
+        const currentCount = Number(await redis.eval(COUNT_SCRIPT, [redisKey], [windowInSeconds]));
 
         const isAllowed = currentCount <= limit;
 

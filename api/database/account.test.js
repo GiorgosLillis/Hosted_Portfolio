@@ -13,22 +13,12 @@ vi.mock('../lib/rateLimiter.js', () => ({
 vi.mock('../lib/functions.js', () => ({
     sendStatus: (res, status, code, message, extra = {}) => res.status(status).json({ success: status < 400, code, message, ...extra }),
     checkToken: vi.fn(),
-    isValidEmail: vi.fn(() => true),
-    isValidPassword: vi.fn(() => true),
-    isValidName: vi.fn(() => true),
     setAuthCookies: vi.fn(),
     clearAuthCookies: vi.fn(),
     setCorsHeaders: vi.fn(),
     getClientIp: vi.fn((req) => req.headers['x-forwarded-for'] || req.socket.remoteAddress),
-    enforceRateLimit: vi.fn(async (res, key, limit, windowSeconds) => {
-        const { rateLimiter } = await import('../lib/rateLimiter.js');
-        const { allowed, ttl } = await rateLimiter(key, limit, windowSeconds);
-        if (!allowed) {
-            res.setHeader('Retry-After', ttl);
-            res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
-        }
-        return allowed;
-    }),
+    // The real one from http.js, running on the mocked rateLimiter above
+    enforceRateLimits: async (...args) => (await vi.importActual('../lib/http.js')).enforceRateLimits(...args),
     handleApiError: vi.fn((res, error) => {
         if (error.message === 'Invalid or expired token.' || error.message === 'Not authenticated') {
             return res.status(401).json({ success: false, message: 'Not authenticated' });
@@ -42,9 +32,18 @@ vi.mock('../lib/functions.js', () => ({
     }),
 }));
 
+// Real escaping and email normalizing, only the format checks are controlled by the tests
+vi.mock('../lib/sanitize.js', async (importOriginal) => ({
+    ...(await importOriginal()),
+    isValidEmail: vi.fn(() => true),
+    isValidPassword: vi.fn(() => true),
+    isValidName: vi.fn(() => true),
+}));
+
 vi.mock('../lib/prisma.js', () => ({
     prisma: {
         user: {
+            findUnique: vi.fn(),
             update: vi.fn(),
             delete: vi.fn(),
         },
@@ -67,7 +66,16 @@ vi.mock('@upstash/redis', () => ({
     },
 }));
 
-const { checkToken, isValidEmail, isValidPassword, isValidName } = await import('../lib/functions.js');
+// The token store, the link email and the DNS lookup are tested in emailVerification.test.js
+vi.mock('../lib/emailVerification.js', () => ({
+    checkEmailDomain: vi.fn(),
+    createEmailToken: vi.fn(),
+    sendVerificationEmail: vi.fn(),
+}));
+
+const { checkToken } = await import('../lib/functions.js');
+const { checkEmailDomain, createEmailToken, sendVerificationEmail } = await import('../lib/emailVerification.js');
+const { isValidEmail, isValidPassword, isValidName } = await import('../lib/sanitize.js');
 const { prisma } = await import('../lib/prisma.js');
 const { rateLimiter } = await import('../lib/rateLimiter.js');
 const nodemailer = (await import('nodemailer')).default;
@@ -85,6 +93,9 @@ beforeEach(() => {
     isValidName.mockReturnValue(true);
     sendMail.mockResolvedValue({ messageId: 'test-id' });
     redis.del.mockResolvedValue(1);
+    checkEmailDomain.mockResolvedValue('ok');
+    createEmailToken.mockResolvedValue('c'.repeat(64));
+    sendVerificationEmail.mockResolvedValue(undefined);
 });
 
 describe('account handler', () => {
@@ -162,7 +173,10 @@ describe('account handler', () => {
 
         beforeEach(async () => {
             storedHash = await bcrypt.hash(validBody.current_password, 10);
-            fakeUser = { id: 1, email: validBody.email, passwordHash: storedHash, tokenVersion: 0 };
+            // The session user has no password hash, the handler reads it from the database
+            fakeUser = { id: 1, email: validBody.email, tokenVersion: 0 };
+            // By id: the password hash of the logged-in account. By email: whether a new address is already taken (it isn't).
+            prisma.user.findUnique.mockImplementation(async ({ where }) => (where.id !== undefined ? { passwordHash: storedHash } : null));
             prisma.user.update.mockResolvedValue({
                 id: 1,
                 email: validBody.email,
@@ -264,7 +278,7 @@ describe('account handler', () => {
             expect(redis.del).toHaveBeenCalledWith(`user_session:${fakeUser.id}`);
         });
 
-        it('does not bump tokenVersion or touch the cache when the password is unchanged', async () => {
+        it('does not bump tokenVersion when the password is unchanged, but still clears the stale cached session', async () => {
             checkToken.mockResolvedValue(fakeUser);
             const req = createMockReq({ method: 'PUT', body: { ...validBody, password: '' } });
             const res = createMockRes();
@@ -272,7 +286,125 @@ describe('account handler', () => {
 
             const updateArgs = prisma.user.update.mock.calls[0][0];
             expect(updateArgs.data.tokenVersion).toBeUndefined();
-            expect(redis.del).not.toHaveBeenCalled();
+            expect(redis.del).toHaveBeenCalledWith(`user_session:${fakeUser.id}`);
+        });
+
+        it('keeps the current email when a new one is entered, and sends the new address a confirmation link', async () => {
+            checkToken.mockResolvedValue(fakeUser);
+            const res = createMockRes();
+            await accountHandler(createMockReq({ method: 'PUT', body: { ...validBody, email: 'New.Address@Example.com' } }), res);
+
+            const updateArgs = prisma.user.update.mock.calls[0][0];
+            expect(updateArgs.data.email).toBeUndefined();
+            // Other devices are logged out when the change is confirmed, not now
+            expect(updateArgs.data.tokenVersion).toBeUndefined();
+            expect(createEmailToken).toHaveBeenCalledWith('change', fakeUser.id, 'new.address@example.com');
+            expect(sendVerificationEmail).toHaveBeenCalledWith('new.address@example.com', 'c'.repeat(64), 'change');
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'email-change-pending', pendingEmail: 'new.address@example.com' }));
+        });
+
+        it('rejects a new address that is throwaway, cannot receive mail or is already taken, before changing anything', async () => {
+            checkToken.mockResolvedValue(fakeUser);
+            const cases = [
+                () => checkEmailDomain.mockResolvedValueOnce('disposable'),
+                () => checkEmailDomain.mockResolvedValueOnce('no-mail'),
+                () => prisma.user.findUnique.mockImplementation(async ({ where }) => (where.id !== undefined ? { passwordHash: storedHash } : { id: 99 })),
+            ];
+            const expectedCodes = ['email-disposable', 'email-domain-invalid', 'email-exists'];
+
+            for (const [index, arrange] of cases.entries()) {
+                arrange();
+                const res = createMockRes();
+                await accountHandler(createMockReq({ method: 'PUT', body: { ...validBody, email: 'taken@example.com' } }), res);
+                expect(res.status).toHaveBeenCalledWith(400);
+                expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: expectedCodes[index] }));
+            }
+            expect(prisma.user.update).not.toHaveBeenCalled();
+            expect(sendVerificationEmail).not.toHaveBeenCalled();
+        });
+
+        it('saves the other changes but says so when the link to the new address cannot be sent', async () => {
+            checkToken.mockResolvedValue(fakeUser);
+            sendVerificationEmail.mockRejectedValueOnce(new Error('SMTP is down'));
+            const res = createMockRes();
+            await accountHandler(createMockReq({ method: 'PUT', body: { ...validBody, email: 'new.address@example.com' } }), res);
+
+            expect(prisma.user.update).toHaveBeenCalled();
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'email-change-send-failed' }));
+        });
+
+        it('does not treat a different letter case of the same email as a change', async () => {
+            checkToken.mockResolvedValue({ ...fakeUser, email: 'User@Example.com' });
+            const res = createMockRes();
+            await accountHandler(createMockReq({ method: 'PUT', body: validBody }), res);
+
+            expect(sendVerificationEmail).not.toHaveBeenCalled();
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'user-updated' }));
+        });
+
+        it('tells the old address what changed and that the new address must confirm it, in full so a typo can be spotted', async () => {
+            checkToken.mockResolvedValue(fakeUser);
+            const req = createMockReq({ method: 'PUT', body: { ...validBody, email: 'new.address@example.com', password: 'NewStr0ng!Pass' } });
+            await accountHandler(req, createMockRes());
+
+            const mail = sendMail.mock.calls[0][0];
+            expect(mail.to).toBe(fakeUser.email);
+            expect(mail.html).toContain('new.address@example.com');
+            expect(mail.html).toContain('takes effect once the link sent to that address is clicked');
+            expect(mail.html).toContain('your password');
+            expect(mail.html).toContain('logged out of your other devices');
+        });
+
+        it('does not mention a device logout when only the name changed', async () => {
+            checkToken.mockResolvedValue({ ...fakeUser, firstName: 'Jon', lastName: 'Doe' });
+            const req = createMockReq({ method: 'PUT', body: validBody });
+            const res = createMockRes();
+            await accountHandler(req, res);
+
+            const mail = sendMail.mock.calls[0][0];
+            expect(mail.html).toContain('your name');
+            expect(mail.html).not.toContain('logged out');
+        });
+
+        it('still returns 200 when clearing the cached session fails', async () => {
+            checkToken.mockResolvedValue(fakeUser);
+            redis.del.mockRejectedValueOnce(new Error('Redis is down'));
+            const req = createMockReq({ method: 'PUT', body: validBody });
+            const res = createMockRes();
+            await accountHandler(req, res);
+            expect(res.status).toHaveBeenCalledWith(200);
+        });
+
+        it('returns 401 when the account no longer exists in the database', async () => {
+            checkToken.mockResolvedValue(fakeUser);
+            prisma.user.findUnique.mockResolvedValue(null);
+            const req = createMockReq({ method: 'PUT', body: validBody });
+            const res = createMockRes();
+            await accountHandler(req, res);
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(prisma.user.update).not.toHaveBeenCalled();
+        });
+
+        it('also recognises the duplicate email error when the adapter gives only the message and no P2002 code', async () => {
+            checkToken.mockResolvedValue(fakeUser);
+            prisma.user.update.mockRejectedValue(new Error('duplicate key value violates unique constraint "users_email_key"'));
+            const req = createMockReq({ method: 'PUT', body: validBody });
+            const res = createMockRes();
+            await accountHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'email-exists' }));
+        });
+
+        it('returns 400 when the new email already belongs to another account', async () => {
+            checkToken.mockResolvedValue(fakeUser);
+            prisma.user.update.mockRejectedValue(Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }));
+            const req = createMockReq({ method: 'PUT', body: validBody });
+            const res = createMockRes();
+            await accountHandler(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'email-exists' }));
         });
 
         it('returns 500 if the database throws unexpectedly', async () => {
@@ -291,6 +423,8 @@ describe('account handler', () => {
 
         beforeEach(async () => {
             storedHash = await bcrypt.hash(credentials.password, 10);
+            prisma.user.findUnique.mockResolvedValue({ passwordHash: storedHash });
+            prisma.user.delete.mockResolvedValue({});
         });
 
         it('rejects when rate limited by IP or user with 429', async () => {
@@ -328,11 +462,45 @@ describe('account handler', () => {
         });
 
         it('rejects when password does not match with 401', async () => {
-            checkToken.mockResolvedValue({ id: 1, passwordHash: storedHash });
+            checkToken.mockResolvedValue({ id: 1 });
             const req = createMockReq({ method: 'DELETE', body: { password: 'WrongPass1!' } });
             const res = createMockRes();
             await accountHandler(req, res);
             expect(res.status).toHaveBeenCalledWith(401);
+            expect(prisma.user.delete).not.toHaveBeenCalled();
+        });
+
+        it('deletes nothing yet: emails the account a deletion link and keeps the session', async () => {
+            checkToken.mockResolvedValue({ id: 1, email: 'user@example.com' });
+            const res = createMockRes();
+            await accountHandler(createMockReq({ method: 'DELETE', body: credentials }), res);
+
+            expect(prisma.user.delete).not.toHaveBeenCalled();
+            expect(createEmailToken).toHaveBeenCalledWith('delete', 1, 'user@example.com');
+            expect(sendVerificationEmail).toHaveBeenCalledWith('user@example.com', 'c'.repeat(64), 'delete');
+            expect(res.setHeader).not.toHaveBeenCalledWith('Set-Cookie', expect.anything());
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'delete-pending' }));
+        });
+
+        it('answers 500 and deletes nothing when the deletion email cannot be sent', async () => {
+            checkToken.mockResolvedValue({ id: 1, email: 'user@example.com' });
+            sendVerificationEmail.mockRejectedValueOnce(new Error('SMTP is down'));
+            const res = createMockRes();
+            await accountHandler(createMockReq({ method: 'DELETE', body: credentials }), res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(prisma.user.delete).not.toHaveBeenCalled();
+        });
+
+        it('returns 401 when the account no longer exists in the database', async () => {
+            checkToken.mockResolvedValue({ id: 1 });
+            prisma.user.findUnique.mockResolvedValue(null);
+            const req = createMockReq({ method: 'DELETE', body: credentials });
+            const res = createMockRes();
+            await accountHandler(req, res);
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(prisma.user.delete).not.toHaveBeenCalled();
         });
     });
 });

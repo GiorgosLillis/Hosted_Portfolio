@@ -37,7 +37,7 @@ form.addEventListener("submit", async function (e) {
         if (!formData.subject || formData.subject.trim().length < 1 || formData.subject.length > 100) {
             errors.push(t('subject-length'));
         }
-        if (!formData.message ||formData.message.trim().length < 1 || formData.message.length > 1000) {
+        if (!formData.message ||formData.message.trim().length < 1 || formData.message.length > 2000) {
             errors.push(t('message-length'));
         }
 

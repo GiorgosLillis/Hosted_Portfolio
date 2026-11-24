@@ -203,7 +203,7 @@
     >
       <p id="logStatus" class="text-center mt-lg-4 mt-xl-5 fs-2"></p>
       <form
-        class="my-5 p-0 item-input container col-12 col-md-8 col-lg-6 d-flex flex-column justify-content-center align-items-center"
+        class="my-5 p-0 item-input container col-12 col-md-10 col-lg-8 col-xl-6 d-flex flex-column justify-content-center align-items-center"
       >
         <h1 class="p-0 mb-4 text-center" data-i18n="shopping">SHOPPING LIST</h1>
         <div
@@ -247,6 +247,7 @@
               type="text"
               class="form-control"
               id="item"
+              maxlength="100"
               placeholder="Write your item here"
               aria-label="Select Item on cart"
               data-i18n-attr="aria-label:cart-aria;placeholder:cart-placeholder"
@@ -264,6 +265,7 @@
               placeholder="e.g. 2.5"
               min="0"
               step="0.01"
+              max="1000"
               data-i18n-attr="aria-label:quantity-aria;placeholder:quantity-placeholder"
             />
           </div>
@@ -271,7 +273,12 @@
             <label for="unit" class="form-label mb-0"
               ><span class="h2" data-i18n="unit">Unit</span></label
             >
-            <select class="form-select" id="unit" aria-label="Select Unit" data-i18n-attr="aria-label:unit-aria">
+            <select
+              class="form-select"
+              id="unit"
+              aria-label="Select Unit"
+              data-i18n-attr="aria-label:unit-aria"
+            >
               <option value="" data-i18n="unit">Unit</option>
               <option value="pcs" data-i18n="pcs">Pcs</option>
               <option value="kg">Kg</option>
@@ -347,7 +354,7 @@
       </form>
 
       <section
-        class="row col-12 col-md-8 col-lg-6 row-cols-2 row-cols-md-4 g-0 d-flex justify-content-center align-items-center"
+        class="row col-12 col-md-10 col-lg-8 col-xl-6 row-cols-2 row-cols-md-4 g-0 d-flex justify-content-center align-items-center"
       >
         <div class="col d-flex justify-content-center align-items-center">
           <button
@@ -399,7 +406,7 @@
         </div>
       </section>
       <section
-        class="row col-12 col-md-8 col-lg-6 row-cols-2 row-cols-md-4 g-0 d-flex justify-content-center align-items-center"
+        class="row col-12 col-md-10 col-lg-8 col-xl-6 row-cols-2 row-cols-md-4 g-0 d-flex justify-content-center align-items-center"
       >
         <div class="col d-flex justify-content-center align-items-center">
           <button
@@ -449,7 +456,7 @@
       </div>
 
       <section
-        class="row col-12 col-md-8 col-lg-6 d-flex flex-column justify-content-center align-items-center"
+        class="row col-12 col-md-10 col-lg-8 col-xl-6 d-flex flex-column justify-content-center align-items-center"
       >
         <ul
           class="list-group my-2 col-12 col-md-8 px-0"
@@ -458,7 +465,10 @@
         ></ul>
       </section>
     </main>
-    <p class="recaptcha-attribution text-center mb-3">
+    <p
+      class="recaptcha-attribution text-center mb-3"
+      data-i18n-html="recaptcha-note"
+    >
       This site is protected by reCAPTCHA and the Google
       <a
         href="https://policies.google.com/privacy"

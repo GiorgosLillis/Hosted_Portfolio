@@ -1,10 +1,11 @@
 import { prisma } from '../lib/prisma.js';
 import bcrypt from 'bcryptjs';
 import jsonwebtoken from 'jsonwebtoken';
-import sanitizeHTML from '../lib/sanitize.js';
-import { checkToken, isValidEmail, isValidPassword, isValidName, setAuthCookies, clearAuthCookies, setCorsHeaders, getClientIp, enforceRateLimit, handleApiError, sendStatus } from '../lib/functions.js';
+import sanitizeHTML, { normalizeEmail, isValidEmail, isValidPassword, isValidName } from '../lib/sanitize.js';
+import { checkToken, setAuthCookies, setCorsHeaders, getClientIp, enforceRateLimits, handleApiError, sendStatus } from '../lib/functions.js';
 import { recaptchaMiddleware } from '../lib/recaptcha.js';
 import { sendEmail } from '../lib/mailer.js';
+import { checkEmailDomain, createEmailToken, sendVerificationEmail } from '../lib/emailVerification.js';
 import { Redis } from '@upstash/redis';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -38,7 +39,7 @@ async function getAccount(req: VercelRequest, res: VercelResponse) {
         const user = await checkToken(req);
         const userKey = `get_user_attempt:${user.id}`;
 
-        if (!(await enforceRateLimit(res, userKey, 30, 60))) return; // 30 requests per minute
+        if (!(await enforceRateLimits(res, [userKey, 30, 60]))) return; // 30 requests per minute
 
         const userData = {
             id: user.id,
@@ -56,21 +57,21 @@ async function getAccount(req: VercelRequest, res: VercelResponse) {
 async function editAccount(req: VercelRequest, res: VercelResponse) {
     try {
         const user = await checkToken(req);
-        if (!user) {
-            return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
-        }
 
         const ip = getClientIp(req);
-        if (!(await enforceRateLimit(res, `edit_user_attempt_ip:${ip}`, 30, 60))) return; // 30 requests per minute per IP
-        if (!(await enforceRateLimit(res, `edit_user_attempt:${user.id}`, 15, 60))) return; // 15 requests per minute
+        if (!(await enforceRateLimits(res,
+            [`edit_user_attempt_ip:${ip}`, 30, 60],  // 30 requests per minute per IP
+            [`edit_user_attempt:${user.id}`, 15, 60] // 15 requests per minute per user
+        ))) return;
 
         if (!process.env.JWT_SECRET) {
-            return sendStatus(res, 500, 'server-misconfigured', 'JWT secret is not configured on the server');
+            console.error('JWT_SECRET is not configured on the server');
+            return sendStatus(res, 500, 'server-misconfigured', 'The server is not configured correctly');
         }
 
-        const { email, current_password, password, first_name, last_name } = req.body;
+        const { current_password, password, first_name, last_name } = req.body;
+        const email = normalizeEmail(req.body.email);
         const updateData: {
-            email?: string;
             firstName?: string;
             lastName?: string;
             passwordHash?: string;
@@ -85,17 +86,39 @@ async function editAccount(req: VercelRequest, res: VercelResponse) {
             return sendStatus(res, 400, 'invalid-input', 'Invalid input. Please ensure all fields are correctly filled.');
         }
 
-        // Confirm the current password
-        const passwordMatch = await bcrypt.compare(current_password, user.passwordHash);
+        const stored = await prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
+        if (!stored) {
+            return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
+        }
+
+        const passwordMatch = await bcrypt.compare(current_password, stored.passwordHash);
         if (!passwordMatch) {
             return sendStatus(res, 400, 'invalid-password', 'Invalid password');
         }
 
-        if (email) updateData.email = email;
-        if (first_name) updateData.firstName = sanitizeHTML(first_name);
-        if (last_name) updateData.lastName = sanitizeHTML(last_name);
+        const safeFirstName = sanitizeHTML(first_name);
+        const safeLastName = sanitizeHTML(last_name);
+        const emailChanged = email !== user.email.toLowerCase();
+        const nameChanged = safeFirstName !== user.firstName || safeLastName !== user.lastName;
 
-        // Rehash and update the password if a new one was provided
+        // A new address is only checked here: it replaces the old one when the link sent to it is clicked
+        if (emailChanged) {
+            const domainCheck = await checkEmailDomain(email);
+            if (domainCheck === 'disposable') {
+                return sendStatus(res, 400, 'email-disposable', 'Temporary email addresses are not accepted.');
+            }
+            if (domainCheck === 'no-mail') {
+                return sendStatus(res, 400, 'email-domain-invalid', 'This email domain cannot receive mail. Check the address for typos.');
+            }
+            if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) {
+                return sendStatus(res, 400, 'email-exists', 'User with this email already exists');
+            }
+        }
+
+        if (first_name) updateData.firstName = safeFirstName;
+        if (last_name) updateData.lastName = safeLastName;
+
+        // A new password logs every other device out (an email change does so when it is confirmed)
         if (password) {
             updateData.passwordHash = await bcrypt.hash(password, 10);
             updateData.tokenVersion = { increment: 1 };
@@ -112,16 +135,12 @@ async function editAccount(req: VercelRequest, res: VercelResponse) {
             data: updateData,
         });
 
-        // If password has been changed, log out and terminate session
-        if (password) {
-            try {
-                await redis.del(`user_session:${user.id}`);
-            } catch (error) {
-                console.error('Failed to clear cached session after password change:', error);
-            }
+        try {
+            await redis.del(`user_session:${user.id}`);
+        } catch (error) {
+            console.error('Failed to clear cached session after an account edit:', error);
         }
 
-        // Re-issue the session token since the user's data (e.g. email) may have changed
         const token = jsonwebtoken.sign(
             { userId: user.id, email: updatedUser.email, tokenVersion: updatedUser.tokenVersion },
             process.env.JWT_SECRET,
@@ -130,25 +149,54 @@ async function editAccount(req: VercelRequest, res: VercelResponse) {
 
         setAuthCookies(res, token);
 
+        let changeLinkSent = false;
+        if (emailChanged) {
+            try {
+                const rawToken = await createEmailToken('change', user.id, email);
+                await sendVerificationEmail(email, rawToken, 'change');
+                changeLinkSent = true;
+            } catch (error) {
+                console.error('Failed to send the confirmation link for an email change:', error);
+            }
+        }
+
         try {
-            const from = `"Account Security" <${process.env.EMAIL_ID}>`;
+            const from = `"Account Security" <${process.env.MAIL_FROM}>`;
             const to = user.email;
             const subject = 'Account details edit';
-            const message = `<p>Some of your account details have been edited</p>`;
+            const changes = [];
+            if (nameChanged) changes.push('your name');
+            if (password) changes.push('your password');
+            const message = (changes.length ? `<p>You changed ${changes.join(', ')}.</p>` : '')
+                + (emailChanged ? `<p>A change of your email address to ${sanitizeHTML(email)} was requested. It takes effect once the link sent to that address is clicked.</p>` : '')
+                + (!changes.length && !emailChanged ? '<p>Your account details were saved.</p>' : '')
+                + (password ? '<p>You were logged out of your other devices.</p>' : '')
+                + '<p>If this was not you, reset your password right away.</p>';
             await sendEmail({ from, to, subject, message });
         } catch (error) {
             console.error('Failed to send edit confirmation email:', error);
         }
 
-        return sendStatus(res, 200, 'user-updated', 'User updated successfully', { user: {
-                id: updatedUser.id,
-                email: updatedUser.email,
-                firstName: updatedUser.firstName,
-                lastName: updatedUser.lastName,
-                tokenVersion: updatedUser.tokenVersion
-            } });
+        const userData = {
+            id: updatedUser.id,
+            email: updatedUser.email,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            tokenVersion: updatedUser.tokenVersion
+        };
+        if (emailChanged) {
+            return changeLinkSent
+                ? sendStatus(res, 200, 'email-change-pending', 'Saved. Click the link sent to the new address to switch to it.', { user: userData, pendingEmail: email })
+                : sendStatus(res, 200, 'email-change-send-failed', 'Saved, but the confirmation email to the new address could not be sent. Try changing it again.', { user: userData });
+        }
+        return sendStatus(res, 200, 'user-updated', 'User updated successfully', { user: userData });
 
     } catch (error) {
+        // Another account already uses the new email address. The Neon adapter reports this without Prisma's P2002 code, only in the message.
+        const { code, message } = error as { code?: string; message?: string };
+        if (code === 'P2002' || message?.includes('users_email_key')) {
+            return sendStatus(res, 400, 'email-exists', 'User with this email already exists');
+        }
         return handleApiError(res, error, 'Server error on edit:');
     }
 }
@@ -156,13 +204,12 @@ async function editAccount(req: VercelRequest, res: VercelResponse) {
 async function deleteAccount(req: VercelRequest, res: VercelResponse) {
     try {
         const user = await checkToken(req);
-        if (!user) {
-            return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
-        }
 
         const ip = getClientIp(req);
-        if (!(await enforceRateLimit(res, `delete_user_attempt_ip:${ip}`, 10, 3600))) return; // 10 requests per hour per IP
-        if (!(await enforceRateLimit(res, `delete_user_attempt:${user.id}`, 3, 3600))) return; // 3 requests per hour
+        if (!(await enforceRateLimits(res,
+            [`delete_user_attempt_ip:${ip}`, 10, 3600], // 10 requests per hour per IP
+            [`delete_user_attempt:${user.id}`, 3, 3600] // 3 requests per hour per user
+        ))) return;
 
         const { password } = req.body;
         if (!password) {
@@ -172,25 +219,22 @@ async function deleteAccount(req: VercelRequest, res: VercelResponse) {
         if (!isValidPassword(password)) {
             return sendStatus(res, 400, 'invalid-password', 'Invalid password.');
         }
-        const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+        const stored = await prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
+        if (!stored) {
+            return sendStatus(res, 401, 'not-authenticated', 'Not authenticated');
+        }
+        const passwordMatch = await bcrypt.compare(password, stored.passwordHash);
         if (!passwordMatch) {
             return sendStatus(res, 401, 'invalid-password', 'Invalid password.');
         }
 
-        await prisma.user.delete({
-            where: {
-                id: user.id,
-            },
-        });
+        // Nothing is deleted yet: the account goes when the link sent to its address is clicked (register.ts, action "verify")
+        const rawToken = await createEmailToken('delete', user.id, user.email);
+        await sendVerificationEmail(user.email, rawToken, 'delete');
 
-        clearAuthCookies(res);
-
-        return sendStatus(res, 200, 'account-deleted', 'Account deleted successfully.');
+        return sendStatus(res, 200, 'delete-pending', 'Check your email and click the link to delete your account.');
 
     } catch (error) {
-        if ((error as { code?: string }).code === 'P2025') {
-            return sendStatus(res, 404, 'user-not-found', 'User not found.');
-        }
         return handleApiError(res, error, 'Server error on delete:');
     }
 }

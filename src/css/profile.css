@@ -20,9 +20,15 @@ h5, h4{
   font-size: 1.4rem;
 }
 
+/* Only the buttons whose Greek text is long (log out from other devices, send reset link) shrink to fit */
+html[lang="el"] .long-text .button-span {
+  font-size: 1.1rem;
+}
+
 .controls{
   width: 90%;
-  height: 50px;
+  /* Grows instead of overflowing when a long label wraps to two lines */
+  min-height: 50px;
 }
 
 .btn-danger:hover, .btn-danger:active, .btn-danger:focus {

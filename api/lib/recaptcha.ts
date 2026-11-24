@@ -1,7 +1,7 @@
 import axios from 'axios';
 import 'dotenv/config';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sendStatus } from './functions.js';
+import { sendStatus } from './http.js';
 
 interface RecaptchaResult {
     success: boolean;

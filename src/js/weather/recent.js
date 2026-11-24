@@ -1,3 +1,5 @@
+import { isSameLocation } from './location-match.js';
+
 const RECENT_KEY = 'recentCities';
 const MAX_CITIES = 5;
 
@@ -19,12 +21,12 @@ export function clearRecents() {
     return [];
 }
 
-// Newest first, deduped by city + country, capped at MAX_CITIES. Returns the updated list.
-export function addRecents({ city, country, latitude, longitude }) {
-    const sameCity = (entry) => entry.name.toLowerCase() === city.toLowerCase() && entry.country.toLowerCase() === country.toLowerCase();
+// Newest first, deduped by place (a city searched in another language counts as the same), capped at MAX_CITIES. Returns the updated list.
+export function addRecents({ city, country, region, latitude, longitude }) {
+    const sameCity = (entry) => isSameLocation(entry, { city, country, latitude, longitude });
 
     const updated = [
-        { name: city, country, latitude, longitude, searchedAt: Date.now() },
+        { name: city, country, region, latitude, longitude, searchedAt: Date.now() },
         ...loadRecents().filter(entry => !sameCity(entry)),
     ].slice(0, MAX_CITIES);
 

@@ -1,6 +1,7 @@
 // main-index.js - Refactored to use new API functions
 import { getLocation, fetchWeather, getCachedWeather } from '../weather/weather-api.js';
-import i18next from '../common/i18n.js';
+import { localName, translatePlaces, PLACE_NAMES_EVENT } from '../weather/place-names.js';
+import i18next, { conditionLabel } from '../common/i18n.js';
 
 export const current_weather = document.getElementById('current_weather');
 export const location = document.getElementById('location');
@@ -42,10 +43,10 @@ function render() {
     }
     const { locationInfo, weatherInfo } = loaded;
     if (weatherInfo && weatherInfo.current) {
-        location.textContent = i18next.t('home-greeting', { city: locationInfo.city, country: locationInfo.country });
+        location.textContent = i18next.t('home-greeting', localName(locationInfo));
         current_weather.replaceChildren(buildCurrentWeather(
             weatherInfo.current.temperature,
-            weatherInfo.current.condition,
+            conditionLabel(weatherInfo.current.code, weatherInfo.current.condition),
             weatherInfo.current.icon,
             weatherInfo.time
         ));
@@ -58,7 +59,7 @@ function render() {
 async function init() {
     try {
         const locationInfo = await getLocation();
-        let weatherInfo = getCachedWeather();
+        let weatherInfo = getCachedWeather(locationInfo);
         if (weatherInfo) {
             console.log("Weather info is fresh, displaying from localStorage");
         } else {
@@ -68,6 +69,7 @@ async function init() {
 
         loaded = { locationInfo, weatherInfo };
         render();
+        translatePlaces([locationInfo]);
     } catch (err) {
         console.error("An error occurred during initialization:", err);
         current_weather.textContent = err.message;
@@ -77,7 +79,14 @@ async function init() {
     }
 }
 
-i18next.on('languageChanged', render);
+// Shows the translated text right away, the place name follows once its translation is known
+i18next.on('languageChanged', () => {
+    render();
+    if (loaded) {
+        translatePlaces([loaded.locationInfo]);
+    }
+});
+window.addEventListener(PLACE_NAMES_EVENT, render);
 
 document.addEventListener('DOMContentLoaded', () => {
     init();

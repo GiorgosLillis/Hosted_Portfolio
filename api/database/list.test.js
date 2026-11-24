@@ -18,10 +18,10 @@ vi.mock('../lib/functions.js', () => ({
 
 vi.mock('../lib/prisma.js', () => ({
     prisma: {
+        $executeRaw: vi.fn(),
         userShoppingListItem: {
             findMany: vi.fn(),
             deleteMany: vi.fn(),
-            upsert: vi.fn(),
         },
     },
 }));
@@ -35,12 +35,18 @@ const fakeUser = { id: 1 };
 
 const validItem = { item: 'Milk', category: 'Dairy', quantity: 2, unit: 'L', check: 'false' };
 
+// $executeRaw is a tagged template: the values come after the SQL text, in the order they appear in it
+function savedColumns() {
+    const [, userId, categories, names, quantities, units, purchased] = prisma.$executeRaw.mock.calls[0];
+    return { userId, categories, names, quantities, units, purchased };
+}
+
 beforeEach(() => {
     vi.clearAllMocks();
     rateLimiter.mockResolvedValue({ allowed: true, ttl: 0 });
     checkToken.mockResolvedValue(fakeUser);
     prisma.userShoppingListItem.deleteMany.mockResolvedValue({});
-    prisma.userShoppingListItem.upsert.mockResolvedValue({});
+    prisma.$executeRaw.mockResolvedValue(1);
 });
 
 describe('list handler', () => {
@@ -95,7 +101,7 @@ describe('list handler', () => {
         });
     });
 
-    describe('POST (writing items)', () => {
+    describe('POST (saving the list)', () => {
         it('rejects when rate limited with 429', async () => {
             rateLimiter.mockResolvedValueOnce({ allowed: false, ttl: 20 });
             const req = createMockReq({ method: 'POST', body: { list: [validItem] } });
@@ -111,63 +117,126 @@ describe('list handler', () => {
             expect(res.status).toHaveBeenCalledWith(400);
         });
 
-        it('rejects a non-array "removed" field with 400', async () => {
-            const req = createMockReq({ method: 'POST', body: { list: [validItem], removed: 'not-an-array' } });
+        it('rejects items with a wrong type, an empty or too long field, or a bad quantity with 400', async () => {
+            const invalidItems = [
+                { ...validItem, item: 42 },
+                { ...validItem, item: '   ' },
+                { ...validItem, item: 'a'.repeat(101) },
+                { ...validItem, item: '<script>alert(1)</script>' },
+                { ...validItem, item: 'Milk "fresh"' },
+                { ...validItem, item: '=HYPERLINK("x")' },
+                { ...validItem, item: 'Pizza 🍕' },
+                { ...validItem, category: '' },
+                { ...validItem, category: 'a'.repeat(51) },
+                { ...validItem, unit: '' },
+                { ...validItem, unit: 'a'.repeat(31) },
+                { ...validItem, quantity: 0 },
+                { ...validItem, quantity: -3 },
+                { ...validItem, quantity: 'lots' },
+                { ...validItem, quantity: '' },
+                { ...validItem, quantity: null },
+                { ...validItem, quantity: 1001 },
+                { ...validItem, quantity: 5_000_000 },
+                { ...validItem, check: { yes: true } },
+                null,
+                'Milk',
+            ];
+
+            for (const invalid of invalidItems) {
+                const res = createMockRes();
+                await listHandler(createMockReq({ method: 'POST', body: { list: [{ ...validItem, item: 'Bread' }, invalid] } }), res);
+                expect(res.status, JSON.stringify(invalid)).toHaveBeenCalledWith(400);
+            }
+            expect(prisma.$executeRaw).not.toHaveBeenCalled();
+            expect(prisma.userShoppingListItem.deleteMany).not.toHaveBeenCalled();
+        });
+
+        it('rejects the same item twice with 400, since one statement cannot save it twice', async () => {
+            const req = createMockReq({ method: 'POST', body: { list: [validItem, { ...validItem, quantity: 3 }] } });
             const res = createMockRes();
             await listHandler(req, res);
             expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ code: 'list-duplicate' }));
+            expect(prisma.$executeRaw).not.toHaveBeenCalled();
         });
 
-        it('upserts each item and does not touch the database when nothing was removed', async () => {
-            const req = createMockReq({ method: 'POST', body: { list: [validItem] } });
+        it('rejects a list with more than 500 items with 400', async () => {
+            const tooMany = Array.from({ length: 501 }, (_, index) => ({ ...validItem, item: `Item ${index}` }));
+            const res = createMockRes();
+            await listHandler(createMockReq({ method: 'POST', body: { list: tooMany } }), res);
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(prisma.$executeRaw).not.toHaveBeenCalled();
+        });
+
+        it('accepts item names with the punctuation real products use, in any language', async () => {
+            const list = ["M&M's", 'Coca-Cola', 'Milk 2%', 'Water (1.5L)', 'Φέτα Π.Ο.Π.'].map((item) => ({ ...validItem, item }));
+            const res = createMockRes();
+            await listHandler(createMockReq({ method: 'POST', body: { list } }), res);
+            expect(res.status).toHaveBeenCalledWith(200);
+        });
+
+        it('accepts a quantity of exactly 1000', async () => {
+            const req = createMockReq({ method: 'POST', body: { list: [{ ...validItem, quantity: 1000 }] } });
             const res = createMockRes();
             await listHandler(req, res);
+            expect(res.status).toHaveBeenCalledWith(200);
+        });
 
+        it('saves the whole list in one statement, in the order it was sent, then deletes every other item of the user', async () => {
+            const list = [validItem, { item: 'Eggs', category: 'Dairy', quantity: '12', unit: 'pcs', check: 'true' }];
+            const res = createMockRes();
+            await listHandler(createMockReq({ method: 'POST', body: { list } }), res);
+
+            expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
+            expect(savedColumns()).toEqual({
+                userId: fakeUser.id,
+                categories: ['Dairy', 'Dairy'],
+                names: ['Milk', 'Eggs'],
+                quantities: [2, 12],
+                units: ['L', 'pcs'],
+                purchased: [false, true],
+            });
+            expect(prisma.userShoppingListItem.deleteMany).toHaveBeenCalledWith({
+                where: { userId: fakeUser.id, name: { notIn: ['Milk', 'Eggs'] } },
+            });
+            // Saving first means a failed delete leaves extra old items, never missing ones
+            expect(prisma.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(prisma.userShoppingListItem.deleteMany.mock.invocationCallOrder[0]);
+            expect(res.status).toHaveBeenCalledWith(200);
+        });
+
+        it('marks an item as purchased for the string "true" and for a real true', async () => {
+            const list = [{ ...validItem, check: true }, { ...validItem, item: 'Eggs', check: 'true' }, { ...validItem, item: 'Tea', check: 'false' }];
+            await listHandler(createMockReq({ method: 'POST', body: { list } }), createMockRes());
+            expect(savedColumns().purchased).toEqual([true, true, false]);
+        });
+
+        it('treats an empty list as "delete everything", without an insert', async () => {
+            const res = createMockRes();
+            await listHandler(createMockReq({ method: 'POST', body: { list: [] } }), res);
+
+            expect(prisma.$executeRaw).not.toHaveBeenCalled();
+            expect(prisma.userShoppingListItem.deleteMany).toHaveBeenCalledWith({ where: { userId: fakeUser.id, name: { notIn: [] } } });
+            expect(res.status).toHaveBeenCalledWith(200);
+        });
+
+        it('ignores a "removed" field sent by an older version of the page', async () => {
+            const res = createMockRes();
+            await listHandler(createMockReq({ method: 'POST', body: { list: [validItem], removed: ['Eggs'] } }), res);
+            expect(res.status).toHaveBeenCalledWith(200);
+        });
+
+        it('returns 500 when the save statement fails, before deleting anything', async () => {
+            prisma.$executeRaw.mockRejectedValue(new Error('DB is down'));
+            const res = createMockRes();
+            await listHandler(createMockReq({ method: 'POST', body: { list: [validItem] } }), res);
+            expect(res.status).toHaveBeenCalledWith(500);
             expect(prisma.userShoppingListItem.deleteMany).not.toHaveBeenCalled();
-            expect(prisma.userShoppingListItem.upsert).toHaveBeenCalledTimes(1);
-            expect(res.status).toHaveBeenCalledWith(200);
-        });
-
-        it('only deletes items explicitly listed in "removed"', async () => {
-            const req = createMockReq({ method: 'POST', body: { list: [validItem], removed: ['Eggs'] } });
-            const res = createMockRes();
-            await listHandler(req, res);
-
-            expect(prisma.userShoppingListItem.deleteMany).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    where: expect.objectContaining({
-                        userId: fakeUser.id,
-                        name: { in: ['Eggs'] },
-                    }),
-                })
-            );
-            expect(prisma.userShoppingListItem.upsert).toHaveBeenCalledTimes(1);
-            expect(res.status).toHaveBeenCalledWith(200);
-        });
-
-        it('maps the "check" string field to a boolean isPurchased', async () => {
-            const req = createMockReq({ method: 'POST', body: { list: [{ ...validItem, check: 'true' }] } });
-            const res = createMockRes();
-            await listHandler(req, res);
-
-            const upsertArgs = prisma.userShoppingListItem.upsert.mock.calls[0][0];
-            expect(upsertArgs.update.isPurchased).toBe(true);
-            expect(upsertArgs.create.isPurchased).toBe(true);
         });
 
         it('returns 500 when the delete step fails', async () => {
             prisma.userShoppingListItem.deleteMany.mockRejectedValue(new Error('DB is down'));
-            const req = createMockReq({ method: 'POST', body: { list: [validItem], removed: ['Eggs'] } });
             const res = createMockRes();
-            await listHandler(req, res);
-            expect(res.status).toHaveBeenCalledWith(500);
-        });
-
-        it('returns 500 when the upsert step fails', async () => {
-            prisma.userShoppingListItem.upsert.mockRejectedValue(new Error('DB is down'));
-            const req = createMockReq({ method: 'POST', body: { list: [validItem] } });
-            const res = createMockRes();
-            await listHandler(req, res);
+            await listHandler(createMockReq({ method: 'POST', body: { list: [validItem] } }), res);
             expect(res.status).toHaveBeenCalledWith(500);
         });
     });

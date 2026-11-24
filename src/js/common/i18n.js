@@ -40,6 +40,15 @@ export function apiMessage(result, fallback = '') {
     return result?.message || fallback;
 }
 
+// Translated name for a WMO weather code, falls back to the server's English text (also covers older cached weather without a code)
+export function conditionLabel(code, fallback = '') {
+    const key = `condition-${code}`;
+    if (code !== null && code !== undefined && i18next.exists(key)) {
+        return i18next.t(key);
+    }
+    return fallback;
+}
+
 export function applyTranslations(root = document) {
     root.querySelectorAll('[data-i18n]').forEach((el) => {
         if (i18next.exists(el.dataset.i18n)) {
@@ -81,7 +90,7 @@ function updateSwitcher() {
     });
 }
 
-function syncNavbarHeight() {
+export function syncNavbarHeight() {
     const navbar = document.getElementById('navbar');
     if (!navbar || navbar.querySelector('.collapse.show, .collapsing')) {
         return;
@@ -89,7 +98,7 @@ function syncNavbarHeight() {
     document.documentElement.style.setProperty('--navbar-height', `${navbar.offsetHeight}px`);
 }
 
-// Pages opt out with data-no-lang-switcher on <body> (the weather page has its own layout)
+// A page can opt out with data-no-lang-switcher on <body>
 function renderLanguageSwitcher() {
     if (document.body.hasAttribute('data-no-lang-switcher')) {
         return;

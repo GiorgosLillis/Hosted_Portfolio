@@ -12,7 +12,6 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
     const { t, i18n } = useTranslation();
     const headingRef = useRef(null);
     const [originalData, setOriginalData] = useState({});
-    const [id, setId] = useState('');
     const [email, setEmail] = useState('');
     const [current_password, setCurrent_Password] = useState('');
     const [password, setPassword] = useState('');
@@ -34,17 +33,16 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
         loadRecaptchaScript();
         if (user) {
             const initialData = {
-                id: user.id || '',
                 email: user.email || '',
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
+                createdAt: user.createdAt || '',
             };
 
-            setId(initialData.id);
             setEmail(initialData.email);
             setFirstName(initialData.firstName);
             setLastName(initialData.lastName);
-            setcreatedAt(user.createdAt || '');
+            setcreatedAt(initialData.createdAt);
             setOriginalData(initialData);
         }
     }, [user]);
@@ -68,14 +66,14 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
             const hasPasswordChange = password.length > 0;
             const currentPasswordProvided = current_password.length > 0;
 
-            if ((!hasDataChanges && !hasPasswordChange)) {
-                showToast(t('toast-no-changes'), 'info');
-                setLoadingAction(null);
-                return;
-            }
             // The current password is always required to make any change
             if (!currentPasswordProvided) {
                 showToast(t('toast-current-pass'), 'danger');
+                setLoadingAction(null);
+                return;
+            }
+            if ((!hasDataChanges && !hasPasswordChange)) {
+                showToast(t('toast-no-changes'), 'info');
                 setLoadingAction(null);
                 return;
             }
@@ -104,7 +102,6 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
             const token = await getRecaptchaToken('edit');
 
             const payload = {
-                id,
                 email,
                 current_password,
                 first_name: firstName,
@@ -131,15 +128,25 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                 return;
             }
 
+            // A new email only takes effect once its link is clicked, until then the account keeps the current one
+            const emailPending = data.code === 'email-change-pending' || data.code === 'email-change-send-failed';
+            const savedEmail = emailPending ? originalData.email : email;
+            setEmail(savedEmail);
             setOriginalData({
-                email: payload.email,
-                firstName: payload.firstName,
-                lastName: payload.lastName,
-                createdAt: createdAt
+                email: savedEmail,
+                firstName,
+                lastName,
+                createdAt
             });
             setPassword('');
             setCurrent_Password('');
-            showToast(t('toast-edit-success'), 'success');
+            if (data.code === 'email-change-pending') {
+                showToast(t('toast-email-change-pending', { email: data.pendingEmail }), 'info');
+            } else if (data.code === 'email-change-send-failed') {
+                showToast(apiMessage(data), 'warning');
+            } else {
+                showToast(t('toast-edit-success'), 'success');
+            }
 
         } catch (err) {
             showToast(err.message, 'danger');
@@ -238,8 +245,10 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                 return;
             }
 
-            showToast(t('toast-delete-success'), 'success');
-            switchToLogout();
+            // Nothing is deleted yet: the account goes when the emailed link is clicked
+            setCurrent_Password('');
+            setdeleteConfirm(false);
+            showToast(apiMessage(data, t('toast-delete-pending')), 'info', 10000);
         } catch (err) {
             showToast(err.message, 'danger');
         } finally {
@@ -247,7 +256,6 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
         }
     };
 
-    // Tracked like every other action so the rest of the buttons are disabled until the logout finishes
     const handleLogout = async () => {
         setLoadingAction('logout');
         await switchToLogout();
@@ -428,7 +436,7 @@ const ProfileEdit = ({ switchToLogout, showToast }) => {
                 <div className="col-12 col-sm-6 d-flex justify-content-center align-items-center">
                     <button
                         type="button"
-                        className="btn px-0 controls text-center mb-3 btn-danger"
+                        className="btn px-0 controls text-center mb-3 btn-danger long-text"
                         id="log-out-devices"
                         aria-label={t('logout-others-aria')}
                         onClick={handleLogoutDevices}

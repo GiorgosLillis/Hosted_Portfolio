@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMockReq, createMockRes } from '../testUtils/mockReqRes.js';
 
-vi.mock('../lib/functions.js', () => ({
+// The real enforceRateLimits stays, it runs on the mocked rateLimiter below
+vi.mock('../lib/http.js', async (importOriginal) => ({
+    ...(await importOriginal()),
     sendStatus: (res, status, code, message, extra = {}) => res.status(status).json({ success: status < 400, code, message, ...extra }),
     setCorsHeaders: vi.fn(),
     getClientIp: vi.fn((req) => req.headers['x-forwarded-for'] || req.socket.remoteAddress),
@@ -25,6 +27,7 @@ vi.mock('../lib/prisma.js', () => ({
         pushSubscription: {
             upsert: vi.fn(),
             deleteMany: vi.fn(),
+            updateMany: vi.fn(),
             findMany: vi.fn(),
             delete: vi.fn(),
         },
@@ -97,7 +100,7 @@ function stubFetchSuccess() {
 }
 
 const validSubscription = {
-    endpoint: 'https://push.example.com/some-id',
+    endpoint: 'https://fcm.googleapis.com/fcm/send/some-id',
     keys: { p256dh: 'test-p256dh', auth: 'test-auth' },
 };
 
@@ -109,6 +112,7 @@ beforeEach(() => {
     stubFetchSuccess();
     prisma.pushSubscription.upsert.mockResolvedValue({});
     prisma.pushSubscription.deleteMany.mockResolvedValue({});
+    prisma.pushSubscription.updateMany.mockResolvedValue({ count: 1 });
     prisma.pushSubscription.findMany.mockResolvedValue([]);
     prisma.pushSubscription.delete.mockResolvedValue({});
     webpush.sendNotification.mockResolvedValue({});
@@ -179,6 +183,27 @@ describe('weather handler', () => {
         expect(res.status).toHaveBeenCalledWith(200);
         const payload = res.json.mock.calls[0][0];
         expect(payload.current.temperature).toBe(20);
+    });
+
+    it('rounds the position to about 1 km for the cache key and the upstream requests', async () => {
+        const req = createMockReq({ body: { lat: 10.123456, lon: 20.987654 } });
+        await weatherHandler(req, createMockRes());
+
+        expect(redis.get).toHaveBeenCalledWith('weather_data:10.12:20.99');
+        const urls = global.fetch.mock.calls.map(([url]) => url);
+        expect(urls).toHaveLength(2);
+        expect(urls.every((url) => url.includes('latitude=10.12&longitude=20.99'))).toBe(true);
+    });
+
+    it('includes the weather code next to the condition text so clients can translate it', async () => {
+        const req = createMockReq({ body: { lat: 10.2, lon: 20.2 } });
+        const res = createMockRes();
+        await weatherHandler(req, res);
+
+        const payload = res.json.mock.calls[0][0];
+        expect(payload.current.code).toBe(0);
+        expect(payload.current.condition).toBe('Clear sky');
+        expect(payload.hourly[0].code).toBe(0);
     });
 
     it('still returns 200 when caching the fresh result fails', async () => {
@@ -255,6 +280,67 @@ describe('weather subscribe', () => {
         expect(res.status).toHaveBeenCalledWith(400);
     });
 
+    it('rejects an endpoint that is not one of the browsers\' push services with 400', async () => {
+        const subscribeWith = async (endpoint) => {
+            const res = createMockRes();
+            await weatherHandler(
+                createMockReq({
+                    query: { action: 'subscribe' },
+                    body: { subscription: { endpoint, keys: validSubscription.keys }, latitude: 37.9, longitude: 23.7 },
+                }),
+                res
+            );
+            return res;
+        };
+
+        for (const endpoint of [
+            'https://evil.example.com/collect',
+            'https://fcm.googleapis.com.evil.com/fcm/send/x',
+            'https://evilnotify.windows.com/x',
+            'https://user:secret@fcm.googleapis.com/fcm/send/x',
+            'https://fcm.googleapis.com:8443/fcm/send/x',
+            'http://fcm.googleapis.com/fcm/send/x',
+        ]) {
+            const res = await subscribeWith(endpoint);
+            expect(res.status, endpoint).toHaveBeenCalledWith(400);
+        }
+        expect(prisma.pushSubscription.upsert).not.toHaveBeenCalled();
+    });
+
+    it('accepts the endpoints of Chrome, Firefox, Safari and Windows push services', async () => {
+        for (const endpoint of [
+            'https://fcm.googleapis.com/fcm/send/abc',
+            'https://updates.push.services.mozilla.com/wpush/v2/abc',
+            'https://web.push.apple.com/abc',
+            'https://wns2-par02p.notify.windows.com/w/?token=abc',
+        ]) {
+            const res = createMockRes();
+            await weatherHandler(
+                createMockReq({
+                    query: { action: 'subscribe' },
+                    body: { subscription: { endpoint, keys: validSubscription.keys }, latitude: 37.9, longitude: 23.7 },
+                }),
+                res
+            );
+            expect(res.status, endpoint).toHaveBeenCalledWith(200);
+        }
+    });
+
+    it('rejects a city or country label that is too long or not a string with 400', async () => {
+        for (const extra of [{ city: 'a'.repeat(101) }, { country: 'a'.repeat(101) }, { city: { nested: true } }]) {
+            const res = createMockRes();
+            await weatherHandler(
+                createMockReq({
+                    query: { action: 'subscribe' },
+                    body: { subscription: validSubscription, latitude: 37.9, longitude: 23.7, ...extra },
+                }),
+                res
+            );
+            expect(res.status).toHaveBeenCalledWith(400);
+        }
+        expect(prisma.pushSubscription.upsert).not.toHaveBeenCalled();
+    });
+
     it('rejects a subscription missing encryption keys with 400', async () => {
         const req = createMockReq({
             query: { action: 'subscribe' },
@@ -303,6 +389,21 @@ describe('weather subscribe', () => {
         expect(res.status).toHaveBeenCalledWith(200);
     });
 
+    it('stores the language of the subscription, English when it is missing or unsupported', async () => {
+        const subscribeWith = async (lang) => {
+            const req = createMockReq({
+                query: { action: 'subscribe' },
+                body: { subscription: validSubscription, latitude: 37.9, longitude: 23.7, lang },
+            });
+            await weatherHandler(req, createMockRes());
+            return prisma.pushSubscription.upsert.mock.calls.at(-1)[0].create.lang;
+        };
+
+        expect(await subscribeWith('el')).toBe('el');
+        expect(await subscribeWith('fr')).toBe('en');
+        expect(await subscribeWith(undefined)).toBe('en');
+    });
+
     it('upserts the subscription using a custom notifyHour', async () => {
         const req = createMockReq({
             query: { action: 'subscribe' },
@@ -338,6 +439,80 @@ describe('weather subscribe', () => {
         });
         const res = createMockRes();
         await weatherHandler(req, res);
+        expect(res.status).toHaveBeenCalledWith(500);
+    });
+});
+
+describe('weather update-language', () => {
+    const update = (body, method = 'POST') => weatherHandler(
+        createMockReq({ method, query: { action: 'update-language' }, body }),
+        res
+    );
+    let res;
+
+    beforeEach(() => {
+        res = createMockRes();
+    });
+
+    it('rejects a non-POST request with 405', async () => {
+        await update({}, 'GET');
+        expect(res.status).toHaveBeenCalledWith(405);
+    });
+
+    it('rejects when rate limited with 429', async () => {
+        rateLimiter.mockResolvedValueOnce({ allowed: false, ttl: 30 });
+        await update({ endpoint: validSubscription.endpoint, lang: 'el' });
+        expect(res.status).toHaveBeenCalledWith(429);
+    });
+
+    it('rejects a missing endpoint with 400', async () => {
+        await update({ lang: 'el' });
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(prisma.pushSubscription.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects a missing or unsupported language with 400', async () => {
+        await update({ endpoint: validSubscription.endpoint });
+        await update({ endpoint: validSubscription.endpoint, lang: 'fr' });
+        expect(res.status).toHaveBeenCalledTimes(2);
+        expect(res.status).toHaveBeenNthCalledWith(1, 400);
+        expect(res.status).toHaveBeenNthCalledWith(2, 400);
+        expect(prisma.pushSubscription.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects an overly long city label with 400', async () => {
+        await update({ endpoint: validSubscription.endpoint, lang: 'el', city: 'a'.repeat(101) });
+        expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it('updates only the language when no city is given', async () => {
+        await update({ endpoint: validSubscription.endpoint, lang: 'el' });
+
+        expect(prisma.pushSubscription.updateMany).toHaveBeenCalledWith({
+            where: { endpoint: validSubscription.endpoint },
+            data: { lang: 'el' },
+        });
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('also updates the city label when one is given', async () => {
+        await update({ endpoint: validSubscription.endpoint, lang: 'el', city: 'Τρίπολη' });
+
+        expect(prisma.pushSubscription.updateMany).toHaveBeenCalledWith({
+            where: { endpoint: validSubscription.endpoint },
+            data: { lang: 'el', city: 'Τρίπολη' },
+        });
+    });
+
+    it('returns 404 when no subscription matches the endpoint', async () => {
+        prisma.pushSubscription.updateMany.mockResolvedValue({ count: 0 });
+        await update({ endpoint: 'https://push.example.com/unknown', lang: 'el' });
+        expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it('returns 500 when the update fails', async () => {
+        prisma.pushSubscription.updateMany.mockRejectedValue(new Error('DB is down'));
+        await update({ endpoint: validSubscription.endpoint, lang: 'el' });
         expect(res.status).toHaveBeenCalledWith(500);
     });
 });
@@ -426,8 +601,8 @@ describe('weather notify', () => {
     it('sends to every subscription regardless of notifyHour when hour=all', async () => {
         stubForecastSuccess();
         prisma.pushSubscription.findMany.mockResolvedValue([
-            { id: 1, endpoint: 'https://push.example.com/a', p256dh: 'p1', auth: 'a1', latitude: 37.9, longitude: 23.7, city: 'Athens', notifyHour: 6 },
-            { id: 2, endpoint: 'https://push.example.com/b', p256dh: 'p2', auth: 'a2', latitude: 40.7, longitude: -74.0, city: 'New York', notifyHour: 20 },
+            { id: 1, endpoint: 'https://fcm.googleapis.com/fcm/send/a', p256dh: 'p1', auth: 'a1', latitude: 37.9, longitude: 23.7, city: 'Athens', notifyHour: 6 },
+            { id: 2, endpoint: 'https://updates.push.services.mozilla.com/wpush/v2/b', p256dh: 'p2', auth: 'a2', latitude: 40.7, longitude: -74.0, city: 'New York', notifyHour: 20 },
         ]);
         const req = createMockReq({
             method: 'GET',
@@ -465,8 +640,66 @@ describe('weather notify', () => {
                 tempMax: 18,
                 icon: '/assets/weather-icons/showers-day.png',
                 img: '/assets/weather-images/rain-day.jpg',
+                title: "Tomorrow's weather in Athens",
+                body: 'Rain: Slight, 9° - 18°',
+                actions: [
+                    { action: 'view-forecast', title: 'Open Forecast' },
+                    { action: 'dismiss', title: 'Dismiss' },
+                ],
             })
         );
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('writes the notification in the language stored with the subscription', async () => {
+        stubForecastSuccess();
+        prisma.pushSubscription.findMany.mockResolvedValue([
+            { id: 1, endpoint: validSubscription.endpoint, p256dh: 'p1', auth: 'a1', latitude: 37.5, longitude: 22.4, city: 'Τρίπολη', notifyHour: 6, lang: 'el' },
+        ]);
+        const req = createMockReq({
+            method: 'GET',
+            query: { action: 'notify', hour: '6' },
+            headers: { authorization: 'Bearer test-cron-secret' },
+        });
+        await weatherHandler(req, createMockRes());
+
+        const payload = JSON.parse(webpush.sendNotification.mock.calls[0][1]);
+        expect(payload.title).toBe('Πρόγνωση για αύριο: Τρίπολη');
+        expect(payload.body).toBe('Βροχή: Ασθενής, 9° - 18°');
+        expect(payload.actions.map((action) => action.title)).toEqual(['Άνοιγμα πρόγνωσης', 'Απόρριψη']);
+    });
+
+    it('falls back to English for a language it has no text for', async () => {
+        stubForecastSuccess();
+        prisma.pushSubscription.findMany.mockResolvedValue([
+            { id: 1, endpoint: validSubscription.endpoint, p256dh: 'p1', auth: 'a1', latitude: 37.9, longitude: 23.7, city: 'Athens', notifyHour: 6, lang: 'fr' },
+        ]);
+        const req = createMockReq({
+            method: 'GET',
+            query: { action: 'notify', hour: '6' },
+            headers: { authorization: 'Bearer test-cron-secret' },
+        });
+        await weatherHandler(req, createMockRes());
+
+        const payload = JSON.parse(webpush.sendNotification.mock.calls[0][1]);
+        expect(payload.title).toBe("Tomorrow's weather in Athens");
+    });
+
+    it('removes a stored subscription whose endpoint is not a push service and never sends to it', async () => {
+        stubForecastSuccess();
+        prisma.pushSubscription.findMany.mockResolvedValue([
+            { id: 7, endpoint: 'https://evil.example.com/collect', p256dh: 'p1', auth: 'a1', latitude: 37.9, longitude: 23.7, city: 'Athens', notifyHour: 6 },
+        ]);
+        const req = createMockReq({
+            method: 'GET',
+            query: { action: 'notify', hour: '6' },
+            headers: { authorization: 'Bearer test-cron-secret' },
+        });
+        const res = createMockRes();
+        await weatherHandler(req, res);
+
+        expect(webpush.sendNotification).not.toHaveBeenCalled();
+        expect(prisma.pushSubscription.delete).toHaveBeenCalledWith({ where: { id: 7 } });
         expect(res.status).toHaveBeenCalledWith(200);
     });
 

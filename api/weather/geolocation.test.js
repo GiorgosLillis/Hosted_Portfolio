@@ -1,19 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMockReq, createMockRes } from '../testUtils/mockReqRes.js';
 
-vi.mock('../lib/functions.js', () => ({
+// The real enforceRateLimits stays, it runs on the mocked rateLimiter below
+vi.mock('../lib/http.js', async (importOriginal) => ({
+    ...(await importOriginal()),
     sendStatus: (res, status, code, message, extra = {}) => res.status(status).json({ success: status < 400, code, message, ...extra }),
     setCorsHeaders: vi.fn(),
     getClientIp: vi.fn((req) => req.headers['x-forwarded-for'] || req.socket.remoteAddress),
-    enforceRateLimit: vi.fn(async (res, key, limit, windowSeconds) => {
-        const { rateLimiter } = await import('../lib/rateLimiter.js');
-        const { allowed, ttl } = await rateLimiter(key, limit, windowSeconds);
-        if (!allowed) {
-            res.setHeader('Retry-After', ttl);
-            res.status(429).json({ success: false, message: `Too many requests. Please try again in ${ttl} seconds.` });
-        }
-        return allowed;
-    }),
     fetchWithTimeout: vi.fn((url, timeoutMs, options) => global.fetch(url, options)),
 }));
 
@@ -96,6 +89,39 @@ describe('geolocation handler', () => {
             });
         });
 
+        it('returns the plain place name when Nominatim reports a whole municipality as the city', async () => {
+            stubFetchSuccess({
+                address: {
+                    city: 'Municipal Unit of Tripoli',
+                    city_district: 'Tripoli Community',
+                    county: 'Arcadia Regional Unit',
+                    country: 'Greece',
+                    country_code: 'gr',
+                },
+            });
+            const req = createMockReq({ body: { lat: 11.2, lon: 21.2 }, query: { action: 'reverse' } });
+            const res = createMockRes();
+            await geolocationHandler(req, res);
+
+            expect(res.json).toHaveBeenCalledWith({ country_name: 'Greece', country: 'GR', city: 'Tripoli' });
+        });
+
+        it('falls back to the municipality instead of the region when there is no city', async () => {
+            stubFetchSuccess({
+                address: {
+                    municipality: 'Municipality of Mandra-Eidyllia',
+                    county: 'Regional Unit of West Attica',
+                    country: 'Greece',
+                    country_code: 'gr',
+                },
+            });
+            const req = createMockReq({ body: { lat: 11.3, lon: 21.3 }, query: { action: 'reverse' } });
+            const res = createMockRes();
+            await geolocationHandler(req, res);
+
+            expect(res.json).toHaveBeenCalledWith({ country_name: 'Greece', country: 'GR', city: 'Mandra-Eidyllia' });
+        });
+
         it('propagates an upstream error status', async () => {
             global.fetch = vi.fn().mockResolvedValue({
                 ok: false,
@@ -120,7 +146,7 @@ describe('geolocation handler', () => {
             const req = createMockReq({ body: { lat: 11.4, lon: 21.4 }, query: { action: 'reverse' }, headers: { 'x-forwarded-for': '5.6.7.8' } });
             const res = createMockRes();
             await geolocationHandler(req, res);
-            expect(rateLimiter).toHaveBeenCalledWith('reverse_location_attempt:5.6.7.8', 10, 60);
+            expect(rateLimiter).toHaveBeenCalledWith('reverse_location_attempt:5.6.7.8', 30, 60);
         });
     });
 
@@ -184,6 +210,37 @@ describe('geolocation handler', () => {
             });
         });
 
+        it('rejects a state over 100 characters or that is not a string with 400', async () => {
+            for (const state of ['a'.repeat(101), 42, ['Crete'], {}]) {
+                const res = createMockRes();
+                await geolocationHandler(createMockReq({ body: { city: 'Athens', country: 'GR', state }, query: { action: 'forward' } }), res);
+                expect(res.status, JSON.stringify(state)).toHaveBeenCalledWith(400);
+            }
+        });
+
+        it('passes the optional state on to the search, and leaves it out when it is not given', async () => {
+            const askedFor = async (body) => {
+                await geolocationHandler(createMockReq({ body, query: { action: 'forward' } }), createMockRes());
+                return global.fetch.mock.calls.at(-1)[0];
+            };
+
+            expect(await askedFor({ city: 'StateCity', country: 'GR', state: 'Central Macedonia' })).toContain('&state=Central%20Macedonia&');
+            expect(await askedFor({ city: 'NoStateCity', country: 'GR' })).not.toContain('state=');
+            expect(await askedFor({ city: 'EmptyStateCity', country: 'GR', state: '' })).not.toContain('state=');
+        });
+
+        it('asks for place names in the requested language, English for anything unsupported', async () => {
+            const askedFor = async (lang) => {
+                const req = createMockReq({ body: { city: 'LangCity', country: 'GR', lang }, query: { action: 'forward' } });
+                await geolocationHandler(req, createMockRes());
+                return global.fetch.mock.calls.at(-1)[0];
+            };
+
+            expect(await askedFor('el')).toContain('accept-language=el');
+            expect(await askedFor('fr')).toContain('accept-language=en');
+            expect(await askedFor(undefined)).toContain('accept-language=en');
+        });
+
         it('returns 404 when no results are found', async () => {
             stubFetchSuccess([]);
             const req = createMockReq({ body: { city: 'ForwardCity2', country: 'XX' }, query: { action: 'forward' } });
@@ -216,7 +273,7 @@ describe('geolocation handler', () => {
             const req = createMockReq({ body: { city: 'ForwardCity5', country: 'GR' }, query: { action: 'forward' }, headers: { 'x-forwarded-for': '1.2.3.4' } });
             const res = createMockRes();
             await geolocationHandler(req, res);
-            expect(rateLimiter).toHaveBeenCalledWith('forward_location_attempt:1.2.3.4', 10, 60);
+            expect(rateLimiter).toHaveBeenCalledWith('forward_location_attempt:1.2.3.4', 30, 60);
         });
     });
 });

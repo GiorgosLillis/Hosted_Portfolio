@@ -1,7 +1,9 @@
 import { addDragAndDropListeners } from "./list-features.js";
-import { saveShoppingList, loadShoppingList, deleteList, trackRemovedItem } from "./memory-handle.js";
+import { saveShoppingList, loadShoppingList, deleteList } from "./memory-handle.js";
 import i18next from "../common/i18n.js";
 import { setButtonMode } from "./button-mode.js";
+import { toListCsv, parseListCsv, MAX_CSV_BYTES } from "./list-csv.js";
+import { hasOnlyAllowedItemCharacters } from "../common/validation.js";
 
 const t = (key, options) => i18next.t(key, options);
 
@@ -12,6 +14,9 @@ const CATEGORY_KEYS = {
   'Household': 'household', 'Personal Care': 'personal', 'Other': 'other',
 };
 const categoryLabel = (category) => CATEGORY_KEYS[category] ? t(CATEGORY_KEYS[category]) : category;
+
+const MAX_ITEMS = 500;
+const MAX_QUANTITY = 1000;
 
 export const List = document.getElementById('displayList');
 export const list_items = List.children;
@@ -50,10 +55,18 @@ function inputValidation(item, quantity, unit, errorMessage) {
     errorMessage.textContent = t('item-repeating');
     return false;
   }
+  if (!hasOnlyAllowedItemCharacters(item)) {
+    errorMessage.textContent = t('item-special-chars');
+    return false;
+  }
 
   const parsedQuantity = parseFloat(quantity);
   if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
     errorMessage.textContent = t('quantity-invalid');
+    return false;
+  }
+  if (parsedQuantity > MAX_QUANTITY) {
+    errorMessage.textContent = t('quantity-too-large', { max: MAX_QUANTITY });
     return false;
   }
 
@@ -91,6 +104,11 @@ function addToList(e) {
   const quantityValue = quantityInput.value.trim();
   const unitValue = unitInput.value.trim();
   const categoryValue = categoryInput.value.trim() || 'Other';
+
+  if (list_items.length >= MAX_ITEMS) {
+    errorMessage.textContent = t('list-full', { max: MAX_ITEMS });
+    return;
+  }
 
   if (!inputValidation(itemValue, quantityValue, unitValue, errorMessage)) {
     return;
@@ -215,7 +233,6 @@ function createBtn() {
   btn.className = 'btn btn-danger btn-sm float-end ms-2';
   btn.ariaLabel = t('delete-item-aria');
   btn.onclick = function () {
-    trackRemovedItem(this.parentElement.dataset.originalItem);
     this.parentElement.remove();
     clearMessages();
     updateItemNumbers();
@@ -262,24 +279,21 @@ function downloadList() {
     errorMessage.textContent = t('list-empty-download');
   }
   else {
-    let textContent = list_items_dom
-      .map((li) => {
-        const category = li.dataset.category;
-        const item = li.dataset.originalItem;
-        const quantity = li.dataset.quantity;
-        const unit = li.dataset.unit;
-        const checked = (li.dataset.checked === 'true') ? 'Got it!' : '';
-        return `${category} ${item} ${quantity}${unit} ${checked}`.trim();
-      })
-      .filter(line => line !== '')
-      .join('\n');
+    // The stored English category is written (not the translated label), so a download uploads again in any language
+    const csv = toListCsv(list_items_dom.map((li) => ({
+      category: li.dataset.category,
+      item: li.dataset.originalItem,
+      quantity: li.dataset.quantity,
+      unit: li.dataset.unit,
+      purchased: li.dataset.checked === 'true',
+    })));
 
-    let blob = new Blob([textContent], { type: 'text/plain' });
+    let blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     let url = URL.createObjectURL(blob);
 
     let a = document.createElement('a');
     a.href = url;
-    a.download = 'list.txt';
+    a.download = 'shopping-list.csv';
     document.body.appendChild(a);
     a.click();
 
@@ -301,7 +315,7 @@ async function uploadList(e) {
   errorMessage.textContent = '';
   try {
     const files = await showFileExplorer({
-      accept: '.txt',
+      accept: '.csv,text/csv',
       multiple: false
     });
 
@@ -338,82 +352,68 @@ function showFileExplorer(options) {
   });
 }
 
-// Parses a previously-downloaded .txt list back into list items, supports both the current
-// "CATEGORY ITEM QUANTITY UNIT" format and the older "ITEM QUANTITY UNIT" format
+// Adds the items of a CSV list (as downloaded from this page) to the current list. All or nothing: nothing is added unless
+// every row is valid, so a file is never half loaded. Items already in the list are skipped, so uploading a file twice is harmless.
 async function processUploadedFile(file) {
-
-  resetList();
-
-  errorMessage.textContent = '';
-  if (!file || file.type !== 'text/plain') {
+  clearMessages();
+  // The extension is what the user chose; the type browsers report for CSV varies (text/csv, Excel's own, or none at all)
+  if (!file || !/\.csv$/i.test(file.name)) {
     errorMessage.textContent = t('invalid-file');
     return;
   }
+  // Checked before reading: 500 items fit in far less, a bigger file isn't a list from here
+  if (file.size > MAX_CSV_BYTES) {
+    errorMessage.textContent = t('file-too-big', { max: formatFileSize(MAX_CSV_BYTES) });
+    return;
+  }
 
-
-  fileInfo.textContent = '';
   fileInfo.className = 'alert alert-info fs-5';
   appendLabeled(fileInfo, t('selected-file'), file.name);
   fileInfo.append(document.createElement('br'));
   appendLabeled(fileInfo, t('file-size'), formatFileSize(file.size));
 
   try {
-    const fileContent = await readFileAsText(file);
-    const lines = fileContent.split('\n').filter(line => line.trim());
-
-    if (lines.length === 0) {
-      errorMessage.textContent = t('file-empty');
+    const result = parseListCsv(await readFileAsText(file));
+    if (result.error) {
+      errorMessage.textContent = t({ empty: 'file-empty', header: 'file-bad-header', format: 'file-bad-format' }[result.error]);
+      return;
+    }
+    if (result.invalid.length > 0) {
+      const shown = result.invalid.slice(0, 3)
+        .map(({ line, text }) => `${line}: "${text.length > 40 ? `${text.slice(0, 40)}…` : text}"`)
+        .join(', ') + (result.invalid.length > 3 ? ', …' : '');
+      errorMessage.textContent = t('file-invalid-lines', { count: result.invalid.length, lines: shown });
       return;
     }
 
-    // Add items from file directly to the list, setting data attributes  
-    lines.forEach(itemTextLine => {
+    // Same case-insensitive name rule as adding an item by hand
+    const namesInList = new Set(Array.from(list_items, (li) => li.dataset.item));
+    const items = result.items.filter((entry) => !namesInList.has(entry.item.toUpperCase()));
+    const alreadyInList = result.items.length - items.length;
+
+    if (list_items.length + items.length > MAX_ITEMS) {
+      errorMessage.textContent = t('list-full', { max: MAX_ITEMS });
+      return;
+    }
+
+    clearMessages();
+    for (const item of items) {
       const listItem = document.createElement('li');
       listItem.className = 'list-group-item fs-5 mb-3 rounded-3';
-
-      // Regex for "CATEGORY ITEM QUANTITY UNIT Got it!"
-      const match = itemTextLine.match(/^(\p{L}+)\s+([\p{L}\s]+?)\s*(\d+(\.\d+)?)\s*(\p{L}+)?\s*(Got it!)?$/iu);
-
-      if (match) {
-        const category = match[1].trim();
-        const item = match[2].trim();
-        const quantity = match[3] || '';
-        const unit = match[5] || '';
-        const isChecked = !!match[6];
-
-        listItem.dataset.originalItem = item;
-        listItem.dataset.item = item.toUpperCase();
-        listItem.dataset.quantity = quantity;
-        listItem.dataset.unit = unit;
-        listItem.dataset.category = category;
-        listItem.dataset.checked = isChecked;
-
-      } else {
-        // Fallback for old format "ITEM QUANTITY UNIT"
-        const oldMatch = itemTextLine.match(/^([\p{L}\s]+)\s*(\d+(\.\d+)?)\s*(\p{L}+)?\s*(Got it!)?$/iu);
-        if (oldMatch) {
-          const item = oldMatch[1].trim();
-          const quantity = oldMatch[2] || '';
-          const unit = oldMatch[4] || '';
-          const isChecked = !!oldMatch[5];
-
-          listItem.dataset.originalItem = item;
-          listItem.dataset.item = item.toUpperCase();
-          listItem.dataset.quantity = quantity;
-          listItem.dataset.unit = unit;
-          listItem.dataset.category = 'Other';
-          listItem.dataset.checked = isChecked;
-        } else {
-          errorMessage.textContent = t('invalid-line', { line: itemTextLine });
-          return;
-        }
-      }
+      listItem.dataset.originalItem = item.item;
+      listItem.dataset.item = item.item.toUpperCase();
+      listItem.dataset.quantity = item.quantity;
+      listItem.dataset.unit = item.unit;
+      listItem.dataset.category = item.category;
+      listItem.dataset.checked = item.purchased;
       List.append(listItem);
-    });
-
+    }
     updateItemNumbers();
-    fileInfo.textContent = '';
+
+    fileInfo.className = 'alert alert-info fs-5';
     appendLabeled(fileInfo, t('selected-file'), `${file.name} ${t('loaded')}`);
+    successMessage.textContent = t('file-items-added', { count: items.length })
+      + (alreadyInList > 0 ? ` ${t('file-items-skipped', { count: alreadyInList })}` : '');
   } catch (error) {
     errorMessage.textContent = t('read-error', { message: error.message });
   }

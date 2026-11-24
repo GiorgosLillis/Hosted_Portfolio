@@ -90,6 +90,50 @@ describe('getCityLocation (forward geocoding)', () => {
         expect(JSON.parse(localStorage.getItem('CityInfo')).city).toBe('Athens');
     });
 
+    it('sends the optional state with the search and remembers it in the cache', async () => {
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({ latitude: 40.6, longitude: 22.2, country_name: 'Greece', country: 'GR', city: 'Άγιος Γεώργιος' }),
+        });
+
+        await getCityLocation('Agios Georgios', 'Greece', 'Central Macedonia');
+
+        expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({ city: 'Agios Georgios', country: 'Greece', state: 'Central Macedonia' });
+        expect(JSON.parse(localStorage.getItem('CityInfo')).searchState).toBe('Central Macedonia');
+    });
+
+    it('keeps the region the server found, empty when there is none', async () => {
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ latitude: 40.6, longitude: 22.2, country_name: 'Greece', country: 'GR', city: 'Agios Georgios', state: 'Central Macedonia' }),
+        });
+        expect((await getCityLocation('Agios Georgios', 'Greece', 'Macedonia')).region).toBe('Central Macedonia');
+
+        localStorage.clear();
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ latitude: 1, longitude: 2, country_name: 'Greece', country: 'GR', city: 'Athens' }),
+        });
+        expect((await getCityLocation('Athens', 'Greece')).region).toBe('');
+    });
+
+    it('does not reuse a cached city for a search with a different state', async () => {
+        const cached = { city: 'Agios Georgios', country: 'Greece', searchState: 'Crete', latitude: 35.1, longitude: 25.4, timestamp: Date.now() };
+        localStorage.setItem('CityInfo', JSON.stringify(cached));
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({ latitude: 40.6, longitude: 22.2, country_name: 'Greece', country: 'GR', city: 'Agios Georgios' }),
+        });
+
+        const sameState = await getCityLocation('Agios Georgios', 'Greece', 'Crete');
+        expect(sameState).toEqual(cached);
+        expect(global.fetch).not.toHaveBeenCalled();
+
+        const otherState = await getCityLocation('Agios Georgios', 'Greece', 'Central Macedonia');
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        expect(otherState.latitude).toBe(40.6);
+    });
+
     it('throws a "not found" error on a 404 response', async () => {
         global.fetch.mockResolvedValue({ ok: false, status: 404 });
         await expect(getCityLocation('Nowhere', 'XX')).rejects.toThrow(/City not found/);

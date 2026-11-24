@@ -14,13 +14,6 @@ const LOCAL_SHOPPING_KEY = 'localShoppingList';
 const ACCOUNT_SHOPPING_KEY = 'accountShoppingList';
 const loading = document.getElementById('loadingMessage');
 
-// Items removed since the last save 
-let removedItemNames = [];
-
-export function trackRemovedItem(name) {
-    removedItemNames.push(name);
-}
-
 function setButtonsDisabled(disabled) {
     allButtons.forEach(button => {
         button.disabled = disabled;
@@ -73,7 +66,8 @@ export async function saveShoppingList() {
         }
 
         const token = await getRecaptchaToken('save_list');
-        const data = JSON.stringify({ id: user.id, list: shoppingList, removed: removedItemNames });
+        // The server replaces the stored list with this one, so items removed here are deleted there too
+        const data = JSON.stringify({ list: shoppingList });
         const response = await fetchWithTimeout('/api/list', {
             method: 'POST',
             headers: {
@@ -87,7 +81,6 @@ export async function saveShoppingList() {
             // Keep the account's local cache in sync with server
             localStorage.setItem(ACCOUNT_SHOPPING_KEY, JSON.stringify(toRenderShape(shoppingList)));
             successMessage.textContent = t('saved-server');
-            removedItemNames = [];
         }
         else {
             const result = await response.json();
@@ -129,7 +122,6 @@ export async function deleteList() {
 
             if (response.ok) {
                 localStorage.removeItem(ACCOUNT_SHOPPING_KEY);
-                removedItemNames = [];
                 resetList();
             }
             else {

@@ -17,7 +17,7 @@ const Forgot = ({ switchToLogin, showToast }) => {
     }, []);
 
     // Re-runs on mount AND when submitted flips true, since the success message replaces
-    // the form in place (no remount) - focus needs to move again to announce it
+    // the form in place (no remount)
     useEffect(() => {
         headingRef.current?.focus();
     }, [submitted]);
@@ -109,7 +109,7 @@ const Forgot = ({ switchToLogin, showToast }) => {
                 <div className="col-12 col-md-6 d-flex justify-content-center align-items-center">
                     <button
                         type="button"
-                        className="btn btn-sm px-0 filter-btn text-center mb-3"
+                        className="btn btn-sm px-0 text-center filter-btn mb-3 long-text"
                         aria-label={t('send-link-aria')}
                         onClick={handleForgot}
                         disabled={isLoading}
@@ -120,11 +120,11 @@ const Forgot = ({ switchToLogin, showToast }) => {
                     </button>
                 </div>
                 <div className="col-12 col-md-10 d-flex justify-content-center align-items-center">
-                    <p className="mb-0 profile-span">
+                    <p className="mb-0 profile-span text-center">
                         {t('remembered')}{' '}
                         <button
                             type="button"
-                            className="p-0 m-0 align-baseline profile-btn"
+                            className="p-0 m-0 align-baseline profile-btn text-center"
                             aria-label={t('login-link-aria')}
                             onClick={switchToLogin}
                             disabled={isLoading}

@@ -1,4 +1,4 @@
-import { setCorsHeaders, getClientIp, enforceRateLimit, fetchWithTimeout, sendStatus } from '../lib/functions.js';
+import { setCorsHeaders, getClientIp, enforceRateLimits, fetchWithTimeout, sendStatus } from '../lib/http.js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Nominatim's usage policy requires a descriptive User-Agent
@@ -8,16 +8,33 @@ const NOMINATIM_HEADERS = {
 
 async function queryNominatim(url: string) {
   const response = await fetchWithTimeout(url, 8000, { headers: NOMINATIM_HEADERS });
-  const data = await response.json();
+  const data = await response.json() as any;
   return { response, data };
 }
 
-// Nominatim doesn't always return a "city" field, hence the fallback chain
+// Languages the site is translated into, anything else falls back to English
+const SUPPORTED_LANGS = ['en', 'el'];
+const pickLanguage = (lang: unknown) => (typeof lang === 'string' && SUPPORTED_LANGS.includes(lang) ? lang : 'en');
+
+// Nominatim files whole municipalities under "city" for some countries (Greece: "Municipal Unit of Tripoli"), drop that wording
+const ADMIN_PREFIX = /^(Municipal Unit|Municipality|Community|Regional Unit|Region|Prefecture|Perfecture) of\s+/i;
+const ADMIN_SUFFIX = /\s+(Community|Municipal Unit|Municipality)$/i;
+
+function cleanPlaceName(name?: string) {
+  return name?.replace(ADMIN_PREFIX, '').replace(ADMIN_SUFFIX, '').trim() || undefined;
+}
+
+// Nominatim doesn't always return a "city" field, hence the fallback chain, from the most to the least specific place
 function extractLocation(address: any, cityOverride?: string) {
+  const place = cityOverride || [address.city, address.town, address.village, address.hamlet, address.municipality, address.city_district, address.county]
+    .map(cleanPlaceName)
+    .find(Boolean);
+
   return {
     country_name: address.country,
     country: address.country_code.toUpperCase(),
-    city: cityOverride || address.city || address.town || address.village || address.county
+    city: place,
+    state: cleanPlaceName(address.state)
   };
 }
 
@@ -25,7 +42,7 @@ function extractLocation(address: any, cityOverride?: string) {
 async function applyGeoRateLimit(req: VercelRequest, res: VercelResponse, keyPrefix: string): Promise<boolean> {
   res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=3600');
   const ip = getClientIp(req);
-  return enforceRateLimit(res, `${keyPrefix}:${ip}`, 10, 60); // 10 requests per minute per IP
+  return enforceRateLimits(res, [`${keyPrefix}:${ip}`, 30, 60]); // 30 requests per minute per IP, translating a list of saved cities makes one per city
 }
 
 // Coordinates -> city/country name
@@ -45,7 +62,7 @@ async function reverseLocation(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${parsedLat}&lon=${parsedLon}&addressdetails=1&accept-language=en`;
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${parsedLat}&lon=${parsedLon}&addressdetails=1&accept-language=en`; // always English, the name cleanup above relies on it, the client translates it afterwards
     const { response, data } = await queryNominatim(url);
 
     if (!response.ok || data.error) {
@@ -65,7 +82,7 @@ async function reverseLocation(req: VercelRequest, res: VercelResponse) {
 async function forwardLocation(req: VercelRequest, res: VercelResponse) {
   if (!(await applyGeoRateLimit(req, res, 'forward_location_attempt'))) return;
 
-  const { city, country } = req.method === 'GET' ? req.query : req.body;
+  const { city, country, state, lang } = req.method === 'GET' ? req.query : req.body;
 
   if (typeof city !== 'string' || city.trim() === '') {
     return sendStatus(res, 400, 'city-name-required', "City name is required and must be a non-empty string.");
@@ -82,9 +99,15 @@ async function forwardLocation(req: VercelRequest, res: VercelResponse) {
       return sendStatus(res, 400, 'country-long', "Country name is too long.");
     }
   }
+  if (state) {
+    if (typeof state !== 'string' || state.trim() === '' || state.length > 100) {
+      return sendStatus(res, 400, 'state-invalid', "State must be a non-empty string of at most 100 characters if provided.");
+    }
+  }
 
   try {
-    const url = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&format=json&limit=1&addressdetails=1&accept-language=en`;
+    const stateParam = state ? `&state=${encodeURIComponent(state)}` : '';
+    const url = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}${stateParam}&format=json&limit=1&addressdetails=1&accept-language=${pickLanguage(lang)}`;
     const { response, data } = await queryNominatim(url);
 
     if (!response.ok || data.error) {
@@ -100,7 +123,8 @@ async function forwardLocation(req: VercelRequest, res: VercelResponse) {
     res.status(200).json({
       latitude: result.lat,
       longitude: result.lon,
-      ...extractLocation(result.address, result.name)
+      // A boundary result's name is the whole municipality, only a real place's name is used as is
+      ...extractLocation(result.address, result.class === 'place' ? result.name : undefined)
     });
 
   } catch (err) {

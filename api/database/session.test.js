@@ -64,7 +64,7 @@ const functionsRedis = Redis.fromEnv.mock.results[0].value;
 const redis = Redis.fromEnv.mock.results[1].value;
 const sendMail = nodemailer.createTransport.mock.results[0].value.sendMail;
 
-const fakeUser = { id: 1, email: 'user@example.com', tokenVersion: 3 };
+const fakeUser = { id: 1, email: 'user@example.com', tokenVersion: 3, emailVerifiedAt: new Date('2026-01-01') };
 
 function reqWithToken(token) {
     return createMockReq({ method: 'POST', headers: { cookie: `token=${token}` } });

@@ -1,5 +1,71 @@
- /* Hidden until focused - lets keyboard users skip past the repeated nav */
- .skip-link {
+
+
+body{
+    box-sizing: border-box;
+    color: var(--bs-text);
+    font-family: "Tinos", system-ui;
+    font-optical-sizing: auto;
+    font-style: normal;
+    font-weight: 400;
+    font-variation-settings:
+      "slnt" 0,
+      "CRSV" 0.5,
+      "ELSH" 0,
+      "ELXP" 0;
+    background-size: cover;
+    background-position: center; 
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+  
+.theme-default{
+    --bs-secondary: #D99F0D;
+    --bs-primary: #060642;
+    --bs-primary-light: #200242;
+    --bs-secondary-light: #fcbd1dd8;
+    --bs-effect: 	#75B6FF;
+    --bs-effect-secondary: #060642;
+    --bs-text: azure; 
+    --bs-text-secondary: #D99F0D;
+    --image: url('/backgrounds/graph-paper-blue.jpg');
+  }
+
+.theme-dark{
+    --bs-secondary: #06682f;
+    --bs-primary: #0d0d0d;
+    --bs-primary-light: #20202083;
+    --bs-secondary-light: #00b64c8c;
+    --bs-effect: #0adf63;
+    --bs-effect-secondary: #222222;
+    --bs-text: #babbbb;
+    --bs-text-secondary: #058038;
+    --image: url('/backgrounds/graph-paper-dark.jpg');
+  }
+
+.theme-light{
+    --bs-secondary: #E4DCDC;
+    --bs-primary: #f0ffff;
+    --bs-primary-light: white;
+    --bs-secondary-light: #d6c8c8;
+    --bs-effect: red;
+    --bs-effect-secondary: #f0ffff;
+    --bs-text: #740B20;
+    --bs-text-secondary: black;
+    --image: url('/backgrounds/graph-paper-white.jpg');
+  }
+
+.text-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+} 
+
+.skip-link {
     position: absolute;
     top: -50px;
     left: 0;
@@ -15,9 +81,7 @@
  }
 
  /* Google's reCAPTCHA v3 badge: hiding it is only allowed per Google's terms if the required
-    attribution text below is shown instead - see the .recaptcha-attribution footer note on every
-    page that calls loadRecaptchaScript(). Also removes a fixed, asynchronously-injected element
-    that was contributing to a mobile layout overflow bug. */
+    attribution text below is shown instead */
  .grecaptcha-badge {
     visibility: hidden;
  }
@@ -27,18 +91,11 @@
     opacity: 0.8;
  }
 
- /* Greek text runs longer than English, so shrink the rem scale a little and let long words wrap instead of overflowing */
- html[lang="el"] {
-    font-size: 90%;
- }
-
  html[lang="el"] body {
     overflow-wrap: break-word;
     hyphens: auto;
  }
 
- /* Language switcher, injected by i18n.js just after the navbar. Absolute (not in flow) so it never
-    pushes the page content, and below the navbar's z-index so an opened menu covers it. */
  .lang-switcher {
     position: absolute;
     top: calc(var(--navbar-height, 4.5rem) + 0.5rem);
@@ -77,68 +134,3 @@
         display: none;
     }
  }
-
- body{
-    box-sizing: border-box;
-    color: var(--bs-text);
-    font-family: "Tinos", system-ui;
-    font-optical-sizing: auto;
-    font-style: normal;
-    font-weight: 400;
-    font-variation-settings:
-      "slnt" 0,
-      "CRSV" 0.5,
-      "ELSH" 0,
-      "ELXP" 0;
-    background-size: cover;
-    background-position: center; 
-    scroll-behavior: smooth;
-    overflow-x: hidden;
-  }
-  
-  .theme-default{
-    --bs-secondary: #D99F0D;
-    --bs-primary: #060642;
-    --bs-primary-light: #200242;
-    --bs-secondary-light: #fcbd1dd8;
-    --bs-effect: 	#75B6FF;
-    --bs-effect-secondary: #060642;
-    --bs-text: azure; 
-    --bs-text-secondary: #D99F0D;
-    --image: url('/backgrounds/graph-paper-blue.jpg');
-  }
-
-  .theme-dark{
-    --bs-secondary: #06682f;
-    --bs-primary: #0d0d0d;
-    --bs-primary-light: #20202083;
-    --bs-secondary-light: #00b64c8c;
-    --bs-effect: #0adf63;
-    --bs-effect-secondary: #222222;
-    --bs-text: #babbbb;
-    --bs-text-secondary: #058038;
-    --image: url('/backgrounds/graph-paper-dark.jpg');
-  }
-
- .theme-light{
-    --bs-secondary: #E4DCDC;
-    --bs-primary: #f0ffff;
-    --bs-primary-light: white;
-    --bs-secondary-light: #d6c8c8;
-    --bs-effect: red;
-    --bs-effect-secondary: #f0ffff;
-    --bs-text: #740B20;
-    --bs-text-secondary: black;
-    --image: url('/backgrounds/graph-paper-white.jpg');
-  }
-
-.text-button {
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  font-family: inherit;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-}

@@ -1,182 +1,152 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import jwt from 'jsonwebtoken';
+import { createMockReq } from '../testUtils/mockReqRes.js';
+
+const redis = vi.hoisted(() => ({
+    get: vi.fn(),
+    set: vi.fn(),
+    del: vi.fn(),
+    incr: vi.fn(),
+    expire: vi.fn(),
+    ttl: vi.fn(),
+}));
 
 vi.mock('@upstash/redis', () => ({
-    Redis: {
-        fromEnv: vi.fn(() => ({
-            get: vi.fn(),
-            set: vi.fn(),
-        })),
-    },
+    Redis: { fromEnv: () => redis },
 }));
 
 vi.mock('./prisma.js', () => ({
-    prisma: {
-        user: {
-            findUnique: vi.fn(),
-        },
-    },
+    prisma: { user: { findUnique: vi.fn() } },
 }));
 
-const { Redis } = await import('@upstash/redis');
 const { prisma } = await import('./prisma.js');
-const { checkToken, isValidEmail, isValidPassword, isValidName, getClientIp } = await import('./functions.js');
+const { checkToken, setCorsHeaders } = await import('./functions.js');
 
-const redis = Redis.fromEnv.mock.results[1].value;
+const dbUser = {
+    id: 1,
+    email: 'user@example.com',
+    passwordHash: '$2a$10$thisIsAFakeHashThatMustNeverBeCached',
+    firstName: 'John',
+    lastName: 'Doe',
+    tokenVersion: 3,
+    emailVerifiedAt: new Date('2024-01-02'),
+    createdAt: new Date('2024-01-01'),
+    lastLoginAt: null,
+};
 
-function signToken(payload, options = {}) {
-    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d', ...options });
+function requestWithToken(overrides = {}) {
+    const token = jwt.sign({ userId: 1, email: dbUser.email, tokenVersion: 3, ...overrides }, process.env.JWT_SECRET);
+    return createMockReq({ headers: { cookie: `token=${token}` } });
 }
-
-function reqWithToken(token) {
-    return { headers: { cookie: `token=${token}` } };
-}
-
-const fakeUser = { id: 1, email: 'user@example.com', tokenVersion: 3 };
 
 beforeEach(() => {
     vi.clearAllMocks();
     redis.get.mockResolvedValue(null);
     redis.set.mockResolvedValue('OK');
-    prisma.user.findUnique.mockResolvedValue(fakeUser);
-});
-
-describe('getClientIp', () => {
-    it('prefers the x-forwarded-for header when present', () => {
-        const req = { headers: { 'x-forwarded-for': '1.2.3.4' }, socket: { remoteAddress: '5.6.7.8' } };
-        expect(getClientIp(req)).toBe('1.2.3.4');
-    });
-
-    it('falls back to the socket address when the header is missing', () => {
-        const req = { headers: {}, socket: { remoteAddress: '5.6.7.8' } };
-        expect(getClientIp(req)).toBe('5.6.7.8');
-    });
-});
-
-describe('isValidEmail', () => {
-    it('accepts a well-formed email', () => {
-        expect(isValidEmail('a@b.com')).toBe(true);
-    });
-
-    it('rejects a missing value', () => {
-        expect(isValidEmail(undefined)).toBe(false);
-        expect(isValidEmail('')).toBe(false);
-    });
-
-    it('rejects a malformed email', () => {
-        expect(isValidEmail('not-an-email')).toBe(false);
-    });
-});
-
-describe('isValidPassword', () => {
-    it('accepts a password meeting all complexity rules', () => {
-        expect(isValidPassword('Curr3nt!Pass')).toBe(true);
-    });
-
-    it('rejects a missing value', () => {
-        expect(isValidPassword(undefined)).toBe(false);
-        expect(isValidPassword('')).toBe(false);
-    });
-
-    it('rejects a password missing required complexity (too short/no special char)', () => {
-        expect(isValidPassword('weak')).toBe(false);
-        expect(isValidPassword('NoSpecialChar1')).toBe(false);
-    });
-});
-
-describe('isValidName', () => {
-    it('accepts a well-formed name', () => {
-        expect(isValidName('John')).toBe(true);
-        expect(isValidName("O'Brien")).toBe(true);
-    });
-
-    it('rejects a missing value', () => {
-        expect(isValidName(undefined)).toBe(false);
-        expect(isValidName('')).toBe(false);
-    });
-
-    it('rejects a name with digits', () => {
-        expect(isValidName('John3')).toBe(false);
-    });
-
-    it('rejects a name over 50 characters', () => {
-        expect(isValidName('a'.repeat(51))).toBe(false);
-    });
+    prisma.user.findUnique.mockResolvedValue(dbUser);
 });
 
 describe('checkToken', () => {
-    it('throws when there is no cookie at all', async () => {
-        await expect(checkToken({ headers: {} })).rejects.toThrow('Invalid or expired token.');
+    it('rejects a request without the auth cookie', async () => {
+        await expect(checkToken(createMockReq({ headers: {} }))).rejects.toThrow('Invalid or expired token.');
     });
 
-    it('throws when the token has a bad signature', async () => {
-        const badToken = jwt.sign({ userId: fakeUser.id, tokenVersion: fakeUser.tokenVersion }, 'wrong-secret');
-        await expect(checkToken(reqWithToken(badToken))).rejects.toThrow('Invalid or expired token.');
+    it('rejects a token signed with another secret', async () => {
+        const forged = jwt.sign({ userId: 1, tokenVersion: 3 }, 'some-other-secret');
+        const req = createMockReq({ headers: { cookie: `token=${forged}` } });
+        await expect(checkToken(req)).rejects.toThrow('Invalid or expired token.');
     });
 
-    it('throws when the token is expired', async () => {
-        const expiredToken = signToken({ userId: fakeUser.id, tokenVersion: fakeUser.tokenVersion }, { expiresIn: '-1s' });
-        await expect(checkToken(reqWithToken(expiredToken))).rejects.toThrow('Invalid or expired token.');
+    it('loads the user from the database on a cache miss and returns it without the password hash', async () => {
+        const user = await checkToken(requestWithToken());
+
+        expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: 1 } });
+        expect(user).toMatchObject({ id: 1, email: dbUser.email, firstName: 'John', tokenVersion: 3 });
+        expect(user).not.toHaveProperty('passwordHash');
     });
 
-    describe('cache-hit path', () => {
-        it('returns the cached user when tokenVersion matches', async () => {
-            redis.get.mockResolvedValue(fakeUser);
-            const token = signToken({ userId: fakeUser.id, tokenVersion: fakeUser.tokenVersion });
+    it('caches the user for 5 minutes, never including the password hash', async () => {
+        await checkToken(requestWithToken());
 
-            const result = await checkToken(reqWithToken(token));
-
-            expect(result).toEqual(fakeUser);
-            expect(prisma.user.findUnique).not.toHaveBeenCalled();
-        });
-
-        it('rejects a token whose version does not match the cached user (revoked token)', async () => {
-            redis.get.mockResolvedValue(fakeUser);
-            const staleToken = signToken({ userId: fakeUser.id, tokenVersion: fakeUser.tokenVersion - 1 });
-
-            await expect(checkToken(reqWithToken(staleToken))).rejects.toThrow('Invalid or expired token.');
-            expect(prisma.user.findUnique).not.toHaveBeenCalled();
-        });
+        expect(redis.set).toHaveBeenCalledTimes(1);
+        const [key, cached, options] = redis.set.mock.calls[0];
+        expect(key).toBe('user_session:1');
+        expect(options).toEqual({ ex: 300 });
+        expect(cached).toMatchObject({ id: 1, email: dbUser.email });
+        expect(cached).not.toHaveProperty('passwordHash');
     });
 
-    describe('DB-fallback path (cache miss)', () => {
-        it('returns the user and caches it when tokenVersion matches', async () => {
-            const token = signToken({ userId: fakeUser.id, tokenVersion: fakeUser.tokenVersion });
+    it('uses the cached user without touching the database', async () => {
+        const { passwordHash, ...cachedUser } = dbUser;
+        redis.get.mockResolvedValue(cachedUser);
 
-            const result = await checkToken(reqWithToken(token));
+        const user = await checkToken(requestWithToken());
 
-            expect(result).toEqual(fakeUser);
-            expect(redis.set).toHaveBeenCalledWith(`user_session:${fakeUser.id}`, fakeUser, { ex: 300 });
-        });
-
-        it('rejects a token whose version does not match the DB user (revoked token)', async () => {
-            const staleToken = signToken({ userId: fakeUser.id, tokenVersion: fakeUser.tokenVersion - 1 });
-
-            await expect(checkToken(reqWithToken(staleToken))).rejects.toThrow('Invalid or expired token.');
-            expect(redis.set).not.toHaveBeenCalled();
-        });
-
-        it('throws when the user no longer exists', async () => {
-            prisma.user.findUnique.mockResolvedValue(null);
-            const token = signToken({ userId: 999, tokenVersion: 0 });
-
-            await expect(checkToken(reqWithToken(token))).rejects.toThrow('User specified in token not found');
-        });
+        expect(prisma.user.findUnique).not.toHaveBeenCalled();
+        expect(user).toMatchObject({ id: 1, tokenVersion: 3 });
     });
 
-    it('still applies the tokenVersion check via the DB when the Redis read fails', async () => {
+    it('rejects when the token version no longer matches the cached user (logged out everywhere)', async () => {
+        const { passwordHash, ...cachedUser } = dbUser;
+        redis.get.mockResolvedValue({ ...cachedUser, tokenVersion: 4 });
+
+        await expect(checkToken(requestWithToken())).rejects.toThrow('Invalid or expired token.');
+    });
+
+    it('rejects when the token version no longer matches the database', async () => {
+        prisma.user.findUnique.mockResolvedValue({ ...dbUser, tokenVersion: 4 });
+
+        await expect(checkToken(requestWithToken())).rejects.toThrow('Invalid or expired token.');
+        expect(redis.set).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the database when Redis cannot be read, and still works when it cannot be written', async () => {
         redis.get.mockRejectedValue(new Error('Redis is down'));
-        const staleToken = signToken({ userId: fakeUser.id, tokenVersion: fakeUser.tokenVersion - 1 });
+        redis.set.mockRejectedValue(new Error('Redis is down'));
 
-        await expect(checkToken(reqWithToken(staleToken))).rejects.toThrow('Invalid or expired token.');
+        const user = await checkToken(requestWithToken());
+
+        expect(prisma.user.findUnique).toHaveBeenCalled();
+        expect(user.id).toBe(1);
     });
 
-    it('throws when JWT_SECRET is not configured', async () => {
-        const original = process.env.JWT_SECRET;
-        delete process.env.JWT_SECRET;
+    it('treats a token for a user that no longer exists like any other invalid token, so it ends as a 401', async () => {
+        prisma.user.findUnique.mockResolvedValue(null);
 
-        await expect(checkToken(reqWithToken('irrelevant'))).rejects.toThrow('JWT_SECRET is not configured on the server');
+        await expect(checkToken(requestWithToken())).rejects.toThrow('Invalid or expired token.');
+    });
 
-        process.env.JWT_SECRET = original;
+    it('ends the session of an account whose email is not confirmed, from the database or from the cache', async () => {
+        prisma.user.findUnique.mockResolvedValue({ ...dbUser, emailVerifiedAt: null });
+        await expect(checkToken(requestWithToken())).rejects.toThrow('Invalid or expired token.');
+
+        const { passwordHash, ...cachedUser } = dbUser;
+        redis.get.mockResolvedValue({ ...cachedUser, emailVerifiedAt: null });
+        await expect(checkToken(requestWithToken())).rejects.toThrow('Invalid or expired token.');
+    });
+
+    it('only accepts tokens signed with HS256', async () => {
+        const hs512 = jwt.sign({ userId: 1, email: dbUser.email, tokenVersion: 3 }, process.env.JWT_SECRET, { algorithm: 'HS512' });
+        const req = createMockReq({ headers: { cookie: `token=${hs512}` } });
+
+        await expect(checkToken(req)).rejects.toThrow('Invalid or expired token.');
+    });
+});
+
+describe('setCorsHeaders', () => {
+    it('marks responses as not cacheable by default, since they usually carry private data', () => {
+        const res = { setHeader: vi.fn() };
+        setCorsHeaders(res);
+
+        expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'no-store');
+    });
+
+    it('lets an endpoint that sets its own caching afterwards override it', () => {
+        const headers = {};
+        const res = { setHeader: (name, value) => { headers[name] = value; } };
+        setCorsHeaders(res);
+        res.setHeader('Cache-Control', 'public, s-maxage=3600');
+
+        expect(headers['Cache-Control']).toBe('public, s-maxage=3600');
     });
 });

@@ -27,8 +27,17 @@
       "headers": {
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "SAMEORIGIN",
+        "Strict-Transport-Security": "max-age=63072000",
         "Referrer-Policy": "strict-origin-when-cross-origin",
-        "Content-Security-Policy":"default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ 'sha256-rYqKmgvIamlmoE767kzFF9yKhZqfrTWwA9H8KPb80Rc='; style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'sha256-DvWacr7auOcDSavBLJY1LG7f1q3Mop5tVo/VOh/pzc4='; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https://cdnjs.cloudflare.com https://www.gstatic.com/recaptcha/; connect-src 'self' https://www.google.com/recaptcha/; frame-src https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+        "Permissions-Policy": "camera=(), microphone=(), payment=(), usb=(), geolocation=(self)",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net/npm/aos@2.3.1/dist/aos.js https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ 'sha256-rYqKmgvIamlmoE767kzFF9yKhZqfrTWwA9H8KPb80Rc='; style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'sha256-DvWacr7auOcDSavBLJY1LG7f1q3Mop5tVo/VOh/pzc4='; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https://cdnjs.cloudflare.com https://www.gstatic.com/recaptcha/; connect-src 'self' https://www.google.com/recaptcha/; frame-src https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+      },
+      "continue": true
+    },
+    {
+      "src": "/((?!api/).*)",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://www.giorgoslillis.com"
       },
       "continue": true
     },
@@ -46,6 +55,10 @@
       "src": "/api/unsubscribe",
       "dest": "/api/weather/weather.ts?action=unsubscribe"
     },
+    {
+      "src": "/api/update-language",
+      "dest": "/api/weather/weather.ts?action=update-language"
+    },
     { "src": "/api/notify", "dest": "/api/weather/weather.ts?action=notify" },
     {
       "src": "/api/Reverse_Location",
@@ -57,6 +70,18 @@
     },
     { "src": "/api/login", "dest": "/api/database/login.ts" },
     { "src": "/api/register", "dest": "/api/database/register.ts" },
+    {
+      "src": "/api/verify-email",
+      "dest": "/api/database/register.ts?action=verify"
+    },
+    {
+      "src": "/api/resend-verification",
+      "dest": "/api/database/register.ts?action=resend"
+    },
+    {
+      "src": "/api/cleanup-unverified",
+      "dest": "/api/database/register.ts?action=cleanup"
+    },
     { "src": "/api/edit", "dest": "/api/database/account.ts" },
     { "src": "/api/logout", "dest": "/api/database/session.ts" },
     { "src": "/api/logoutDevices", "dest": "/api/database/session.ts" },
@@ -73,6 +98,7 @@
       "path": "/api/keep-alive",
       "schedule": "0 0 * * *"
     },
+    { "path": "/api/cleanup-unverified", "schedule": "30 3 * * *" },
     { "path": "/api/notify?hour=0", "schedule": "0 0 * * *" },
     { "path": "/api/notify?hour=1", "schedule": "0 1 * * *" },
     { "path": "/api/notify?hour=2", "schedule": "0 2 * * *" },
