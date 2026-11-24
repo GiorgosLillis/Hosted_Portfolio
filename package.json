@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@prisma/client": "^7.10.0",
-    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/jest-dom": "^8.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsdom": "^30.0.0",
